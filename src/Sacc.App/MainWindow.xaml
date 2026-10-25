@@ -1,0 +1,438 @@
+﻿<Window x:Class="Sacc.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:infra="clr-namespace:Sacc.App.Infrastructure"
+        Title="{Binding AppTitle}" Height="760" Width="1120" MinHeight="520" MinWidth="820"
+        Topmost="{Binding AlwaysOnTop}" Background="{StaticResource PanelBrush}">
+    <Window.InputBindings>
+        <KeyBinding Key="Escape" Command="{Binding StopCommand}"/>
+    </Window.InputBindings>
+    <Window.Resources>
+        <DataTemplate x:Key="TextField">
+            <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" ToolTip="{Binding Hint}"/>
+        </DataTemplate>
+        <DataTemplate x:Key="BoolField">
+            <CheckBox IsChecked="{Binding BoolValue}" VerticalAlignment="Center" Content="enabled"/>
+        </DataTemplate>
+        <DataTemplate x:Key="ChoiceField">
+            <ComboBox ItemsSource="{Binding Def.Choices}" SelectedItem="{Binding Value}"/>
+        </DataTemplate>
+        <DataTemplate x:Key="PlayerField">
+            <ComboBox IsEditable="True" TextSearch.TextPath="SteamId" ToolTip="{Binding Hint}"
+                      ItemsSource="{Binding DataContext.Players, RelativeSource={RelativeSource AncestorType=Window}}"
+                      Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Display}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </DataTemplate>
+        <infra:ParamTemplateSelector x:Key="ParamSelector"
+                                     Text="{StaticResource TextField}" Bool="{StaticResource BoolField}"
+                                     Choice="{StaticResource ChoiceField}" Player="{StaticResource PlayerField}"/>
+    </Window.Resources>
+
+    <DockPanel>
+        <!-- Header -->
+        <Border DockPanel.Dock="Top" Background="{StaticResource HeaderBrush}" Padding="14,10">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
+                    <Ellipse Width="10" Height="10" Margin="0,0,6,0">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Fill" Value="#B3261E"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding GameOk}" Value="True">
+                                        <Setter Property="Fill" Value="#4CAF50"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Ellipse.Style>
+                    </Ellipse>
+                    <TextBlock Text="{Binding GameStatusText}" Foreground="#DDE3E6" Margin="0,0,18,0" VerticalAlignment="Center"/>
+                    <CheckBox IsChecked="{Binding DryRun}" Foreground="#FFD27F" VerticalAlignment="Center" Margin="0,0,14,0"
+                              ToolTip="Log commands without sending anything to the game">Dry run</CheckBox>
+                    <CheckBox IsChecked="{Binding AlwaysOnTop}" Foreground="#DDE3E6" VerticalAlignment="Center">On top</CheckBox>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="SACC" FontSize="20" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
+                    <TextBlock Text="SCUM Admin Command Console" FontSize="14" Foreground="#DDE3E6" Margin="10,5,0,0"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Status bar -->
+        <Border DockPanel.Dock="Bottom" Background="White" BorderBrush="#DADFE2" BorderThickness="0,1,0,0" Padding="10,5">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Command="{Binding StopCommand}" Margin="0" MinWidth="0"
+                        Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" Content="Stop (Esc)"/>
+                <TextBlock Text="{Binding Status}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding Status}"/>
+            </DockPanel>
+        </Border>
+
+        <TabControl Margin="8" Padding="10">
+            <!-- ============================================================ Console -->
+            <TabItem Header="Console">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="340"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Column="0">
+                        <TextBox DockPanel.Dock="Top" Margin="0,0,0,6" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="Search commands"/>
+                        <ListBox ItemsSource="{Binding CommandsView}" SelectedItem="{Binding SelectedCommand}"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled" HorizontalContentAlignment="Stretch">
+                            <ListBox.GroupStyle>
+                                <GroupStyle>
+                                    <GroupStyle.HeaderTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" Margin="2,8,0,2"/>
+                                        </DataTemplate>
+                                    </GroupStyle.HeaderTemplate>
+                                </GroupStyle>
+                            </ListBox.GroupStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="2">
+                                        <Border DockPanel.Dock="Right" CornerRadius="3" Padding="5,0" Margin="6,0,0,0" VerticalAlignment="Top"
+                                                Background="{Binding Confidence, Converter={StaticResource ConfidenceBrush}}">
+                                            <TextBlock Text="{Binding Confidence}" Foreground="White" FontSize="10"/>
+                                        </Border>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}"/>
+                                            <TextBlock Text="{Binding Template}" Style="{StaticResource Mono}" FontSize="11" Foreground="{StaticResource MutedBrush}"/>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+
+                    <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+                        <StackPanel DataContext="{Binding}">
+                            <TextBlock Text="Pick a command on the left." FontSize="14">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource Muted}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedCommand}" Value="{x:Null}">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <StackPanel Visibility="{Binding SelectedCommand, Converter={StaticResource NotEmptyToVisibility}}">
+                                <TextBlock Text="{Binding SelectedCommand.Name}" FontSize="18" FontWeight="SemiBold"/>
+                                <TextBlock Text="{Binding SelectedCommand.Description}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                <TextBlock Text="{Binding SelectedCommand.Notes}" Style="{StaticResource Muted}" Margin="0,4,0,0" FontStyle="Italic"
+                                           Visibility="{Binding SelectedCommand.Notes, Converter={StaticResource NotEmptyToVisibility}}"/>
+
+                                <ItemsControl ItemsSource="{Binding Fields}" Margin="0,10,0,0">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,0,0,6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="140"/>
+                                                    <ColumnDefinition Width="*" MaxWidth="420"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding Label}" VerticalAlignment="Center"/>
+                                                <ContentControl Grid.Column="1" Content="{Binding}" ContentTemplateSelector="{StaticResource ParamSelector}"/>
+                                                <TextBlock Grid.Column="2" Text="{Binding Hint}" Style="{StaticResource Muted}" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <TextBlock Text="Will send" Style="{StaticResource SectionLabel}"/>
+                                <Border Background="White" BorderBrush="#DADFE2" BorderThickness="1" Padding="8,6">
+                                    <TextBlock Text="{Binding Preview}" Style="{StaticResource Mono}" FontSize="14" TextWrapping="Wrap"/>
+                                </Border>
+                                <TextBlock Text="{Binding PreviewProblem}" Foreground="{StaticResource ErrorBrush}" TextWrapping="Wrap" Margin="0,4,0,0"
+                                           Visibility="{Binding PreviewProblem, Converter={StaticResource NotEmptyToVisibility}}"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                    <Button Style="{StaticResource PrimaryButton}" Command="{Binding SendCommand}" Content="Send to game"/>
+                                    <Button Command="{Binding CopyCommand}" Content="Copy"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <DockPanel Grid.Row="1" Grid.ColumnSpan="3" Margin="0,10,0,0">
+                        <Button DockPanel.Dock="Right" Command="{Binding SendFreeformCommand}" Margin="6,0,0,0" Content="Send"/>
+                        <TextBlock DockPanel.Dock="Left" Text="Raw:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBox x:Name="FreeformBox" Text="{Binding FreeformText, UpdateSourceTrigger=PropertyChanged}" FontFamily="Cascadia Mono, Consolas"
+                                 PreviewKeyDown="FreeformBox_PreviewKeyDown"
+                                 ToolTip="Type any admin command. Enter sends, Up/Down recalls history."/>
+                    </DockPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- ============================================================ Players -->
+            <TabItem Header="Players">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+                        <Button Style="{StaticResource PrimaryButton}" Command="{Binding RefreshPlayersCommand}" Content="Refresh from game"
+                                ToolTip="Sends #ListPlayers true and reads the clipboard"/>
+                        <Button Command="{Binding PastePlayersCommand}" Content="Paste list"
+                                ToolTip="Parse #ListPlayers output you copied yourself"/>
+                        <Button Command="{Binding ClearPlayersCommand}" Content="Clear"/>
+                    </StackPanel>
+                    <Border DockPanel.Dock="Right" Width="260" Margin="10,0,0,0" Padding="10" Background="White" BorderBrush="#DADFE2" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="{Binding SelectedPlayer.Display, FallbackValue='Select a player'}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                            <TextBlock Text="Teleport" Style="{StaticResource SectionLabel}"/>
+                            <WrapPanel>
+                                <Button Command="{Binding PlayerActionCommand}" CommandParameter="teleport-to-player" Content="Go to"/>
+                                <Button Command="{Binding PlayerActionCommand}" CommandParameter="teleport-to-me" Content="Bring"/>
+                                <Button Command="{Binding PlayerActionCommand}" CommandParameter="location" Content="Locate"/>
+                                <Button Command="{Binding UsePlayerAsTargetCommand}" Content="Use as target"
+                                        ToolTip="Fill the target box on the Locations and Macros tabs"/>
+                            </WrapPanel>
+                            <TextBlock Text="Fame / currency" Style="{StaticResource SectionLabel}"/>
+                            <DockPanel Margin="0,0,0,6">
+                                <ComboBox DockPanel.Dock="Right" Width="80" Margin="6,0,0,0" ItemsSource="{Binding Currencies}" SelectedItem="{Binding PlayerCurrency}"/>
+                                <TextBox Text="{Binding PlayerAmount, UpdateSourceTrigger=PropertyChanged}" ToolTip="Amount"/>
+                            </DockPanel>
+                            <WrapPanel>
+                                <Button Command="{Binding PlayerActionCommand}" CommandParameter="set-fame" Content="Set fame"/>
+                                <Button Command="{Binding PlayerActionCommand}" CommandParameter="change-currency" Content="Add money"/>
+                            </WrapPanel>
+                            <TextBlock Text="Moderation" Style="{StaticResource SectionLabel}"/>
+                            <WrapPanel>
+                                <Button Command="{Binding PlayerActionCommand}" CommandParameter="mute" Content="Mute"/>
+                                <Button Command="{Binding PlayerActionCommand}" CommandParameter="unmute" Content="Unmute"/>
+                                <Button Style="{StaticResource DangerButton}" Command="{Binding PlayerActionCommand}" CommandParameter="kick" Content="Kick"/>
+                                <Button Style="{StaticResource DangerButton}" Command="{Binding PlayerActionCommand}" CommandParameter="ban" Content="Ban"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+                    <DataGrid ItemsSource="{Binding Players}" SelectedItem="{Binding SelectedPlayer}" IsReadOnly="True">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Name" Binding="{Binding Nickname}" Width="2*"/>
+                            <DataGridTextColumn Header="SteamID64" Binding="{Binding SteamId}" Width="150"/>
+                            <DataGridTextColumn Header="Fame" Binding="{Binding Fame}" Width="70"/>
+                            <DataGridTextColumn Header="Account" Binding="{Binding Account}" Width="90"/>
+                            <DataGridTextColumn Header="Gold" Binding="{Binding Gold}" Width="60"/>
+                            <DataGridTextColumn Header="Location" Binding="{Binding Location}" Width="2*"/>
+                            <DataGridTextColumn Header="Seen" Binding="{Binding LastSeen, StringFormat='MMM d HH:mm'}" Width="100"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+
+            <!-- ============================================================ Spawner -->
+            <TabItem Header="Spawner">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Text="Items" FontSize="16" FontWeight="SemiBold"/>
+                        <DockPanel DockPanel.Dock="Top" Margin="0,6,0,6">
+                            <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0" Text="{Binding ItemAmount, UpdateSourceTrigger=PropertyChanged}" ToolTip="Amount"/>
+                            <TextBox Text="{Binding ItemCode, UpdateSourceTrigger=PropertyChanged}" ToolTip="Item asset id"/>
+                        </DockPanel>
+                        <WrapPanel DockPanel.Dock="Top">
+                            <Button Style="{StaticResource PrimaryButton}" Command="{Binding SpawnItemCommand}" Content="Spawn"/>
+                            <Button Command="{Binding ListItemsCommand}" Content="Search in game" ToolTip="Sends #ListItems with the text as a filter"/>
+                            <Button Command="{Binding AddFavoriteItemCommand}" Content="☆ Favorite"/>
+                        </WrapPanel>
+                        <TextBlock DockPanel.Dock="Top" Style="{StaticResource Muted}" Margin="0,0,0,6"
+                                   Text="Favorites: double-click to spawn with the amount above."/>
+                        <ListBox x:Name="ItemFavorites" ItemsSource="{Binding FavoriteItems}" MouseDoubleClick="ItemFavorites_DoubleClick">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Content="✕" MinWidth="0" Padding="4,0" Margin="8,0,0,0"
+                                                Command="{Binding DataContext.RemoveFavoriteItemCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                        <TextBlock Text="{Binding}" Style="{StaticResource Mono}" VerticalAlignment="Center"/>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                    <DockPanel Grid.Column="2">
+                        <TextBlock DockPanel.Dock="Top" Text="Vehicles" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBox DockPanel.Dock="Top" Margin="0,6,0,6" Text="{Binding VehicleCode, UpdateSourceTrigger=PropertyChanged}" ToolTip="Vehicle asset id"/>
+                        <WrapPanel DockPanel.Dock="Top">
+                            <Button Style="{StaticResource PrimaryButton}" Command="{Binding SpawnVehicleCommand}" Content="Spawn"/>
+                            <Button Command="{Binding AddFavoriteVehicleCommand}" Content="☆ Favorite"/>
+                        </WrapPanel>
+                        <TextBlock DockPanel.Dock="Top" Style="{StaticResource Muted}" Margin="0,0,0,6" Text="Favorites: double-click to spawn."/>
+                        <ListBox x:Name="VehicleFavorites" ItemsSource="{Binding FavoriteVehicles}" MouseDoubleClick="VehicleFavorites_DoubleClick">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Content="✕" MinWidth="0" Padding="4,0" Margin="8,0,0,0"
+                                                Command="{Binding DataContext.RemoveFavoriteVehicleCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                        <TextBlock Text="{Binding}" Style="{StaticResource Mono}" VerticalAlignment="Center"/>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- ============================================================ Locations -->
+            <TabItem Header="Locations">
+                <DockPanel>
+                    <WrapPanel DockPanel.Dock="Top">
+                        <Button Command="{Binding AddBookmarkCommand}" Content="Add"/>
+                        <Button Command="{Binding CaptureLocationCommand}" Content="Capture target's location"
+                                ToolTip="Sends #Location &lt;target&gt; true and saves the coordinates it returns"/>
+                        <Button Style="{StaticResource DangerButton}" Command="{Binding DeleteBookmarkCommand}" Content="Delete"/>
+                        <TextBlock Text="Target:" VerticalAlignment="Center" Margin="12,0,6,6"/>
+                        <TextBox Width="200" Margin="0,0,6,6" Text="{Binding BookmarkTarget, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="SteamID64 or name. Empty = your SteamID from Settings."/>
+                        <Button Style="{StaticResource PrimaryButton}" Command="{Binding TeleportBookmarkCommand}" Content="Teleport target here"/>
+                    </WrapPanel>
+                    <DataGrid ItemsSource="{Binding Bookmarks}" SelectedItem="{Binding SelectedBookmark}" CellEditEnding="Bookmarks_CellEditEnding">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="2*"/>
+                            <DataGridTextColumn Header="X" Binding="{Binding X}" Width="110"/>
+                            <DataGridTextColumn Header="Y" Binding="{Binding Y}" Width="110"/>
+                            <DataGridTextColumn Header="Z" Binding="{Binding Z}" Width="110"/>
+                            <DataGridTextColumn Header="Notes" Binding="{Binding Notes}" Width="3*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+
+            <!-- ============================================================ Macros -->
+            <TabItem Header="Macros">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="240"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <DockPanel>
+                        <WrapPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">
+                            <Button Command="{Binding NewMacroCommand}" Content="New"/>
+                            <Button Style="{StaticResource DangerButton}" Command="{Binding DeleteMacroCommand}" Content="Delete"/>
+                        </WrapPanel>
+                        <ListBox ItemsSource="{Binding Macros}" SelectedItem="{Binding SelectedMacro}" DisplayMemberPath="Name"/>
+                    </DockPanel>
+                    <DockPanel Grid.Column="2" Visibility="{Binding SelectedMacro, Converter={StaticResource NotEmptyToVisibility}}">
+                        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                            <TextBlock Text="Name:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBox Text="{Binding SelectedMacro.Name, UpdateSourceTrigger=PropertyChanged}"/>
+                        </DockPanel>
+                        <WrapPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">
+                            <TextBlock Text="{}{player} =" VerticalAlignment="Center" Margin="0,0,6,6"/>
+                            <TextBox Width="200" Margin="0,0,6,6" Text="{Binding MacroTarget, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Button Command="{Binding CheckMacroCommand}" Content="Check"/>
+                            <Button Style="{StaticResource PrimaryButton}" Command="{Binding RunMacroCommand}" Content="Run"/>
+                        </WrapPanel>
+                        <TextBox Text="{Binding SelectedMacro.Script, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" AcceptsTab="True"
+                                 VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" FontFamily="Cascadia Mono, Consolas"/>
+                    </DockPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- ============================================================ Log -->
+            <TabItem Header="Log">
+                <DockPanel>
+                    <WrapPanel DockPanel.Dock="Top">
+                        <Button Command="{Binding ResendCommand}" CommandParameter="{Binding SelectedItem, ElementName=HistoryGrid}" Content="Resend"/>
+                        <Button Command="{Binding ToFreeformCommand}" CommandParameter="{Binding SelectedItem, ElementName=HistoryGrid}" Content="Edit in console"/>
+                        <Button Style="{StaticResource DangerButton}" Command="{Binding ClearHistoryCommand}" Content="Clear"/>
+                    </WrapPanel>
+                    <DataGrid x:Name="HistoryGrid" ItemsSource="{Binding History}" IsReadOnly="True">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Time" Binding="{Binding Time, StringFormat='MMM d HH:mm:ss'}" Width="120"/>
+                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="160"/>
+                            <DataGridTextColumn Header="Command" Binding="{Binding Text}" Width="*" FontFamily="Cascadia Mono, Consolas"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+
+            <!-- ============================================================ Settings -->
+            <TabItem Header="Settings">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Grid MaxWidth="760" HorizontalAlignment="Left">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="230"/>
+                            <ColumnDefinition Width="260"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.Resources>
+                            <Style TargetType="TextBlock" BasedOn="{x:Null}">
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                                <Setter Property="Margin" Value="0,0,0,8"/>
+                            </Style>
+                            <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                                <Setter Property="Margin" Value="0,0,0,8"/>
+                            </Style>
+                            <Style TargetType="CheckBox">
+                                <Setter Property="Margin" Value="0,0,0,8"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </Grid.Resources>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Text="Your SteamID64"/>
+                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Settings.MySteamId}"/>
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="  default target for self-commands" Foreground="{StaticResource MutedBrush}"/>
+
+                        <TextBlock Grid.Row="1" Text="Game process name"/>
+                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Settings.ProcessName}"/>
+
+                        <TextBlock Grid.Row="2" Text="Open-chat key"/>
+                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Settings.ChatKey}"/>
+                        <TextBlock Grid.Row="2" Grid.Column="2" Text="  WPF key name: T, Enter, Oem2…" Foreground="{StaticResource MutedBrush}"/>
+
+                        <TextBlock Grid.Row="3" Text="Input mode"/>
+                        <ComboBox Grid.Row="3" Grid.Column="1" Margin="0,0,0,8" ItemsSource="{Binding InputModes}" SelectedItem="{Binding Settings.InputMode}"/>
+                        <TextBlock Grid.Row="3" Grid.Column="2" Text="  Paste is fastest; Type if paste fails" Foreground="{StaticResource MutedBrush}"/>
+
+                        <TextBlock Grid.Row="4" Text="Delay after focusing game (ms)"/>
+                        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Settings.FocusDelayMs}"/>
+                        <TextBlock Grid.Row="5" Text="Delay after opening chat (ms)"/>
+                        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding Settings.ChatOpenDelayMs}"/>
+                        <TextBlock Grid.Row="6" Text="Delay before Enter (ms)"/>
+                        <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding Settings.BeforeEnterDelayMs}"/>
+                        <TextBlock Grid.Row="7" Text="Delay between commands (ms)"/>
+                        <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding Settings.AfterSendDelayMs}"/>
+                        <TextBlock Grid.Row="8" Text="Clipboard reply timeout (ms)"/>
+                        <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding Settings.ClipboardCaptureTimeoutMs}"/>
+
+                        <CheckBox Grid.Row="9" Grid.ColumnSpan="3" IsChecked="{Binding Settings.RestoreClipboard}" Content="Restore my clipboard text after sending"/>
+                        <CheckBox Grid.Row="10" Grid.ColumnSpan="3" IsChecked="{Binding Settings.ReturnFocusToSacc}" Content="Switch back to SACC after sending"/>
+                        <CheckBox Grid.Row="11" Grid.ColumnSpan="3" IsChecked="{Binding Settings.ConfirmDangerous}" Content="Confirm kick / ban / destroy-all commands"/>
+
+                        <WrapPanel Grid.Row="12" Grid.ColumnSpan="3" Margin="0,8,0,0">
+                            <Button Style="{StaticResource PrimaryButton}" Command="{Binding SaveSettingsCommand}" Content="Save settings"/>
+                            <Button Command="{Binding EditCatalogCommand}" Content="Edit command catalog"/>
+                            <Button Command="{Binding ReloadCatalogCommand}" Content="Reload catalog"/>
+                            <Button Command="{Binding OpenDataFolderCommand}" Content="Open data folder"/>
+                            <Button Command="{Binding RelaunchAsAdminCommand}" Content="Restart as administrator"/>
+                        </WrapPanel>
+                        <TextBlock Grid.Row="13" Grid.ColumnSpan="3" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,0"
+                                   Text="SACC sends commands by focusing the SCUM window, opening chat, and pasting or typing the line. If SCUM runs as administrator, SACC must too, or Windows will block the keystrokes. Commands marked Conflicting or Unverified in the catalog may need their template adjusted for the current game version."/>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>
