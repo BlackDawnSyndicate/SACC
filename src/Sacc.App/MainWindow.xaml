@@ -241,10 +241,15 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <DockPanel>
-                        <TextBlock DockPanel.Dock="Top" Text="Items" FontSize="16" FontWeight="SemiBold"/>
+                        <DockPanel DockPanel.Dock="Top">
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding ItemMatchSummary}" Style="{StaticResource Muted}" VerticalAlignment="Bottom"/>
+                            <TextBlock Text="Items" FontSize="16" FontWeight="SemiBold"/>
+                        </DockPanel>
                         <DockPanel DockPanel.Dock="Top" Margin="0,6,0,6">
                             <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0" Text="{Binding ItemAmount, UpdateSourceTrigger=PropertyChanged}" ToolTip="Amount"/>
-                            <TextBox Text="{Binding ItemCode, UpdateSourceTrigger=PropertyChanged}" ToolTip="Item asset id"/>
+                            <TextBox x:Name="ItemCodeBox" Text="{Binding ItemCode, UpdateSourceTrigger=PropertyChanged}" FontFamily="Cascadia Mono, Consolas"
+                                     PreviewKeyDown="ItemCodeBox_PreviewKeyDown"
+                                     ToolTip="Item asset id. Type any part of it ('m16 mag'); Down picks from the list, Enter spawns."/>
                         </DockPanel>
                         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,6">
                             <TextBlock Text="StackCount" VerticalAlignment="Center" Margin="0,0,6,0"/>
@@ -259,39 +264,52 @@
                             <Button Command="{Binding ListItemsCommand}" Content="Search in game" ToolTip="Sends #ListItems with the text as a filter"/>
                             <Button Command="{Binding AddFavoriteItemCommand}" Content="☆ Favorite"/>
                         </WrapPanel>
-                        <TextBlock DockPanel.Dock="Top" Style="{StaticResource Muted}" Margin="0,0,0,6"
-                                   Text="Favorites: double-click to spawn with the amount above."/>
-                        <ListBox x:Name="ItemFavorites" ItemsSource="{Binding FavoriteItems}" MouseDoubleClick="ItemFavorites_DoubleClick">
+                        <ListBox x:Name="ItemFavorites" DockPanel.Dock="Bottom" Height="140" ItemsSource="{Binding FavoriteItems}" MouseDoubleClick="ItemFavorites_DoubleClick">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <DockPanel>
                                         <Button DockPanel.Dock="Right" Content="✕" MinWidth="0" Padding="4,0" Margin="8,0,0,0"
                                                 Command="{Binding DataContext.RemoveFavoriteItemCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
-                                        <TextBlock Text="{Binding}" Style="{StaticResource Mono}" VerticalAlignment="Center"/>
+                                        <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource CodeWithIcon}"/>
                                     </DockPanel>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
+                        <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Muted}" Margin="0,8,0,4"
+                                   Text="Favorites: double-click to spawn with the settings above."/>
+                        <ListBox x:Name="ItemMatchesList" ItemsSource="{Binding ItemMatches}" ItemTemplate="{StaticResource CodeWithIcon}"
+                                 PreviewMouseLeftButtonUp="ItemMatches_Click" MouseDoubleClick="ItemMatches_DoubleClick"
+                                 KeyDown="ItemMatches_KeyDown" VirtualizingPanel.IsVirtualizing="True"
+                                 ToolTip="Click to pick, double-click to spawn, Enter to pick"/>
                     </DockPanel>
                     <DockPanel Grid.Column="2">
-                        <TextBlock DockPanel.Dock="Top" Text="Vehicles" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBox DockPanel.Dock="Top" Margin="0,6,0,6" Text="{Binding VehicleCode, UpdateSourceTrigger=PropertyChanged}" ToolTip="Vehicle asset id"/>
+                        <DockPanel DockPanel.Dock="Top">
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding VehicleMatchSummary}" Style="{StaticResource Muted}" VerticalAlignment="Bottom"/>
+                            <TextBlock Text="Vehicles" FontSize="16" FontWeight="SemiBold"/>
+                        </DockPanel>
+                        <TextBox x:Name="VehicleCodeBox" DockPanel.Dock="Top" Margin="0,6,0,6" Text="{Binding VehicleCode, UpdateSourceTrigger=PropertyChanged}"
+                                 FontFamily="Cascadia Mono, Consolas" PreviewKeyDown="VehicleCodeBox_PreviewKeyDown"
+                                 ToolTip="Vehicle asset id. Type any part of it; Down picks from the list, Enter spawns."/>
                         <WrapPanel DockPanel.Dock="Top">
                             <Button Style="{StaticResource PrimaryButton}" Command="{Binding SpawnVehicleCommand}" Content="Spawn"/>
                             <Button Command="{Binding AddFavoriteVehicleCommand}" Content="☆ Favorite"/>
                         </WrapPanel>
-                        <TextBlock DockPanel.Dock="Top" Style="{StaticResource Muted}" Margin="0,0,0,6" Text="Favorites: double-click to spawn."/>
-                        <ListBox x:Name="VehicleFavorites" ItemsSource="{Binding FavoriteVehicles}" MouseDoubleClick="VehicleFavorites_DoubleClick">
+                        <ListBox x:Name="VehicleFavorites" DockPanel.Dock="Bottom" Height="140" ItemsSource="{Binding FavoriteVehicles}" MouseDoubleClick="VehicleFavorites_DoubleClick">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <DockPanel>
                                         <Button DockPanel.Dock="Right" Content="✕" MinWidth="0" Padding="4,0" Margin="8,0,0,0"
                                                 Command="{Binding DataContext.RemoveFavoriteVehicleCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
-                                        <TextBlock Text="{Binding}" Style="{StaticResource Mono}" VerticalAlignment="Center"/>
+                                        <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource CodeWithIcon}"/>
                                     </DockPanel>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
+                        <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Muted}" Margin="0,8,0,4" Text="Favorites: double-click to spawn."/>
+                        <ListBox x:Name="VehicleMatchesList" Margin="0,6,0,0" ItemsSource="{Binding VehicleMatches}" ItemTemplate="{StaticResource CodeWithIcon}"
+                                 PreviewMouseLeftButtonUp="VehicleMatches_Click" MouseDoubleClick="VehicleMatches_DoubleClick"
+                                 KeyDown="VehicleMatches_KeyDown"
+                                 ToolTip="Click to pick, double-click to spawn, Enter to pick"/>
                     </DockPanel>
                 </Grid>
             </TabItem>
@@ -306,6 +324,8 @@
                     </Grid.ColumnDefinitions>
                     <DockPanel>
                         <WrapPanel DockPanel.Dock="Top">
+                            <Button Style="{StaticResource PrimaryButton}" Command="{Binding NewKitCommand}" Content="New kit"
+                                    ToolTip="Create an empty kit in the current folder"/>
                             <Button Command="{Binding ImportSahFolderCommand}" Content="Import SAH folder…"
                                     ToolTip="Import every SCUM Admin Helper pack, players export and #spawnitem text file under a folder (zips included)"/>
                             <Button Command="{Binding ImportSahFilesCommand}" Content="Import files…"/>
@@ -314,7 +334,8 @@
                         </WrapPanel>
                         <TextBox DockPanel.Dock="Top" Margin="0,0,0,6" Text="{Binding KitSearch, UpdateSourceTrigger=PropertyChanged}"
                                  ToolTip="Search kit names, folders and item codes"/>
-                        <ListBox ItemsSource="{Binding KitsView}" SelectedItem="{Binding SelectedKit}"
+                        <ListBox x:Name="KitList" ItemsSource="{Binding KitsView}" SelectedItem="{Binding SelectedKit}"
+                                 SelectionChanged="KitList_SelectionChanged"
                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled" HorizontalContentAlignment="Stretch"
                                  VirtualizingPanel.IsVirtualizingWhenGrouping="True">
                             <ListBox.GroupStyle>
@@ -341,12 +362,16 @@
 
                     <DockPanel Grid.Column="2" Visibility="{Binding SelectedKit, Converter={StaticResource NotEmptyToVisibility}}">
                         <StackPanel DockPanel.Dock="Top">
-                            <TextBox Text="{Binding SelectedKit.Name, UpdateSourceTrigger=LostFocus}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                            <TextBlock Style="{StaticResource Muted}">
-                                <Run Text="{Binding SelectedKit.Group, Mode=OneWay}"/>
-                                <Run Text="  ·  "/>
-                                <Run Text="{Binding SelectedKit.Source, Mode=OneWay}"/>
-                            </TextBlock>
+                            <TextBox x:Name="KitNameBox" Text="{Binding SelectedKit.Name, UpdateSourceTrigger=LostFocus}" FontSize="16" FontWeight="SemiBold"
+                                     Margin="0,0,0,4" LostFocus="KitDetail_LostFocus" ToolTip="Kit name"/>
+                            <DockPanel Margin="0,0,0,2">
+                                <TextBlock Text="Folder" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock DockPanel.Dock="Right" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="8,0,0,0"
+                                           Text="{Binding SelectedKit.Source}" MaxWidth="320" TextTrimming="CharacterEllipsis" ToolTip="{Binding SelectedKit.Source}"/>
+                                <ComboBox IsEditable="True" ItemsSource="{Binding KitFolders}" MinWidth="200"
+                                          Text="{Binding SelectedKitFolder, UpdateSourceTrigger=LostFocus}"
+                                          ToolTip="Pick a folder or type a new one (use / for subfolders)"/>
+                            </DockPanel>
                             <TextBlock Text="{Binding SelectedKit.Description}" TextWrapping="Wrap" Margin="0,4,0,0"
                                        Visibility="{Binding SelectedKit.Description, Converter={StaticResource NotEmptyToVisibility}}"/>
                             <TextBlock Foreground="{StaticResource ErrorBrush}" Margin="0,4,0,0" TextWrapping="Wrap"
@@ -363,12 +388,52 @@
                             </TextBlock>
                             <WrapPanel Margin="0,8,0,0">
                                 <Button Style="{StaticResource PrimaryButton}" Command="{Binding SpawnKitCommand}" Content="Spawn kit"/>
+                                <CheckBox Content="Fill magazines" IsChecked="{Binding SelectedKit.FillMagazines}" VerticalAlignment="Center" Margin="0,0,12,6"
+                                          Click="KitOption_Click"
+                                          ToolTip="Spawn every magazine in this kit with the Full StackCount (Settings → magazine pattern decides what counts)"/>
                                 <Button Command="{Binding CloneKitCommand}" Content="Clone"
                                         ToolTip="Make an editable copy of this kit/pack in the same folder"/>
                                 <Button Command="{Binding KitToMacroCommand}" Content="Copy to macro"/>
                                 <Button Style="{StaticResource DangerButton}" Command="{Binding DeleteKitCommand}" Content="Delete"/>
                                 <Button Style="{StaticResource DangerButton}" Command="{Binding DeleteKitGroupCommand}" Content="Delete folder"/>
                             </WrapPanel>
+
+                            <!-- Add-item row: type-ahead with icons, like the Spawner. -->
+                            <Border Background="White" BorderBrush="#DADFE2" BorderThickness="1" Padding="8,6" Margin="0,4,0,6">
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                        <TextBlock Text="Amount" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                                        <TextBox Width="44" Text="{Binding NewItemAmount, UpdateSourceTrigger=PropertyChanged}" PreviewKeyDown="NewItemField_PreviewKeyDown"
+                                                 ToolTip="New item amount"/>
+                                        <TextBlock Text="StackCount" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                                        <TextBox Width="44" Text="{Binding NewItemStack, UpdateSourceTrigger=PropertyChanged}" PreviewKeyDown="NewItemField_PreviewKeyDown"
+                                                 ToolTip="New item StackCount (optional)"
+                                                 IsEnabled="{Binding NewItemFull, Converter={StaticResource InverseBool}}"/>
+                                        <CheckBox Content="Full" IsChecked="{Binding NewItemFull}" VerticalAlignment="Center" Margin="8,0,8,0"/>
+                                        <Button Style="{StaticResource PrimaryButton}" Command="{Binding AddKitItemCommand}" Content="Add item" Margin="0" MinWidth="0"/>
+                                        <Button Command="{Binding RemoveKitItemCommand}" Content="Remove item" Margin="6,0,0,0" MinWidth="0"
+                                                ToolTip="Remove the selected row from this kit"/>
+                                    </StackPanel>
+                                    <Border Width="28" Height="28" Margin="0,0,6,0" Background="#1F2A30" CornerRadius="3">
+                                        <Image Source="{Binding NewItemCode, Converter={StaticResource CodeToIcon}}" Stretch="Uniform"
+                                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                                    </Border>
+                                    <Grid>
+                                        <TextBox x:Name="NewItemBox" Text="{Binding NewItemCode, UpdateSourceTrigger=PropertyChanged}"
+                                                 FontFamily="Cascadia Mono, Consolas" PreviewKeyDown="NewItemBox_PreviewKeyDown"
+                                                 ToolTip="New item: type any part of a code; Down picks a suggestion, Enter adds"/>
+                                        <Popup x:Name="NewItemPopup" PlacementTarget="{Binding ElementName=NewItemBox}" Placement="Bottom"
+                                               IsOpen="{Binding NewItemPopupOpen}" StaysOpen="False" AllowsTransparency="True"
+                                               Width="{Binding ActualWidth, ElementName=NewItemBox}">
+                                            <Border Background="White" BorderBrush="#B8C0C6" BorderThickness="1">
+                                                <ListBox x:Name="NewItemSuggestions" ItemsSource="{Binding NewItemMatches}" MaxHeight="320"
+                                                         ItemTemplate="{StaticResource CodeWithIcon}" BorderThickness="0"
+                                                         PreviewMouseLeftButtonUp="NewItemSuggestions_Click" KeyDown="NewItemSuggestions_KeyDown"/>
+                                            </Border>
+                                        </Popup>
+                                    </Grid>
+                                </DockPanel>
+                            </Border>
                         </StackPanel>
                         <ItemsControl DockPanel.Dock="Bottom" ItemsSource="{Binding SelectedKit.ExtraCommands}" Margin="0,6,0,0">
                             <ItemsControl.ItemTemplate>
@@ -377,10 +442,20 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                        <DataGrid ItemsSource="{Binding SelectedKitItems}" CellEditEnding="Bookmarks_CellEditEnding"
-                                  CanUserAddRows="True" CanUserDeleteRows="True" RowEditEnding="KitItems_RowEditEnding"
-                                  ToolTip="Edit codes and amounts; type in the last row to add an item; select a row and press Delete to remove it">
+                        <DataGrid ItemsSource="{Binding SelectedKitItems}" SelectedItem="{Binding SelectedKitItem}" CellEditEnding="Bookmarks_CellEditEnding"
+                                  CanUserAddRows="False" CanUserDeleteRows="True" RowEditEnding="KitItems_RowEditEnding"
+                                  ToolTip="Edit codes, amounts and stacks in place; select a row and press Delete (or Remove item) to remove it">
                             <DataGrid.Columns>
+                                <DataGridTemplateColumn Header="" Width="40" IsReadOnly="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Width="32" Height="32" Margin="2" Background="#1F2A30" CornerRadius="3">
+                                                <Image Source="{Binding Code, Converter={StaticResource CodeToIcon}}" Stretch="Uniform"
+                                                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
                                 <DataGridTextColumn Header="Spawn code / command" Binding="{Binding Code}" Width="*" FontFamily="Cascadia Mono, Consolas"/>
                                 <DataGridTextColumn Header="Amount" Binding="{Binding Amount}" Width="70"/>
                                 <DataGridTextColumn Header="StackCount" Binding="{Binding StackCount, TargetNullValue=''}" Width="85"/>
@@ -495,7 +570,7 @@
                             <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
                         <TextBlock Grid.Row="0" Text="Your SteamID64"/>
@@ -535,6 +610,9 @@
                         <TextBlock Grid.Row="17" Text="&quot;Full&quot; StackCount"/>
                         <TextBox Grid.Row="17" Grid.Column="1" Text="{Binding Settings.FullStackCount}"/>
                         <TextBlock Grid.Row="17" Grid.Column="2" Text="  sent when Full is ticked; the game caps overflow" Foreground="{StaticResource MutedBrush}"/>
+                        <TextBlock Grid.Row="18" Text="Magazine pattern (regex)"/>
+                        <TextBox Grid.Row="18" Grid.Column="1" Text="{Binding Settings.MagazinePattern}" FontFamily="Cascadia Mono, Consolas"/>
+                        <TextBlock Grid.Row="18" Grid.Column="2" Text="  which codes a kit's 'Fill magazines' fills" Foreground="{StaticResource MutedBrush}"/>
 
                         <CheckBox Grid.Row="9" Grid.ColumnSpan="3" IsChecked="{Binding Settings.RestoreClipboard}" Content="Restore my clipboard text after sending"/>
                         <CheckBox Grid.Row="10" Grid.ColumnSpan="3" IsChecked="{Binding Settings.ReturnFocusToSacc}" Content="Switch back to SACC after sending"/>
@@ -545,6 +623,9 @@
                             <Button Command="{Binding EditCatalogCommand}" Content="Edit command catalog"/>
                             <Button Command="{Binding ReloadCatalogCommand}" Content="Reload catalog"/>
                             <Button Command="{Binding OpenDataFolderCommand}" Content="Open data folder"/>
+                            <Button Command="{Binding OpenIconsFolderCommand}" Content="Open icons folder"
+                                    ToolTip="Put your own &lt;SpawnCode&gt;.png screenshots here; they override the bundled icons"/>
+                            <Button Command="{Binding ReloadIconsCommand}" Content="Reload icons"/>
                             <Button Command="{Binding RelaunchAsAdminCommand}" Content="Restart as administrator"/>
                         </WrapPanel>
                         <TextBlock Grid.Row="13" Grid.ColumnSpan="3" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,0"

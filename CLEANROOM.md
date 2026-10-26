@@ -20,7 +20,13 @@ At the user's request, SAH was decompiled using a two-room process:
 
 SAH's exported packs refer to items only by SAH's internal numeric ids. To import the user's own exports, the dirty room extracted a single two-column table: SAH id → game spawn code, or the full spawn command for vehicles, zombies, animals and NPCs. SAH's display names, categories and icons were excluded. The spawn codes are the game's own asset names.
 
-The dirty room checked the table against the user's independently written `#spawnitem` text loadouts: 12 of 16 kits that exist in both match exactly. The table is used only to read SAH files. It is not a browsable item catalog in SACC.
+The dirty room checked the table against the user's independently written `#spawnitem` text loadouts: 12 of 16 kits that exist in both match exactly. The table is used to read SAH files. Since 0.2.4 (at the user's request), its spawn codes, and nothing else, also feed the Spawner's type-ahead list of known item and vehicle codes. Those codes are the game's own asset names. No SAH display names, categories or icons are used.
+
+### Item icons: `data/icons/`
+
+The icons are SCUM's own inventory thumbnails, which SAH ships as plain, unencrypted PNG resources. Admins need the real in-game art to tell apart variants with near-identical names, so the user decided (2026-10-26) that SACC uses it, as SCUM's wiki and other admin tools do. SACC is a free, non-commercial tool that only works with SCUM. The dirty room extracted only the per-item icons, named by spawn code: 2,386 of 2,388 item codes and 19 of 54 vehicles. They were downscaled to at most 64 px for bundling; full-size originals stay in the dirty room. No SAH UI art, branding or map tiles were taken. SCUM's encrypted game files were never decrypted.
+
+Icons in the user's data folder `icons\<SpawnCode>.png` override the bundled ones, so admins can replace or add any icon with their own in-game screenshots.
 
 ### Behaviour adopted from the spec
 
@@ -29,7 +35,7 @@ Kit counts above 10 are split into lines of at most 10, as SAH does. SACC's vers
 ## What was NOT done
 
 - No decompiled code, structure or identifiers copied into SACC.
-- No copying of its UI layout, strings, images, map assets, map tiles, or bundled data tables (item/vehicle display lists, icons), apart from the id → spawn-code interoperability table above.
+- No copying of its UI layout, strings, images, map assets, map tiles, or bundled data tables (item/vehicle display lists, icons), apart from the id → spawn-code interoperability table and the item icons described above.
 
 ## Where SACC's knowledge comes from
 

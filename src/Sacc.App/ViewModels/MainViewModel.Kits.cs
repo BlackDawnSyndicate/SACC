@@ -18,7 +18,14 @@ public sealed partial class MainViewModel
     public Kit? SelectedKit
     {
         get => _selectedKit;
-        set { if (Set(ref _selectedKit, value)) { Raise(nameof(SelectedKitItems)); CommandManager.InvalidateRequerySuggested(); } }
+        set
+        {
+            if (!Set(ref _selectedKit, value)) return;
+            Raise(nameof(SelectedKitItems));
+            Raise(nameof(SelectedKitFolder));
+            SelectedKitItem = null;
+            CommandManager.InvalidateRequerySuggested();
+        }
     }
 
     /// <summary>Fresh list each selection so the grid shows edits made by Resolve.</summary>
@@ -127,6 +134,7 @@ public sealed partial class MainViewModel
 
         if (result.Players.Count > 0) SahImport.MergePlayers(Players, result.Players);
 
+        RebuildItemCatalog();
         foreach (var w in result.Warnings) FileLog.Write("IMPORT", w);
         Status = "Imported " + result.Summary
             + (result.Warnings.Count > 0 ? $" {result.Warnings.Count} warning(s) in the log." : "")
@@ -147,8 +155,7 @@ public sealed partial class MainViewModel
     private void ResolveKits()
     {
         var n = SahImport.Resolve(Kits, LoadSahItemMap());
-        Raise(nameof(SelectedKitItems));
-        KitsView.Refresh();
+        RefreshKitItems();
         Status = $"Resolved {n} item(s); {Kits.Sum(k => k.UnresolvedCount)} still unresolved.";
         Save();
     }
@@ -160,7 +167,7 @@ public sealed partial class MainViewModel
         if (def == null) { Status = "The command catalog has no 'spawn-item' entry."; return null; }
 
         // A user-edited catalog from before StackCount support would silently drop stack sizes.
-        if (kit.Items.Any(i => i.StackFull || i.StackCount > 0) && !def.Params.Any(p => p.Name == "stack"))
+        if ((kit.FillMagazines || kit.Items.Any(i => i.StackFull || i.StackCount > 0)) && !def.Params.Any(p => p.Name == "stack"))
         {
             Status = "This kit uses StackCount, but your 'spawn-item' catalog entry has no {stack} parameter. "
                    + "Add  [ StackCount {stack}]  to its template (Settings → Edit command catalog).";
@@ -178,7 +185,7 @@ public sealed partial class MainViewModel
             });
             if (!r.Ok) error ??= $"{kit.Name}: {code}: {string.Join("  ", r.Errors)}";
             return r.Text;
-        }, Settings.MaxSpawnPerCommand, Settings.FullStackCount, out skipped);
+        }, Settings.MaxSpawnPerCommand, Settings.FullStackCount, out skipped, ItemCatalog.MagazineMatcher(Settings.MagazinePattern));
         if (error != null) { Status = error; return null; }
         return lines;
     }

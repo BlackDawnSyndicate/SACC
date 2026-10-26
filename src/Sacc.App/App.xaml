@@ -14,6 +14,18 @@
         <infra:ConfidenceBrushConverter x:Key="ConfidenceBrush"/>
         <infra:NotEmptyToVisibilityConverter x:Key="NotEmptyToVisibility"/>
         <infra:InverseBoolConverter x:Key="InverseBool"/>
+        <infra:CodeToIconConverter x:Key="CodeToIcon"/>
+
+        <!-- A spawn code with its in-game thumbnail (blank square when no icon is known). -->
+        <DataTemplate x:Key="CodeWithIcon">
+            <StackPanel Orientation="Horizontal">
+                <Border Width="32" Height="32" Margin="0,1,8,1" Background="#1F2A30" CornerRadius="3">
+                    <Image Source="{Binding Converter={StaticResource CodeToIcon}}" Stretch="Uniform"
+                           RenderOptions.BitmapScalingMode="HighQuality"/>
+                </Border>
+                <TextBlock Text="{Binding}" VerticalAlignment="Center" FontFamily="Cascadia Mono, Consolas"/>
+            </StackPanel>
+        </DataTemplate>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
 
         <Style TargetType="Button">

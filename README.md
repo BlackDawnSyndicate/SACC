@@ -23,8 +23,8 @@ If SCUM runs as administrator, Windows blocks keystrokes from non-elevated progr
 |---|---|
 | Console | Searchable command catalog with a generated form, a live preview of the exact line, and a raw command box (Enter sends, Up/Down recalls history). |
 | Players | **Refresh from game** sends `#ListPlayers true` and reads the clipboard. **Paste list** parses output you copied yourself. Per-player buttons: go to, bring, locate, fame, money, mute, kick, ban. |
-| Spawner | Item and vehicle spawning with favorites (double-click to spawn). An optional **StackCount** sets rounds in a magazine or units in a stack. **Full** sends a large value (200 by default), which the game caps at the item's maximum. **Search in game** sends `#ListItems <filter>`. |
-| Kits | Named item loadouts, grouped by folder. **Spawn kit** sends each item; counts above 10 are split into several lines (configurable). **Clone** makes an editable copy of any kit or imported pack in the same folder. Re-importing the original never touches the copy. Items can be edited in place, including a per-item StackCount or Full: type in the last row to add one, or press Delete to remove one. **Copy to macro** turns a kit into an editable macro. Kits are created by importing (see below) or by cloning. |
+| Spawner | Item and vehicle spawning. Type any part of a code ("m16 mag") to filter the full list of known codes. Down moves into the list, Enter picks or spawns, double-click spawns. Favorites work the same way (double-click to spawn). An optional **StackCount** sets rounds in a magazine or units in a stack. **Full** sends a large value (200 by default), which the game caps at the item's maximum. **Search in game** sends `#ListItems <filter>`. |
+| Kits | Named item loadouts, grouped by folder. **Spawn kit** sends each item; counts above 10 are split into several lines (configurable). **Fill magazines** spawns every magazine in a kit with the Full StackCount; the magazine pattern is a setting. **Clone** makes an editable copy of any kit or imported pack in the same folder. Re-importing the original never touches the copy. Items can be edited in place, including a per-item StackCount or Full: type in the last row to add one, or press Delete to remove one. **Copy to macro** turns a kit into an editable macro. **New kit** creates an empty kit in the current folder; rename it and pick or type a folder (`/` for subfolders). The add-item row has the same type-ahead and icons as the Spawner, plus Amount, StackCount and Full. Enter takes the top suggestion, then adds. Adding the same item with the same stack settings increases the existing row's amount. **Remove item** (or Delete) removes the selected row. Kits can also be created by importing (see below) or cloning. |
 | Locations | Saved X/Y/Z bookmarks. Capture a player's location, or teleport a target to a bookmark. |
 | Macros | Plain-text scripts: one command per line, `wait 500` to pause, `//` for comments, and `{player}` / `{me}` variables. |
 | Log | Every command sent or dry-run, with resend and edit. |
@@ -49,6 +49,10 @@ If the game rejects a command, use **Settings → Edit command catalog**. This c
 - **Text loadouts:** a title line followed by `#spawnitem <code> [n]` lines becomes a kit. Other `#` lines are kept as extra commands.
 
 Re-importing the same file replaces its kits instead of duplicating them. Problems with individual files are written to the log.
+
+## Item icons
+
+The Spawner lists, favorites and kit items show SCUM's own inventory thumbnails, so look-alike items can be told apart. To replace or add one, save an in-game screenshot as `<SpawnCode>.png` (for example `Magazine_M16.png`) in **Settings → Open icons folder**, then press **Reload icons**. Your icons take precedence over the bundled ones. About 35 vehicles and two items ship without an icon.
 
 ## Data
 

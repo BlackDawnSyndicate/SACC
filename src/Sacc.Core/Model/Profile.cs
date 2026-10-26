@@ -36,6 +36,8 @@ public sealed class Settings
     public int MaxSpawnPerCommand { get; set; } = 10;
     /// <summary>StackCount sent for "Full". No magazine holds more than 100, and the game caps overflow.</summary>
     public int FullStackCount { get; set; } = 200;
+    /// <summary>Regex identifying magazine codes, for a kit's "Fill magazines" option.</summary>
+    public string MagazinePattern { get; set; } = "^(Magazine_.*|M1_Clip)$";
 }
 
 public sealed class PlayerRecord
@@ -98,6 +100,8 @@ public sealed class Kit
     public List<KitItem> Items { get; set; } = new();
     /// <summary>Non-spawn admin commands run after the items (from text loadouts).</summary>
     public List<string> ExtraCommands { get; set; } = new();
+    /// <summary>Spawn every magazine in the kit with the Full StackCount, whatever its own row says.</summary>
+    public bool FillMagazines { get; set; }
     /// <summary>Where the kit was imported from (file name, or zip!entry); empty for kits made in SACC.</summary>
     public string Source { get; set; } = "";
     public DateTime? SourceDate { get; set; }
@@ -112,6 +116,34 @@ public sealed class Kit
     /// Deep copy for editing. The clone has no Source, so re-importing the
     /// original file never replaces or duplicates it.
     /// </summary>
+    /// <summary>"New kit", or "New kit 2", "New kit 3"… if taken.</summary>
+    public static string UniqueName(string baseName, IEnumerable<string> takenNames)
+    {
+        var taken = new HashSet<string>(takenNames, StringComparer.OrdinalIgnoreCase);
+        var name = baseName;
+        for (int n = 2; taken.Contains(name); n++) name = $"{baseName} {n}";
+        return name;
+    }
+
+    /// <summary>
+    /// Add an item, or bump the amount of an existing row with the same code and stack
+    /// settings (a different StackCount is a different row). Returns the row that holds it.
+    /// </summary>
+    public KitItem AddItem(string code, int amount, int? stackCount, bool stackFull)
+    {
+        var stack = stackFull ? null : stackCount is > 0 ? stackCount : null;
+        var existing = Items.FirstOrDefault(i =>
+            string.Equals(i.Code, code, StringComparison.OrdinalIgnoreCase) && i.StackFull == stackFull && i.StackCount == stack);
+        if (existing != null)
+        {
+            existing.Amount += Math.Max(1, amount);
+            return existing;
+        }
+        var item = new KitItem { Code = code, Amount = Math.Max(1, amount), StackCount = stack, StackFull = stackFull };
+        Items.Add(item);
+        return item;
+    }
+
     public Kit Clone(IEnumerable<string> takenNames)
     {
         var taken = new HashSet<string>(takenNames, StringComparer.OrdinalIgnoreCase);
@@ -127,6 +159,7 @@ public sealed class Kit
                 Code = i.Code, Amount = i.Amount, SahId = i.SahId, StackCount = i.StackCount, StackFull = i.StackFull,
             }).ToList(),
             ExtraCommands = ExtraCommands.ToList(),
+            FillMagazines = FillMagazines,
         };
     }
 }

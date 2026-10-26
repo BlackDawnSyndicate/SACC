@@ -47,6 +47,121 @@ public partial class MainWindow : Window
         }
     }
 
+    // ---- Spawner type-ahead: the code box filters the list; Down moves into it, Enter picks or spawns.
+
+    private void ItemCodeBox_PreviewKeyDown(object sender, KeyEventArgs e) =>
+        CodeBoxKey(e, ItemMatchesList, () => _vm.SpawnItemCommand.Execute(null));
+
+    private void VehicleCodeBox_PreviewKeyDown(object sender, KeyEventArgs e) =>
+        CodeBoxKey(e, VehicleMatchesList, () => _vm.SpawnVehicleCommand.Execute(null));
+
+    private static void CodeBoxKey(KeyEventArgs e, ListBox list, Action spawn)
+    {
+        if (e.Key == Key.Down && list.Items.Count > 0)
+        {
+            list.SelectedIndex = 0;
+            list.UpdateLayout();
+            (list.ItemContainerGenerator.ContainerFromIndex(0) as ListBoxItem)?.Focus();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Enter)
+        {
+            spawn();
+            e.Handled = true;
+        }
+    }
+
+    private void ItemMatches_Click(object sender, MouseButtonEventArgs e) => PickFrom(ItemMatchesList, c => _vm.ItemCode = c, ItemCodeBox, focus: false);
+    private void VehicleMatches_Click(object sender, MouseButtonEventArgs e) => PickFrom(VehicleMatchesList, c => _vm.VehicleCode = c, VehicleCodeBox, focus: false);
+
+    private void ItemMatches_DoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (ItemMatchesList.SelectedItem is string code) _vm.SpawnItemCommand.Execute(code);
+    }
+
+    private void VehicleMatches_DoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (VehicleMatchesList.SelectedItem is string code) _vm.SpawnVehicleCommand.Execute(code);
+    }
+
+    private void ItemMatches_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter) { PickFrom(ItemMatchesList, c => _vm.ItemCode = c, ItemCodeBox, focus: true); e.Handled = true; }
+    }
+
+    private void VehicleMatches_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter) { PickFrom(VehicleMatchesList, c => _vm.VehicleCode = c, VehicleCodeBox, focus: true); e.Handled = true; }
+    }
+
+    private static void PickFrom(ListBox list, Action<string> set, TextBox box, bool focus)
+    {
+        if (list.SelectedItem is not string code) return;
+        set(code);
+        if (!focus) return;
+        box.Focus();
+        box.CaretIndex = box.Text.Length;
+    }
+
+    private void KitOption_Click(object sender, RoutedEventArgs e) => _vm.Save();
+
+    private void KitList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (KitList.SelectedItem != null) KitList.ScrollIntoView(KitList.SelectedItem);
+    }
+
+    // Kit name edits: refresh the list label and save.
+    private void KitDetail_LostFocus(object sender, RoutedEventArgs e) => _vm.KitItemsChanged();
+
+    // ---- Kit add-item row: Down enters the suggestions, Enter picks (in the list) or adds (in the box).
+
+    private void NewItemBox_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case Key.Down when _vm.NewItemPopupOpen && NewItemSuggestions.Items.Count > 0:
+                NewItemSuggestions.SelectedIndex = 0;
+                NewItemSuggestions.UpdateLayout();
+                (NewItemSuggestions.ItemContainerGenerator.ContainerFromIndex(0) as ListBoxItem)?.Focus();
+                e.Handled = true;
+                break;
+            case Key.Escape when _vm.NewItemPopupOpen:
+                _vm.NewItemPopupOpen = false;
+                e.Handled = true; // don't let Esc also trigger Stop
+                break;
+            case Key.Enter:
+                // With suggestions showing and nothing exact typed yet, Enter takes the top suggestion first.
+                if (_vm.NewItemPopupOpen && _vm.NewItemMatches.Count > 0) _vm.PickNewItem(_vm.NewItemMatches[0]);
+                else if (_vm.AddKitItemCommand.CanExecute(null)) _vm.AddKitItemCommand.Execute(null);
+                e.Handled = true;
+                break;
+        }
+    }
+
+    private void NewItemField_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter) return;
+        if (_vm.AddKitItemCommand.CanExecute(null)) _vm.AddKitItemCommand.Execute(null);
+        NewItemBox.Focus();
+        e.Handled = true;
+    }
+
+    private void NewItemSuggestions_Click(object sender, MouseButtonEventArgs e) => PickSuggestion();
+
+    private void NewItemSuggestions_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter) { PickSuggestion(); e.Handled = true; }
+        else if (e.Key == Key.Escape) { _vm.NewItemPopupOpen = false; NewItemBox.Focus(); e.Handled = true; }
+    }
+
+    private void PickSuggestion()
+    {
+        if (NewItemSuggestions.SelectedItem is not string code) return;
+        _vm.PickNewItem(code);
+        NewItemBox.Focus();
+        NewItemBox.CaretIndex = NewItemBox.Text.Length;
+    }
+
     private void ItemFavorites_DoubleClick(object sender, MouseButtonEventArgs e)
     {
         if (ItemFavorites.SelectedItem is string code) _vm.SpawnItemCommand.Execute(code);

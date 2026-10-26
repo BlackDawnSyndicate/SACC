@@ -38,6 +38,7 @@ public sealed partial class MainViewModel : ObservableObject
         FavoriteVehicles = new(_profile.FavoriteVehicles);
         History = new(_profile.History);
         InitKits();
+        RebuildItemCatalog();
 
         CommandsView = new ListCollectionView(new List<CommandDef>());
         LoadCatalog();
@@ -111,7 +112,7 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<ParamFieldViewModel> Fields { get; } = new();
     public ListCollectionView CommandsView { get; private set; }
 
-    public string AppTitle => $"SACC â€” SCUM Admin Command Console {typeof(MainViewModel).Assembly.GetName().Version?.ToString(3)}";
+    public string AppTitle => $"SACC — SCUM Admin Command Console {typeof(MainViewModel).Assembly.GetName().Version?.ToString(3)}";
     public bool SelfElevated => GameLink.SelfElevated;
     public IEnumerable<InputMode> InputModes => Enum.GetValues<InputMode>();
 
@@ -194,7 +195,7 @@ public sealed partial class MainViewModel : ObservableObject
     public string MacroTarget { get => _macroTarget; set => Set(ref _macroTarget, value); }
 
     private string _itemCode = "";
-    public string ItemCode { get => _itemCode; set => Set(ref _itemCode, value); }
+    public string ItemCode { get => _itemCode; set { if (Set(ref _itemCode, value)) RefreshItemMatches(); } }
 
     private string _itemAmount = "1";
     public string ItemAmount { get => _itemAmount; set => Set(ref _itemAmount, value); }
@@ -206,7 +207,7 @@ public sealed partial class MainViewModel : ObservableObject
     public bool ItemStackFull { get => _itemStackFull; set => Set(ref _itemStackFull, value); }
 
     private string _vehicleCode = "";
-    public string VehicleCode { get => _vehicleCode; set => Set(ref _vehicleCode, value); }
+    public string VehicleCode { get => _vehicleCode; set { if (Set(ref _vehicleCode, value)) RefreshVehicleMatches(); } }
 
     private int _historyCursor = -1;
 
@@ -558,6 +559,7 @@ public sealed partial class MainViewModel : ObservableObject
         code = code.Trim();
         if (code.Length == 0 || code.Contains(' ') || list.Contains(code, StringComparer.OrdinalIgnoreCase)) return;
         list.Add(code);
+        RebuildItemCatalog();
         Save();
     }
 

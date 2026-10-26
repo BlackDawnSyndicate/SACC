@@ -333,7 +333,7 @@ public static partial class SahImport
     /// <paramref name="fullStackCount"/>. Full-command entries are sent once per unit. Extra commands follow.
     /// </summary>
     public static List<string> KitLines(Kit kit, Func<string, int, int?, string> renderSpawn, int maxPerCommand,
-        int fullStackCount, out int unresolved)
+        int fullStackCount, out int unresolved, Func<string, bool>? isMagazine = null)
     {
         unresolved = 0;
         var chunk = Math.Max(1, maxPerCommand);
@@ -346,7 +346,8 @@ public static partial class SahImport
                 for (int i = 0; i < item.Amount; i++) lines.Add(item.Code);
                 continue;
             }
-            var stack = item.StackFull ? fullStackCount : item.StackCount is > 0 ? item.StackCount : null;
+            var full = item.StackFull || (kit.FillMagazines && isMagazine?.Invoke(item.Code) == true);
+            var stack = full ? fullStackCount : item.StackCount is > 0 ? item.StackCount : null;
             for (var left = item.Amount; left > 0; left -= chunk)
                 lines.Add(renderSpawn(item.Code, Math.Min(chunk, left), stack));
         }
