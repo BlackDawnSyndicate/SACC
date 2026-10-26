@@ -13,6 +13,9 @@ public static partial class TemplateRenderer
     [GeneratedRegex(@"\s{2,}")]
     private static partial Regex MultiSpace();
 
+    [GeneratedRegex(@"\[([^\[\]]*)\]")]
+    private static partial Regex OptionalSegment();
+
     public sealed record Result(string Text, IReadOnlyList<string> Errors)
     {
         public bool Ok => Errors.Count == 0;
@@ -38,7 +41,12 @@ public static partial class TemplateRenderer
             resolved[p.Name] = normalized;
         }
 
-        var text = Token().Replace(def.Template, m =>
+        // "[ StackCount {stack}]" is kept only when every placeholder inside it has a value.
+        var text = OptionalSegment().Replace(def.Template, m =>
+            Token().Matches(m.Groups[1].Value).All(t => resolved.TryGetValue(t.Groups[1].Value, out var v) && v.Length > 0)
+                ? m.Groups[1].Value
+                : "");
+        text = Token().Replace(text, m =>
             resolved.TryGetValue(m.Groups[1].Value, out var v) ? v : m.Value);
         text = MultiSpace().Replace(text, " ").Trim();
 

@@ -63,7 +63,12 @@ public sealed partial class MainViewModel : ObservableObject
         CheckMacroCommand = new RelayCommand(() => ReportMacro(ParseMacro()), () => SelectedMacro != null);
         RunMacroCommand = new AsyncCommand(RunMacroAsync, () => SelectedMacro != null);
 
-        SpawnItemCommand = new AsyncCommand(o => RunCatalogAsync("spawn-item", new() { ["item"] = o as string ?? ItemCode, ["amount"] = ItemAmount }));
+        SpawnItemCommand = new AsyncCommand(o => RunCatalogAsync("spawn-item", new()
+        {
+            ["item"] = o as string ?? ItemCode,
+            ["amount"] = ItemAmount,
+            ["stack"] = ItemStackFull ? Settings.FullStackCount.ToString(System.Globalization.CultureInfo.InvariantCulture) : ItemStack,
+        }));
         SpawnVehicleCommand = new AsyncCommand(o => RunCatalogAsync("spawn-vehicle", new() { ["vehicle"] = o as string ?? VehicleCode }));
         ListItemsCommand = new AsyncCommand(() => RunCatalogAsync("list-items", new() { ["filter"] = ItemCode }));
         AddFavoriteItemCommand = new RelayCommand(() => AddFavorite(FavoriteItems, ItemCode));
@@ -193,6 +198,12 @@ public sealed partial class MainViewModel : ObservableObject
 
     private string _itemAmount = "1";
     public string ItemAmount { get => _itemAmount; set => Set(ref _itemAmount, value); }
+
+    private string _itemStack = "";
+    public string ItemStack { get => _itemStack; set => Set(ref _itemStack, value); }
+
+    private bool _itemStackFull;
+    public bool ItemStackFull { get => _itemStackFull; set => Set(ref _itemStackFull, value); }
 
     private string _vehicleCode = "";
     public string VehicleCode { get => _vehicleCode; set => Set(ref _vehicleCode, value); }

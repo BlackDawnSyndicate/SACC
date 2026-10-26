@@ -152,7 +152,7 @@ public class SahImportTests
             },
             ExtraCommands = { "#SetTime 12" },
         };
-        var lines = SahImport.KitLines(kit, (c, n) => $"#SpawnItem {c} {n}", 10, out var unresolved);
+        var lines = SahImport.KitLines(kit, (c, n, _) => $"#SpawnItem {c} {n}", 10, 200, out var unresolved);
         Assert.Equal(1, unresolved);
         Assert.Equal(new[]
         {
@@ -161,6 +161,31 @@ public class SahImportTests
             "#SpawnItem Weapon_M9 10",
             "#SetTime 12",
         }, lines);
+    }
+
+    [Fact]
+    public void KitLinesPassStackCountAndFull()
+    {
+        var kit = new Kit
+        {
+            Items =
+            {
+                new KitItem { Code = "Magazine_M16", Amount = 12, StackFull = true, StackCount = 5 },
+                new KitItem { Code = "Cal_556x45_Ammobox", Amount = 1, StackCount = 30 },
+                new KitItem { Code = "Batteries", Amount = 1, StackCount = 0 },
+            },
+        };
+        var lines = SahImport.KitLines(kit, (c, n, s) => s is { } v ? $"{c} {n} S{v}" : $"{c} {n}", 10, 200, out _);
+        Assert.Equal(new[] { "Magazine_M16 10 S200", "Magazine_M16 2 S200", "Cal_556x45_Ammobox 1 S30", "Batteries 1" }, lines);
+    }
+
+    [Fact]
+    public void TextLoadoutReadsStackCount()
+    {
+        var kit = Assert.Single(Import("Cash\n#SpawnItem Cash 1 StackCount 500\n#spawnitem Banana 2", "loadouts.txt").Kits);
+        Assert.Equal(500, kit.Items[0].StackCount);
+        Assert.Null(kit.Items[1].StackCount);
+        Assert.Equal(2, kit.Items[1].Amount);
     }
 
     [Fact]

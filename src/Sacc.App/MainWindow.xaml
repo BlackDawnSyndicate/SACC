@@ -246,6 +246,14 @@
                             <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0" Text="{Binding ItemAmount, UpdateSourceTrigger=PropertyChanged}" ToolTip="Amount"/>
                             <TextBox Text="{Binding ItemCode, UpdateSourceTrigger=PropertyChanged}" ToolTip="Item asset id"/>
                         </DockPanel>
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="StackCount" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBox Width="60" Text="{Binding ItemStack, UpdateSourceTrigger=PropertyChanged}"
+                                     IsEnabled="{Binding ItemStackFull, Converter={StaticResource InverseBool}}"
+                                     ToolTip="Optional: rounds in a magazine or units in a stack. Leave empty for the game default."/>
+                            <CheckBox Content="Full" IsChecked="{Binding ItemStackFull}" VerticalAlignment="Center" Margin="10,0,0,0"
+                                      ToolTip="Send the 'full' StackCount from Settings (200 by default); the game caps it at the item's maximum"/>
+                        </StackPanel>
                         <WrapPanel DockPanel.Dock="Top">
                             <Button Style="{StaticResource PrimaryButton}" Command="{Binding SpawnItemCommand}" Content="Spawn"/>
                             <Button Command="{Binding ListItemsCommand}" Content="Search in game" ToolTip="Sends #ListItems with the text as a filter"/>
@@ -374,7 +382,9 @@
                                   ToolTip="Edit codes and amounts; type in the last row to add an item; select a row and press Delete to remove it">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Spawn code / command" Binding="{Binding Code}" Width="*" FontFamily="Cascadia Mono, Consolas"/>
-                                <DataGridTextColumn Header="Amount" Binding="{Binding Amount}" Width="80"/>
+                                <DataGridTextColumn Header="Amount" Binding="{Binding Amount}" Width="70"/>
+                                <DataGridTextColumn Header="StackCount" Binding="{Binding StackCount, TargetNullValue=''}" Width="85"/>
+                                <DataGridCheckBoxColumn Header="Full" Binding="{Binding StackFull, UpdateSourceTrigger=PropertyChanged}" Width="45"/>
                                 <DataGridTextColumn Header="SAH id" Binding="{Binding SahId}" Width="70" IsReadOnly="True"/>
                             </DataGrid.Columns>
                         </DataGrid>
@@ -485,6 +495,7 @@
                             <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
                         <TextBlock Grid.Row="0" Text="Your SteamID64"/>
@@ -516,6 +527,14 @@
                         <TextBlock Grid.Row="14" Text="Max amount per spawn line"/>
                         <TextBox Grid.Row="14" Grid.Column="1" Text="{Binding Settings.MaxSpawnPerCommand}"/>
                         <TextBlock Grid.Row="14" Grid.Column="2" Text="  kits split bigger counts (10 matches SAH)" Foreground="{StaticResource MutedBrush}"/>
+
+                        <CheckBox Grid.Row="15" Grid.ColumnSpan="3" IsChecked="{Binding Settings.ChatStaysOpenAfterSend}"
+                                  Content="Game chat stays open after Enter (SCUM does): open chat once per batch, press Escape at the end"/>
+                        <TextBlock Grid.Row="16" Text="Delay after closing chat (ms)"/>
+                        <TextBox Grid.Row="16" Grid.Column="1" Text="{Binding Settings.CloseDelayMs}"/>
+                        <TextBlock Grid.Row="17" Text="&quot;Full&quot; StackCount"/>
+                        <TextBox Grid.Row="17" Grid.Column="1" Text="{Binding Settings.FullStackCount}"/>
+                        <TextBlock Grid.Row="17" Grid.Column="2" Text="  sent when Full is ticked; the game caps overflow" Foreground="{StaticResource MutedBrush}"/>
 
                         <CheckBox Grid.Row="9" Grid.ColumnSpan="3" IsChecked="{Binding Settings.RestoreClipboard}" Content="Restore my clipboard text after sending"/>
                         <CheckBox Grid.Row="10" Grid.ColumnSpan="3" IsChecked="{Binding Settings.ReturnFocusToSacc}" Content="Switch back to SACC after sending"/>

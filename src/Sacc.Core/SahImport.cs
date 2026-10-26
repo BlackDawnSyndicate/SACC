@@ -33,7 +33,7 @@ public static partial class SahImport
     [GeneratedRegex(@"\((\d{2}-\d{2}-\d{4})\)")]
     private static partial Regex FileDate();
 
-    [GeneratedRegex(@"^#spawnitem\s+(\S+)(?:\s+(\d+))?\s*$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^#spawnitem\s+(\S+)(?:\s+(\d+))?(?:\s+StackCount\s+(\d+))?\s*$", RegexOptions.IgnoreCase)]
     private static partial Regex SpawnLine();
 
     [GeneratedRegex(@"^\d{17}$")]
@@ -287,7 +287,12 @@ public static partial class SahImport
             if (spawn.Success)
             {
                 var amount = spawn.Groups[2].Success ? int.Parse(spawn.Groups[2].Value, CultureInfo.InvariantCulture) : 1;
-                current.Items.Add(new KitItem { Code = spawn.Groups[1].Value, Amount = Math.Max(1, amount) });
+                current.Items.Add(new KitItem
+                {
+                    Code = spawn.Groups[1].Value,
+                    Amount = Math.Max(1, amount),
+                    StackCount = spawn.Groups[3].Success ? int.Parse(spawn.Groups[3].Value, CultureInfo.InvariantCulture) : null,
+                });
             }
             else if (CommandLine.Check(line) is { Ok: true } ok)
             {
@@ -323,10 +328,12 @@ public static partial class SahImport
 
     /// <summary>
     /// Expand a kit into chat lines. Item codes render through <paramref name="renderSpawn"/>
-    /// with amounts split into chunks of at most <paramref name="maxPerCommand"/> (SAH did the
-    /// same: 23 → 10, 10, 3). Full-command entries are sent once per unit. Extra commands follow.
+    /// (code, amount, stack count or null) with amounts split into chunks of at most
+    /// <paramref name="maxPerCommand"/> (SAH did the same: 23 → 10, 10, 3). "Full" items use
+    /// <paramref name="fullStackCount"/>. Full-command entries are sent once per unit. Extra commands follow.
     /// </summary>
-    public static List<string> KitLines(Kit kit, Func<string, int, string> renderSpawn, int maxPerCommand, out int unresolved)
+    public static List<string> KitLines(Kit kit, Func<string, int, int?, string> renderSpawn, int maxPerCommand,
+        int fullStackCount, out int unresolved)
     {
         unresolved = 0;
         var chunk = Math.Max(1, maxPerCommand);
@@ -339,8 +346,9 @@ public static partial class SahImport
                 for (int i = 0; i < item.Amount; i++) lines.Add(item.Code);
                 continue;
             }
+            var stack = item.StackFull ? fullStackCount : item.StackCount is > 0 ? item.StackCount : null;
             for (var left = item.Amount; left > 0; left -= chunk)
-                lines.Add(renderSpawn(item.Code, Math.Min(chunk, left)));
+                lines.Add(renderSpawn(item.Code, Math.Min(chunk, left), stack));
         }
         lines.AddRange(kit.ExtraCommands);
         return lines;

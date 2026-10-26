@@ -13,6 +13,7 @@
 
         <infra:ConfidenceBrushConverter x:Key="ConfidenceBrush"/>
         <infra:NotEmptyToVisibilityConverter x:Key="NotEmptyToVisibility"/>
+        <infra:InverseBoolConverter x:Key="InverseBool"/>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
 
         <Style TargetType="Button">

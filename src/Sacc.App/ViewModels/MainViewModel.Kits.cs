@@ -159,17 +159,26 @@ public sealed partial class MainViewModel
         var def = _catalog.Find("spawn-item");
         if (def == null) { Status = "The command catalog has no 'spawn-item' entry."; return null; }
 
+        // A user-edited catalog from before StackCount support would silently drop stack sizes.
+        if (kit.Items.Any(i => i.StackFull || i.StackCount > 0) && !def.Params.Any(p => p.Name == "stack"))
+        {
+            Status = "This kit uses StackCount, but your 'spawn-item' catalog entry has no {stack} parameter. "
+                   + "Add  [ StackCount {stack}]  to its template (Settings → Edit command catalog).";
+            return null;
+        }
+
         string? error = null;
-        var lines = SahImport.KitLines(kit, (code, amount) =>
+        var lines = SahImport.KitLines(kit, (code, amount, stack) =>
         {
             var r = TemplateRenderer.Render(def, new Dictionary<string, string?>
             {
                 ["item"] = code,
                 ["amount"] = amount.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["stack"] = stack?.ToString(System.Globalization.CultureInfo.InvariantCulture),
             });
             if (!r.Ok) error ??= $"{kit.Name}: {code}: {string.Join("  ", r.Errors)}";
             return r.Text;
-        }, Settings.MaxSpawnPerCommand, out skipped);
+        }, Settings.MaxSpawnPerCommand, Settings.FullStackCount, out skipped);
         if (error != null) { Status = error; return null; }
         return lines;
     }

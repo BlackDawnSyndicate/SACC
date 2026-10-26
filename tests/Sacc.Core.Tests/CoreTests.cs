@@ -80,6 +80,17 @@ public class TemplateRendererTests
     }
 
     [Fact]
+    public void OptionalSegmentOnlyWhenFilled()
+    {
+        var def = Spawn();
+        def.Template = "#SpawnItem {item} {amount}[ StackCount {stack}]";
+        def.Params.Add(new ParamDef { Name = "stack", Kind = ParamKind.Integer, Optional = true });
+        Assert.Equal("#SpawnItem Mag 1 StackCount 200", TemplateRenderer.Render(def, V(("item", "Mag"), ("amount", "1"), ("stack", "200"))).Text);
+        Assert.Equal("#SpawnItem Mag 1", TemplateRenderer.Render(def, V(("item", "Mag"), ("amount", "1"), ("stack", ""))).Text);
+        Assert.False(TemplateRenderer.Render(def, V(("item", "Mag"), ("stack", "lots"))).Ok);
+    }
+
+    [Fact]
     public void UsesDefault()
     {
         var def = Spawn();

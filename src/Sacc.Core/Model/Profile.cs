@@ -20,6 +20,9 @@ public sealed class Settings
     public int ChatOpenDelayMs { get; set; } = 150;
     public int BeforeEnterDelayMs { get; set; } = 80;
     public int AfterSendDelayMs { get; set; } = 300;
+    /// <summary>SCUM keeps chat open after Enter; SACC then opens it once per batch and presses Escape at the end.</summary>
+    public bool ChatStaysOpenAfterSend { get; set; } = true;
+    public int CloseDelayMs { get; set; } = 150;
     public int ClipboardCaptureTimeoutMs { get; set; } = 2500;
     public bool RestoreClipboard { get; set; } = true;
     public bool ReturnFocusToSacc { get; set; }
@@ -31,6 +34,8 @@ public sealed class Settings
     public int HistoryLimit { get; set; } = 500;
     /// <summary>Largest amount put in one #SpawnItem line; bigger kit counts are split.</summary>
     public int MaxSpawnPerCommand { get; set; } = 10;
+    /// <summary>StackCount sent for "Full". No magazine holds more than 100, and the game caps overflow.</summary>
+    public int FullStackCount { get; set; } = 200;
 }
 
 public sealed class PlayerRecord
@@ -73,6 +78,10 @@ public sealed class KitItem
     /// <summary>Game spawn code; null while an imported SAH id is still unresolved.</summary>
     public string? Code { get; set; }
     public int Amount { get; set; } = 1;
+    /// <summary>Optional StackCount (rounds in a mag, units in a stack). Ignored when <see cref="StackFull"/> is set.</summary>
+    public int? StackCount { get; set; }
+    /// <summary>Spawn with Settings.FullStackCount; the game caps it at the item's real maximum.</summary>
+    public bool StackFull { get; set; }
     /// <summary>The item's numeric id in an imported SCUM Admin Helper pack, kept so it can be re-resolved.</summary>
     public int? SahId { get; set; }
 
@@ -113,7 +122,10 @@ public sealed class Kit
             Name = name,
             Group = Group,
             Description = Description,
-            Items = Items.Select(i => new KitItem { Code = i.Code, Amount = i.Amount, SahId = i.SahId }).ToList(),
+            Items = Items.Select(i => new KitItem
+            {
+                Code = i.Code, Amount = i.Amount, SahId = i.SahId, StackCount = i.StackCount, StackFull = i.StackFull,
+            }).ToList(),
             ExtraCommands = ExtraCommands.ToList(),
         };
     }
