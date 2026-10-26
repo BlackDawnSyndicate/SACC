@@ -24,6 +24,7 @@ If SCUM runs as administrator, Windows blocks keystrokes from non-elevated progr
 | Console | Searchable command catalog with a generated form, a live preview of the exact line, and a raw command box (Enter sends, Up/Down recalls history). |
 | Players | **Refresh from game** sends `#ListPlayers true` and reads the clipboard. **Paste list** parses output you copied yourself. Per-player buttons: go to, bring, locate, fame, money, mute, kick, ban. |
 | Spawner | Item and vehicle spawning with favorites (double-click to spawn). **Search in game** sends `#ListItems <filter>`. |
+| Kits | Named item loadouts, grouped by folder. **Spawn kit** sends each item; counts above 10 are split into several lines (configurable). **Clone** makes an editable copy of any kit or imported pack in the same folder. Re-importing the original never touches the copy. Items can be edited in place: type in the last row to add one, or press Delete to remove one. **Copy to macro** turns a kit into an editable macro. Kits are created by importing (see below) or by cloning. |
 | Locations | Saved X/Y/Z bookmarks. Capture a player's location, or teleport a target to a bookmark. |
 | Macros | Plain-text scripts: one command per line, `wait 500` to pause, `//` for comments, and `{player}` / `{me}` variables. |
 | Log | Every command sent or dry-run, with resend and edit. |
@@ -38,6 +39,16 @@ Commands live in `data/commands.json`, not in code. Each entry has a confidence 
 - **Unverified**: community knowledge with no public source found, including the `true` clipboard flag on `#ListPlayers` and `#Location`.
 
 If the game rejects a command, use **Settings → Edit command catalog**. This copies the catalog to your data folder, where your edits survive updates. Fix the template there, then press **Reload catalog**. Typing `#` in game chat shows the server's own command list.
+
+## Importing from SCUM Admin Helper
+
+**Kits → Import SAH folder…** reads a whole folder tree, including `.zip` files inside it. Each subfolder becomes a kit group. It handles:
+
+- **Pack exports** (`<Title> - SAH Pack (dd-mm-yyyy).json`) become kits. SAH stores pack items as its own numeric ids; `data/sah-item-ids.json` translates them to game spawn codes, and vehicles, zombies, animals and NPCs map to their full commands. The original id stays on each item, so an id the table can't translate is kept and can be filled in later with **Resolve ids**.
+- **Player exports** (`SAH Players (dd-mm-yyyy).json`) are merged into Players. Newer data wins, and the export date is used as "last seen".
+- **Text loadouts:** a title line followed by `#spawnitem <code> [n]` lines becomes a kit. Other `#` lines are kept as extra commands.
+
+Re-importing the same file replaces its kits instead of duplicating them. Problems with individual files are written to the log.
 
 ## Data
 

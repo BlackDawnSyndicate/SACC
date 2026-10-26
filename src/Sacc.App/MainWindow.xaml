@@ -185,6 +185,8 @@
                                 ToolTip="Sends #ListPlayers true and reads the clipboard"/>
                         <Button Command="{Binding PastePlayersCommand}" Content="Paste list"
                                 ToolTip="Parse #ListPlayers output you copied yourself"/>
+                        <Button Command="{Binding ImportSahFilesCommand}" Content="Import SAH players…"
+                                ToolTip="Import a 'SAH Players (date).json' export"/>
                         <Button Command="{Binding ClearPlayersCommand}" Content="Clear"/>
                     </StackPanel>
                     <Border DockPanel.Dock="Right" Width="260" Margin="10,0,0,0" Padding="10" Background="White" BorderBrush="#DADFE2" BorderThickness="1">
@@ -282,6 +284,100 @@
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
+                    </DockPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- ============================================================ Kits -->
+            <TabItem Header="Kits">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="340"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <DockPanel>
+                        <WrapPanel DockPanel.Dock="Top">
+                            <Button Command="{Binding ImportSahFolderCommand}" Content="Import SAH folder…"
+                                    ToolTip="Import every SCUM Admin Helper pack, players export and #spawnitem text file under a folder (zips included)"/>
+                            <Button Command="{Binding ImportSahFilesCommand}" Content="Import files…"/>
+                            <Button Command="{Binding ResolveKitsCommand}" Content="Resolve ids"
+                                    ToolTip="Re-check unresolved SAH item ids against the item table"/>
+                        </WrapPanel>
+                        <TextBox DockPanel.Dock="Top" Margin="0,0,0,6" Text="{Binding KitSearch, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="Search kit names, folders and item codes"/>
+                        <ListBox ItemsSource="{Binding KitsView}" SelectedItem="{Binding SelectedKit}"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled" HorizontalContentAlignment="Stretch"
+                                 VirtualizingPanel.IsVirtualizingWhenGrouping="True">
+                            <ListBox.GroupStyle>
+                                <GroupStyle>
+                                    <GroupStyle.HeaderTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Name, TargetNullValue='(no folder)'}" FontWeight="Bold"
+                                                       Foreground="{StaticResource AccentBrush}" Margin="2,8,0,2" TextWrapping="Wrap"/>
+                                        </DataTemplate>
+                                    </GroupStyle.HeaderTemplate>
+                                </GroupStyle>
+                            </ListBox.GroupStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="2">
+                                        <TextBlock DockPanel.Dock="Right" Text="{Binding Items.Count, StringFormat='{}{0} items'}"
+                                                   Foreground="{StaticResource MutedBrush}" Margin="6,0,0,0"/>
+                                        <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis"/>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+
+                    <DockPanel Grid.Column="2" Visibility="{Binding SelectedKit, Converter={StaticResource NotEmptyToVisibility}}">
+                        <StackPanel DockPanel.Dock="Top">
+                            <TextBox Text="{Binding SelectedKit.Name, UpdateSourceTrigger=LostFocus}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                            <TextBlock Style="{StaticResource Muted}">
+                                <Run Text="{Binding SelectedKit.Group, Mode=OneWay}"/>
+                                <Run Text="  ·  "/>
+                                <Run Text="{Binding SelectedKit.Source, Mode=OneWay}"/>
+                            </TextBlock>
+                            <TextBlock Text="{Binding SelectedKit.Description}" TextWrapping="Wrap" Margin="0,4,0,0"
+                                       Visibility="{Binding SelectedKit.Description, Converter={StaticResource NotEmptyToVisibility}}"/>
+                            <TextBlock Foreground="{StaticResource ErrorBrush}" Margin="0,4,0,0" TextWrapping="Wrap"
+                                       Text="{Binding SelectedKit.UnresolvedCount, StringFormat='{}{0} item(s) have SAH ids with no spawn code yet; they are skipped when spawning.'}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedKit.UnresolvedCount}" Value="0">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <WrapPanel Margin="0,8,0,0">
+                                <Button Style="{StaticResource PrimaryButton}" Command="{Binding SpawnKitCommand}" Content="Spawn kit"/>
+                                <Button Command="{Binding CloneKitCommand}" Content="Clone"
+                                        ToolTip="Make an editable copy of this kit/pack in the same folder"/>
+                                <Button Command="{Binding KitToMacroCommand}" Content="Copy to macro"/>
+                                <Button Style="{StaticResource DangerButton}" Command="{Binding DeleteKitCommand}" Content="Delete"/>
+                                <Button Style="{StaticResource DangerButton}" Command="{Binding DeleteKitGroupCommand}" Content="Delete folder"/>
+                            </WrapPanel>
+                        </StackPanel>
+                        <ItemsControl DockPanel.Dock="Bottom" ItemsSource="{Binding SelectedKit.ExtraCommands}" Margin="0,6,0,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" Style="{StaticResource Mono}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <DataGrid ItemsSource="{Binding SelectedKitItems}" CellEditEnding="Bookmarks_CellEditEnding"
+                                  CanUserAddRows="True" CanUserDeleteRows="True" RowEditEnding="KitItems_RowEditEnding"
+                                  ToolTip="Edit codes and amounts; type in the last row to add an item; select a row and press Delete to remove it">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Spawn code / command" Binding="{Binding Code}" Width="*" FontFamily="Cascadia Mono, Consolas"/>
+                                <DataGridTextColumn Header="Amount" Binding="{Binding Amount}" Width="80"/>
+                                <DataGridTextColumn Header="SAH id" Binding="{Binding SahId}" Width="70" IsReadOnly="True"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
                     </DockPanel>
                 </Grid>
             </TabItem>
@@ -416,6 +512,10 @@
                         <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding Settings.AfterSendDelayMs}"/>
                         <TextBlock Grid.Row="8" Text="Clipboard reply timeout (ms)"/>
                         <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding Settings.ClipboardCaptureTimeoutMs}"/>
+
+                        <TextBlock Grid.Row="14" Text="Max amount per spawn line"/>
+                        <TextBox Grid.Row="14" Grid.Column="1" Text="{Binding Settings.MaxSpawnPerCommand}"/>
+                        <TextBlock Grid.Row="14" Grid.Column="2" Text="  kits split bigger counts (10 matches SAH)" Foreground="{StaticResource MutedBrush}"/>
 
                         <CheckBox Grid.Row="9" Grid.ColumnSpan="3" IsChecked="{Binding Settings.RestoreClipboard}" Content="Restore my clipboard text after sending"/>
                         <CheckBox Grid.Row="10" Grid.ColumnSpan="3" IsChecked="{Binding Settings.ReturnFocusToSacc}" Content="Switch back to SACC after sending"/>

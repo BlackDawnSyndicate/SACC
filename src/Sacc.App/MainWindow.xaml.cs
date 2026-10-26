@@ -59,4 +59,14 @@ public partial class MainWindow : Window
 
     private void Bookmarks_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e) =>
         Dispatcher.BeginInvoke(new Action(_vm.Save));
+
+    // Row add/delete changes the item count shown in the kit list, so refresh it after saving.
+    private void KitItems_RowEditEnding(object sender, DataGridRowEditEndingEventArgs e) =>
+        Dispatcher.BeginInvoke(new Action(_vm.KitItemsChanged));
+
+    protected override void OnPreviewKeyUp(KeyEventArgs e)
+    {
+        base.OnPreviewKeyUp(e);
+        if (e.Key == Key.Delete && e.OriginalSource is DataGridCell or DataGridRow) _vm.KitItemsChanged();
+    }
 }

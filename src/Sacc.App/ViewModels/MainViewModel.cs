@@ -14,7 +14,7 @@ using InputMode = Sacc.Core.Model.InputMode;
 
 namespace Sacc.App.ViewModels;
 
-public sealed class MainViewModel : ObservableObject
+public sealed partial class MainViewModel : ObservableObject
 {
     private readonly GameLink _game = new();
     private readonly Profile _profile;
@@ -37,6 +37,7 @@ public sealed class MainViewModel : ObservableObject
         FavoriteItems = new(_profile.FavoriteItems);
         FavoriteVehicles = new(_profile.FavoriteVehicles);
         History = new(_profile.History);
+        InitKits();
 
         CommandsView = new ListCollectionView(new List<CommandDef>());
         LoadCatalog();
@@ -428,21 +429,7 @@ public sealed class MainViewModel : ObservableObject
     {
         var parsed = Parsing.ParsePlayerList(text);
         if (parsed.Count == 0) { Status = "No SteamID64s found in that text."; return; }
-        foreach (var p in parsed)
-        {
-            var existing = Players.FirstOrDefault(x => x.SteamId == p.SteamId);
-            if (existing != null)
-            {
-                // Keep known values the new text didn't include.
-                p.Nickname = string.IsNullOrWhiteSpace(p.Nickname) ? existing.Nickname : p.Nickname;
-                p.Fame ??= existing.Fame;
-                p.Account ??= existing.Account;
-                p.Gold ??= existing.Gold;
-                p.Location ??= existing.Location;
-                Players[Players.IndexOf(existing)] = p;
-            }
-            else Players.Add(p);
-        }
+        SahImport.MergePlayers(Players, parsed);
         Status = $"Imported {parsed.Count} player(s).";
         Save();
     }
@@ -610,6 +597,7 @@ public sealed class MainViewModel : ObservableObject
         _profile.Players = Players.ToList();
         _profile.Bookmarks = Bookmarks.ToList();
         _profile.Macros = Macros.Select(m => m.ToModel()).ToList();
+        _profile.Kits = Kits.ToList();
         _profile.FavoriteItems = FavoriteItems.ToList();
         _profile.FavoriteVehicles = FavoriteVehicles.ToList();
         _profile.History = History.ToList();

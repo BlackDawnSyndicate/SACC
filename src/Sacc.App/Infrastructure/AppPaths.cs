@@ -18,6 +18,12 @@ public static class AppPaths
     public static string BundledCatalog => Path.Combine(AppContext.BaseDirectory, "data", "commands.json");
 
     public static string ActiveCatalog => File.Exists(UserCatalog) ? UserCatalog : BundledCatalog;
+
+    /// <summary>SAH item id → spawn code table used to import SAH packs; a copy in the data folder overrides the bundled one.</summary>
+    public static string ActiveSahItemMap =>
+        File.Exists(Path.Combine(Root, "sah-item-ids.json"))
+            ? Path.Combine(Root, "sah-item-ids.json")
+            : Path.Combine(AppContext.BaseDirectory, "data", "sah-item-ids.json");
 }
 
 public static class FileLog
