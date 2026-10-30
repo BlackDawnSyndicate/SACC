@@ -44,6 +44,72 @@ public sealed partial class MainViewModel
     public ListCollectionView MapCategoriesView { get; private set; } = new(new List<MapCategoryToggle>());
 
     public event Action? MapChanged;
+    /// <summary>Asks the map to centre on a world point at a zoom level.</summary>
+    public event Action<Vec3, double>? MapGoRequested;
+
+    public IReadOnlyList<KeyValuePair<GridStyle, string>> MapGridChoices { get; } = new[]
+    {
+        new KeyValuePair<GridStyle, string>(GridStyle.Off, "No grid"),
+        new KeyValuePair<GridStyle, string>(GridStyle.Sectors, "Sectors (B2)"),
+        new KeyValuePair<GridStyle, string>(GridStyle.SectorsAndKeypads, "Sectors + keypad lines"),
+        new KeyValuePair<GridStyle, string>(GridStyle.Keypads, "Keypads (B27)"),
+        new KeyValuePair<GridStyle, string>(GridStyle.MapKeypads, "Map keypads 15×15 (A0 top-left)"),
+        new KeyValuePair<GridStyle, string>(GridStyle.MapKeypadsInverted, "Map keypads 15×15 (inverted)"),
+    };
+
+    public GridStyle MapGrid
+    {
+        get => Settings.MapGrid;
+        set { if (value == Settings.MapGrid) return; Settings.MapGrid = value; Raise(); Save(); MapChanged?.Invoke(); }
+    }
+
+    /// <summary>Sector maths for the loaded map, or the Island's known bounds before it loads.</summary>
+    private SectorGrid Grid => _map == null ? SectorGrid.Island : new SectorGrid(new MapProjection(_map.Template.Settings));
+
+    private string _mapGoTo = "";
+    public string MapGoTo { get => _mapGoTo; set => Set(ref _mapGoTo, value); }
+
+    private ICommand? _goTo;
+    public ICommand MapGoToCommand => _goTo ??= new RelayCommand(GoTo, () => !string.IsNullOrWhiteSpace(MapGoTo));
+
+    /// <summary>Go to "B2" (sector), "B27" (keypad), "X Y" coordinates, or a player by name or SteamID.</summary>
+    private void GoTo()
+    {
+        var text = MapGoTo.Trim();
+        var grid = Grid;
+        if (grid.TryParse(text, out _, out var isKeypad) && grid.CenterOf(text) is { } centre)
+        {
+            MapGoRequested?.Invoke(centre, isKeypad ? 4.5 : 3);
+            MapPointPicked(centre, null);
+            Status = $"Centred on {text.ToUpperInvariant().Replace(" ", "")}.";
+            return;
+        }
+
+        var nums = System.Text.RegularExpressions.Regex.Matches(text, @"-?\d+(?:\.\d+)?").Select(m => m.Value).ToList();
+        if (nums.Count is 2 or 3 && !text.Any(char.IsLetter))
+        {
+            var p = new Vec3(double.Parse(nums[0], CultureInfo.InvariantCulture), double.Parse(nums[1], CultureInfo.InvariantCulture),
+                nums.Count == 3 ? double.Parse(nums[2], CultureInfo.InvariantCulture) : Settings.MapTeleportZ);
+            MapGoRequested?.Invoke(p, 4.5);
+            MapPointPicked(p, null);
+            Status = "Centred on those coordinates.";
+            return;
+        }
+
+        var player = Players.FirstOrDefault(pl => pl.SteamId == text)
+                     ?? Players.FirstOrDefault(pl => string.Equals(pl.Nickname, text, StringComparison.OrdinalIgnoreCase))
+                     ?? Players.FirstOrDefault(pl => pl.Nickname.Contains(text, StringComparison.OrdinalIgnoreCase));
+        if (player?.Location is { } loc)
+        {
+            MapGoRequested?.Invoke(loc, 5);
+            MapPointPicked(loc, null);
+            Status = $"Centred on {player.Display} (last known position).";
+            return;
+        }
+        Status = player != null
+            ? $"{player.Display} has no known position. Refresh players first."
+            : "Type a sector (B2), keypad (B27), coordinates (X Y) or a player name.";
+    }
 
     public MapTemplate? MapTemplate => _map?.Template;
     public IReadOnlyDictionary<int, MapCategory> MapCategoryLookup { get; private set; } = new Dictionary<int, MapCategory>();
@@ -171,7 +237,7 @@ public sealed partial class MainViewModel
     public void MapHovered(Vec3? world, MapMarker? marker)
     {
         if (world is not { } w) { MapHover = ""; return; }
-        MapHover = FormattableString.Invariant($"X {w.X:0}   Y {w.Y:0}") + (marker != null ? $"   ·   {marker.Title}" : "");
+        MapHover = Grid.KeypadName(w.X, w.Y) + FormattableString.Invariant($"   X {w.X:0}   Y {w.Y:0}") + (marker != null ? $"   ·   {marker.Title}" : "");
     }
 
     /// <summary>Remember the clicked spot (snapping to a marker under the cursor) for the context actions.</summary>
@@ -186,6 +252,7 @@ public sealed partial class MainViewModel
         MapPointMarker = marker;
         var p = MapPoint.Value;
         MapPointText = (marker != null ? $"{marker.Title}: " : "")
+                       + Grid.KeypadName(p.X, p.Y) + "   "
                        + FormattableString.Invariant($"X {p.X:0.##}  Y {p.Y:0.##}  Z {p.Z:0.##}")
                        + (marker?.Height == null ? "  (Z unknown, using the setting)" : "");
         CommandManager.InvalidateRequerySuggested();

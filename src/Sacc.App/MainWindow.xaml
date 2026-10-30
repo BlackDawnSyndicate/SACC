@@ -226,6 +226,7 @@
                             <DataGridTextColumn Header="Fame" Binding="{Binding Fame}" Width="70"/>
                             <DataGridTextColumn Header="Account" Binding="{Binding Account}" Width="90"/>
                             <DataGridTextColumn Header="Gold" Binding="{Binding Gold}" Width="60"/>
+                            <DataGridTextColumn Header="Sector" Binding="{Binding Converter={StaticResource Sector}}" Width="60"/>
                             <DataGridTextColumn Header="Location" Binding="{Binding Location}" Width="2*"/>
                             <DataGridTextColumn Header="Seen" Binding="{Binding LastSeen, StringFormat='MMM d HH:mm'}" Width="100"/>
                         </DataGrid.Columns>
@@ -484,6 +485,17 @@
                                         ToolTip="Re-download markers and the current map version from scum-map.com"/>
                                 <ComboBox ItemsSource="{Binding MapTypeNames}" SelectedItem="{Binding MapType}" ToolTip="Map style"/>
                             </DockPanel>
+                            <ComboBox ItemsSource="{Binding MapGridChoices}" SelectedValuePath="Key" DisplayMemberPath="Value"
+                                      SelectedValue="{Binding MapGrid}" Margin="0,0,0,6" ToolTip="Sector / keypad grid overlay"/>
+                            <DockPanel Margin="0,0,0,8">
+                                <Button DockPanel.Dock="Right" Command="{Binding MapGoToCommand}" Content="Go" Margin="6,0,0,0" MinWidth="0"/>
+                                <TextBox Text="{Binding MapGoTo, UpdateSourceTrigger=PropertyChanged}"
+                                         ToolTip="Go to a sector (B2), keypad (B27), coordinates (X Y) or a player name">
+                                    <TextBox.InputBindings>
+                                        <KeyBinding Key="Enter" Command="{Binding MapGoToCommand}"/>
+                                    </TextBox.InputBindings>
+                                </TextBox>
+                            </DockPanel>
                             <CheckBox Content="Show players (last known positions)" IsChecked="{Binding MapShowPlayers}" Margin="0,0,0,4"/>
                             <CheckBox Content="Show saved locations" IsChecked="{Binding MapShowBookmarks}" Margin="0,0,0,8"/>
                             <TextBlock Text="Teleport target" Style="{StaticResource SectionLabel}" Margin="0,0,0,4"/>
@@ -581,9 +593,11 @@
                                  ToolTip="SteamID64 or name of the player to move. Empty = you."/>
                         <Button Style="{StaticResource PrimaryButton}" Command="{Binding TeleportBookmarkCommand}" Content="Teleport target here"/>
                     </WrapPanel>
-                    <DataGrid ItemsSource="{Binding Bookmarks}" SelectedItem="{Binding SelectedBookmark}" CellEditEnding="Bookmarks_CellEditEnding">
+                    <DataGrid x:Name="BookmarksGrid" ItemsSource="{Binding Bookmarks}" SelectedItem="{Binding SelectedBookmark}" CellEditEnding="Bookmarks_CellEditEnding"
+                              RowEditEnding="BookmarksGrid_RowEditEnding">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="2*"/>
+                            <DataGridTextColumn Header="Sector" Binding="{Binding Converter={StaticResource Sector}}" Width="60" IsReadOnly="True"/>
                             <DataGridTextColumn Header="X" Binding="{Binding X}" Width="110"/>
                             <DataGridTextColumn Header="Y" Binding="{Binding Y}" Width="110"/>
                             <DataGridTextColumn Header="Z" Binding="{Binding Z}" Width="110"/>

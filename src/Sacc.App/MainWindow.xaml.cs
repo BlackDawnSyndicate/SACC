@@ -32,6 +32,7 @@ public partial class MainWindow : Window
         MapCanvas.Clicked += _vm.MapPointPicked;
         MapCanvas.ContextRequested += _vm.MapPointPicked;
         _vm.MapChanged += SyncMap;
+        _vm.MapGoRequested += (world, zoom) => MapCanvas.CenterOn(world.X, world.Y, zoom);
 
         var tabs = (TabControl)MapTab.Parent;
         tabs.SelectionChanged += async (_, e) =>
@@ -48,6 +49,7 @@ public partial class MainWindow : Window
         MapCanvas.Markers = _vm.VisibleMapMarkers;
         MapCanvas.ShowPlayers = _vm.MapShowPlayers;
         MapCanvas.ShowBookmarks = _vm.MapShowBookmarks;
+        MapCanvas.GridStyle = _vm.MapGrid;
         if (Sacc.App.Map.MapDataService.WebpUnsupported) _vm.NoteWebpMissing();
     }
 
@@ -213,6 +215,10 @@ public partial class MainWindow : Window
 
     private void Bookmarks_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e) =>
         Dispatcher.BeginInvoke(new Action(_vm.Save));
+
+    // Bookmarks are plain objects, so the Sector column only recomputes after an edited X/Y row is committed.
+    private void BookmarksGrid_RowEditEnding(object sender, DataGridRowEditEndingEventArgs e) =>
+        Dispatcher.BeginInvoke(new Action(() => BookmarksGrid.Items.Refresh()), System.Windows.Threading.DispatcherPriority.Background);
 
     // Row add/delete changes the item count shown in the kit list, so refresh it after saving.
     private void KitItems_RowEditEnding(object sender, DataGridRowEditEndingEventArgs e) =>

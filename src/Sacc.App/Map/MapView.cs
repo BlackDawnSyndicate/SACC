@@ -50,6 +50,16 @@ public sealed class MapView : FrameworkElement
     public bool ShowBookmarks { get => _showBookmarks; set { _showBookmarks = value; InvalidateVisual(); } }
     private bool _showBookmarks = true;
 
+    public GridStyle GridStyle { get => _gridStyle; set { _gridStyle = value; InvalidateVisual(); } }
+    private GridStyle _gridStyle = GridStyle.Sectors;
+    private SectorGrid? _grid;
+
+    private static readonly Pen SectorPen = Frozen(new Pen(new SolidColorBrush(Color.FromArgb(0xA0, 0, 0, 0)), 2));
+    private static readonly Pen KeypadPen = Frozen(new Pen(new SolidColorBrush(Color.FromArgb(0x70, 0, 0, 0)), 1));
+    private static readonly Brush GridText = Frozen(new SolidColorBrush(Color.FromArgb(0xF0, 0xFF, 0xFF, 0xFF)));
+    private static readonly Brush GridHalo = Frozen(new SolidColorBrush(Color.FromArgb(0xC0, 0, 0, 0)));
+    private static readonly Typeface GridFace = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal);
+
     /// <summary>World point and nearest marker under the mouse; raised on move, click and right-click.</summary>
     public event Action<Vec3?, MapMarker?>? Hover;
     public event Action<Vec3, MapMarker?>? Clicked;
@@ -70,6 +80,7 @@ public sealed class MapView : FrameworkElement
         var first = _template == null;
         _template = template;
         _projection = new MapProjection(template.Settings);
+        _grid = new SectorGrid(_projection);
         _tileTemplate = tileTemplate;
         if (first) { _cx = _projection.MapWidth / 2; _cy = _projection.MapHeight / 2; }
         InvalidateVisual();
@@ -138,6 +149,8 @@ public sealed class MapView : FrameworkElement
             }
         }
 
+        DrawGrid(dc);
+
         // Markers: small enough not to bury the map when zoomed out.
         var r = Math.Clamp(2 + _zoom * 1.2, 3, 9);
         foreach (var m in _markers)
@@ -174,6 +187,67 @@ public sealed class MapView : FrameworkElement
                 dc.DrawEllipse(PlayerFill, MarkerOutline, p, 6, 6);
                 Label(dc, string.IsNullOrWhiteSpace(pl.Nickname) ? pl.SteamId : pl.Nickname, p, 6);
             }
+    }
+
+    /// <summary>Base-game sector grid, optional keypad sub-grid, and labels in each cell's top-left corner.</summary>
+    private void DrawGrid(DrawingContext dc)
+    {
+        if (_grid == null || _projection == null || _gridStyle == GridStyle.Off) return;
+        const int fine = SectorGrid.Sectors * SectorGrid.KeypadDivisions;
+        var cellW = _grid.SectorWidth / SectorGrid.KeypadDivisions;
+        var cellH = _grid.SectorHeight / SectorGrid.KeypadDivisions;
+        var mapW = _projection.MapWidth;
+        var mapH = _projection.MapHeight;
+
+        var keypadLines = _gridStyle is not GridStyle.Sectors;
+        var sectorLines = _gridStyle is GridStyle.Sectors or GridStyle.SectorsAndKeypads or GridStyle.Keypads;
+        for (var i = 1; i < fine; i++)
+        {
+            var isSector = i % SectorGrid.KeypadDivisions == 0;
+            Pen? pen = isSector && sectorLines ? SectorPen : keypadLines ? KeypadPen : null;
+            if (pen == null) continue;
+            dc.DrawLine(pen, ToScreen(i * cellW, 0), ToScreen(i * cellW, mapH));
+            dc.DrawLine(pen, ToScreen(0, i * cellH), ToScreen(mapW, i * cellH));
+        }
+
+        var cellPx = cellW * Scale;
+        var dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+        switch (_gridStyle)
+        {
+            case GridStyle.Sectors or GridStyle.SectorsAndKeypads:
+                var size = Math.Clamp(cellPx * 0.45, 12, 30);
+                for (var row = 0; row < SectorGrid.Sectors; row++)
+                for (var col = 0; col < SectorGrid.Sectors; col++)
+                {
+                    var name = new SectorGrid.Cell(col, row, 0, 0).Sector;
+                    GridLabel(dc, name, ToScreen(col * _grid.SectorWidth, row * _grid.SectorHeight), size, dpi);
+                }
+                break;
+
+            case GridStyle.Keypads or GridStyle.MapKeypads or GridStyle.MapKeypadsInverted:
+                if (cellPx < 30) break; // too dense to read; zoom in
+                var small = Math.Clamp(cellPx * 0.16, 10, 16);
+                for (var fy = 0; fy < fine; fy++)
+                for (var fx = 0; fx < fine; fx++)
+                {
+                    var name = _gridStyle == GridStyle.Keypads
+                        ? new SectorGrid.Cell(fx / 3, fy / 3, fx % 3, fy % 3).Keypad
+                        : SectorGrid.MapKeypadName(fx, fy, _gridStyle == GridStyle.MapKeypadsInverted);
+                    GridLabel(dc, name, ToScreen(fx * cellW, fy * cellH), small, dpi);
+                }
+                break;
+        }
+    }
+
+    private void GridLabel(DrawingContext dc, string text, Point topLeft, double size, double dpi)
+    {
+        if (topLeft.X > ActualWidth || topLeft.Y > ActualHeight || topLeft.X < -200 || topLeft.Y < -100) return;
+        var halo = new FormattedText(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, GridFace, size, GridHalo, dpi);
+        var front = new FormattedText(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, GridFace, size, GridText, dpi);
+        var at = new Point(topLeft.X + 4, topLeft.Y + 2);
+        // A cheap outline: the dark copy offset in four directions keeps labels readable on any terrain.
+        foreach (var (dx, dy) in new[] { (-1, 0), (1, 0), (0, -1), (0, 1) }) dc.DrawText(halo, new Point(at.X + dx, at.Y + dy));
+        dc.DrawText(front, at);
     }
 
     private void Label(DrawingContext dc, string text, Point at, double offset)

@@ -43,6 +43,7 @@ public sealed class Settings
     public string MapType { get; set; } = "Regular";
     /// <summary>Z used when teleporting to a clicked map spot that has no known height (scum-map.com uses 0).</summary>
     public double MapTeleportZ { get; set; }
+    public GridStyle MapGrid { get; set; } = GridStyle.Sectors;
 }
 
 public sealed class PlayerRecord

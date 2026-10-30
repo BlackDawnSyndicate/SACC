@@ -49,6 +49,20 @@ public sealed class ConfidenceBrushConverter : IValueConverter
         throw new NotSupportedException();
 }
 
+/// <summary>Keypad name ("B27") for a player's last position or a saved location.</summary>
+public sealed class SectorConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) => value switch
+    {
+        PlayerRecord { Location: { } l } => Sacc.Core.SectorGrid.Island.KeypadName(l.X, l.Y),
+        Bookmark b => Sacc.Core.SectorGrid.Island.KeypadName(b.X, b.Y),
+        _ => "",
+    };
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
 public sealed class InverseBoolConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture) => value is not true;
