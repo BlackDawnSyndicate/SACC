@@ -18,6 +18,45 @@ public partial class MainWindow : Window
             confirm: msg => MessageBox.Show(this, msg, "SACC", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes,
             ownWindow: () => new WindowInteropHelper(this).Handle);
         DataContext = _vm;
+        WireMap();
+    }
+
+    // ---- Map tab: the MapView is a plain control fed from the view model.
+
+    private void WireMap()
+    {
+        MapCanvas.Data = _vm.MapDataService;
+        MapCanvas.Players = _vm.Players;
+        MapCanvas.Bookmarks = _vm.Bookmarks;
+        MapCanvas.Hover += _vm.MapHovered;
+        MapCanvas.Clicked += _vm.MapPointPicked;
+        MapCanvas.ContextRequested += _vm.MapPointPicked;
+        _vm.MapChanged += SyncMap;
+
+        var tabs = (TabControl)MapTab.Parent;
+        tabs.SelectionChanged += async (_, e) =>
+        {
+            // SelectionChanged bubbles up from lists inside tabs too; only react to the tab strip itself.
+            if (e.OriginalSource == tabs && tabs.SelectedItem == MapTab) await _vm.EnsureMapLoadedAsync();
+        };
+    }
+
+    private void SyncMap()
+    {
+        if (_vm.MapTemplate is { } t && _vm.ActiveTileTemplate is { } tiles) MapCanvas.SetMap(t, tiles);
+        MapCanvas.Categories = _vm.MapCategoryLookup;
+        MapCanvas.Markers = _vm.VisibleMapMarkers;
+        MapCanvas.ShowPlayers = _vm.MapShowPlayers;
+        MapCanvas.ShowBookmarks = _vm.MapShowBookmarks;
+        if (Sacc.App.Map.MapDataService.WebpUnsupported) _vm.NoteWebpMissing();
+    }
+
+    private void ViewOnScumMap_Click(object sender, RoutedEventArgs e)
+    {
+        // scum-map.com's own URL format: /en/scum/island/X,Y,zoom (centre of view, world coordinates).
+        var (x, y) = _vm.MapPoint is { } p ? (p.X, p.Y) : MapCanvas.CenterWorld;
+        var zoom = Math.Clamp((int)Math.Round(MapCanvas.Zoom), 0, 8);
+        _vm.OpenScumMapCommand.Execute(FormattableString.Invariant($"{x:0.####},{y:0.####},{Math.Max(zoom, 4)}"));
     }
 
     protected override void OnClosing(CancelEventArgs e)

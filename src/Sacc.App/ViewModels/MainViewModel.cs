@@ -462,12 +462,8 @@ public sealed partial class MainViewModel : ObservableObject
     private Task TeleportBookmarkAsync()
     {
         var b = SelectedBookmark!;
-        var target = string.IsNullOrWhiteSpace(BookmarkTarget) ? Settings.MySteamId : BookmarkTarget;
-        if (string.IsNullOrWhiteSpace(target))
-        {
-            Status = "Set a target player, or your own SteamID64 in Settings.";
-            return Task.CompletedTask;
-        }
+        // No target means "me": #Teleport without a player argument moves the admin.
+        var target = BookmarkTarget.Trim();
         return RunCatalogAsync("teleport", new()
         {
             ["player"] = target,

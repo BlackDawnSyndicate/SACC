@@ -38,6 +38,11 @@ public sealed class Settings
     public int FullStackCount { get; set; } = 200;
     /// <summary>Regex identifying magazine codes, for a kit's "Fill magazines" option.</summary>
     public string MagazinePattern { get; set; } = "^(Magazine_.*|M1_Clip)$";
+    /// <summary>scum-map.com marker categories shown on the Map tab.</summary>
+    public List<int> MapVisibleCategories { get; set; } = new();
+    public string MapType { get; set; } = "Regular";
+    /// <summary>Z used when teleporting to a clicked map spot that has no known height (scum-map.com uses 0).</summary>
+    public double MapTeleportZ { get; set; }
 }
 
 public sealed class PlayerRecord

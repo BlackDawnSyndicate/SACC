@@ -43,6 +43,14 @@ Kit counts above 10 are split into lines of at most 10, as SAH does. SACC's vers
 - The keyboard input approach (SendInput with scan codes, clipboard paste) is standard Win32 practice.
 - Every line of SACC was written fresh for this project.
 
-## Deliberately deferred
+## Map (0.3.0)
 
-SAH has an interactive map. SACC v0.1 has none, because the game's map imagery is copyrighted art owned by the game's developer and publisher, and we won't bundle it. A later version could take a user-supplied map image and calibrate it with two known coordinates.
+SACC's Map tab shows scum-map.com's tiles, layer categories and markers. scum-map.com's terms (§7) forbid reuse without permission, so the user asked first. On 2026-10-30, NOTIMEO (Patrick Concord, Developer Outreach) replied that they have no concern with SACC displaying their map layers, with clear attribution and a link back to their site. They offer no API and no technical help.
+
+How SACC uses their site:
+- **Requests:** the same three public GraphQL queries their own map page sends (template, categories, markers), plus their CDN tile URLs.
+- **Fetched live, not bundled:** nothing from scum-map.com is in the repo or the release zip. Data is cached per user, refreshed at most daily; tiles are cached once.
+- **Coordinates:** the map↔world conversion comes from the template's own bounding box, checked against their Copy TP output (`#Teleport -523800 238199.9531 0` at map x 240, y 80).
+- **Attribution:** "Map © scum-map.com", linking to their site, is always visible on the map.
+
+None of this came from SAH. SAH's map tiles were never extracted or used.

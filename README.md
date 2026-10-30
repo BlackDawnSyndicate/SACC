@@ -25,6 +25,7 @@ If SCUM runs as administrator, Windows blocks keystrokes from non-elevated progr
 | Players | **Refresh from game** sends `#ListPlayers true` and reads the clipboard. **Paste list** parses output you copied yourself. Per-player buttons: go to, bring, locate, fame, money, mute, kick, ban. |
 | Spawner | Item and vehicle spawning. Type any part of a code ("m16 mag") to filter the full list of known codes. Down moves into the list, Enter picks or spawns, double-click spawns. Favorites work the same way (double-click to spawn). An optional **StackCount** sets rounds in a magazine or units in a stack. **Full** sends a large value (200 by default), which the game caps at the item's maximum. **Search in game** sends `#ListItems <filter>`. |
 | Kits | Named item loadouts, grouped by folder. **Spawn kit** sends each item; counts above 10 are split into several lines (configurable). **Fill magazines** spawns every magazine in a kit with the Full StackCount; the magazine pattern is a setting. **Clone** makes an editable copy of any kit or imported pack in the same folder. Re-importing the original never touches the copy. Items can be edited in place, including a per-item StackCount or Full: type in the last row to add one, or press Delete to remove one. **Copy to macro** turns a kit into an editable macro. **New kit** creates an empty kit in the current folder; rename it and pick or type a folder (`/` for subfolders). The add-item row has the same type-ahead and icons as the Spawner, plus Amount, StackCount and Full. Enter takes the top suggestion, then adds. Adding the same item with the same stack settings increases the existing row's amount. **Remove item** (or Delete) removes the selected row. Kits can also be created by importing (see below) or cloning. |
+| Map | The SCUM island map and its points of interest from [scum-map.com](https://scum-map.com), shown with their permission. Tick layers on the left (bunkers, caves, outposts…). Players' last known positions and your saved locations are drawn on top. Scroll to zoom and drag to pan; the corner shows the X/Y under the cursor. Right-click a spot (or a marker, to use its exact height) to **Teleport target here**, copy the `#Teleport` command, save it as a location, or open the same spot on scum-map.com. |
 | Locations | Saved X/Y/Z bookmarks. Capture a player's location, or teleport a target to a bookmark. |
 | Macros | Plain-text scripts: one command per line, `wait 500` to pause, `//` for comments, and `{player}` / `{me}` variables. |
 | Log | Every command sent or dry-run, with resend and edit. |
@@ -49,6 +50,12 @@ If the game rejects a command, use **Settings → Edit command catalog**. This c
 - **Text loadouts:** a title line followed by `#spawnitem <code> [n]` lines becomes a kit. Other `#` lines are kept as extra commands.
 
 Re-importing the same file replaces its kits instead of duplicating them. Problems with individual files are written to the log.
+
+## Map data
+
+Map tiles, layers and markers come from **scum-map.com** (operated by NOTIMEO). NOTIMEO gave permission on 2026-10-30 for SACC to display them, provided it shows clear attribution and a link back, which is the "Map © scum-map.com" link on the Map tab. scum-map.com has no public API and no technical support for this use, so SACC is deliberately gentle. It caches marker data for a day (press **Refresh** to update early), downloads each map tile once into `mapcache\` in the data folder, and fetches at most four tiles at a time. If scum-map.com is unreachable, the last cached copy is used.
+
+The map images are WebP. Windows 11 decodes them out of the box. If tiles stay blank, install **WebP Image Extensions** from the Microsoft Store.
 
 ## Item icons
 
