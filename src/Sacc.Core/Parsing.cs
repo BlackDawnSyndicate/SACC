@@ -144,6 +144,20 @@ public static partial class Parsing
             return flag;
         }).ToList();
 
+    /// <summary>
+    /// Adds flags not already in <paramref name="target"/> (same id, or same position when there is
+    /// no id) and returns how many were new. #ListFlags is paged, so pages are merged one by one.
+    /// </summary>
+    public static int MergeFlags(IList<FlagRecord> target, IEnumerable<FlagRecord> incoming)
+    {
+        static string Key(FlagRecord f) => f.Id.Length > 0 ? "id:" + f.Id : "at:" + f.Location;
+        var seen = target.Select(Key).ToHashSet();
+        var added = 0;
+        foreach (var f in incoming)
+            if (seen.Add(Key(f))) { target.Add(f); added++; }
+        return added;
+    }
+
     [GeneratedRegex(@"\bBPC?_\w+")]
     private static partial Regex Blueprint();
 

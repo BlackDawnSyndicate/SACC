@@ -516,7 +516,7 @@
                                 <Button DockPanel.Dock="Right" Command="{Binding PasteFlagsCommand}" Content="Paste" Padding="6,0" Margin="4,0,0,0"
                                         ToolTip="Read #ListFlags output you copied yourself"/>
                                 <Button DockPanel.Dock="Right" Command="{Binding RefreshFlagsCommand}" Content="Refresh" Padding="6,0" Margin="4,0,0,0"
-                                        ToolTip="Sends #ListFlags true and reads the clipboard"/>
+                                        ToolTip="Sends #ListFlags 1 true, 2 true, … and reads each page from the clipboard"/>
                                 <CheckBox Content="{Binding MapFlagsLabel}" IsChecked="{Binding MapShowFlags}" VerticalAlignment="Center"
                                           ToolTip="{Binding MapFlagsTip}"/>
                             </DockPanel>
@@ -582,12 +582,26 @@
                                           ToolTip="The nearest vehicle from the last #ListSpawnedVehicles output">
                                     <TextBlock Text="{Binding GmVehiclesLabel}" TextWrapping="Wrap"/>
                                 </CheckBox>
-                                <WrapPanel Margin="18,0,0,6">
+                                <WrapPanel Margin="18,0,0,2">
                                     <Button Command="{Binding RefreshVehiclesCommand}" Content="Refresh vehicles" MinWidth="0"
                                             ToolTip="Sends #ListSpawnedVehicles true and reads the clipboard"/>
                                     <Button Command="{Binding PasteVehiclesCommand}" Content="Paste" MinWidth="0"
                                             ToolTip="Read #ListSpawnedVehicles output you copied yourself"/>
                                 </WrapPanel>
+                                <CheckBox Content="Nearest saved location height" IsChecked="{Binding GmHeightFromLocations}" Margin="0,0,0,2"
+                                          ToolTip="The nearest bookmark on the Locations tab (its X Y Z)"/>
+                                <DockPanel Margin="0,4,0,2">
+                                    <TextBox DockPanel.Dock="Right" Width="80" Text="{Binding GmSetHeight, UpdateSourceTrigger=LostFocus}"
+                                             IsEnabled="{Binding GmUseSetHeight}" AutomationProperties.Name="Set height value"/>
+                                    <CheckBox Content="Set height (Z)" IsChecked="{Binding GmUseSetHeight}" VerticalAlignment="Center"
+                                              ToolTip="Use this Z for every GM spawn and ignore the sources above"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2,0,6">
+                                    <TextBox DockPanel.Dock="Right" Width="80" Text="{Binding GmHeightOffset, UpdateSourceTrigger=LostFocus}"
+                                             AutomationProperties.Name="Height offset value"/>
+                                    <TextBlock Text="Height offset (cm)" VerticalAlignment="Center"
+                                               ToolTip="Added to whichever height is used; 100 = 1 m higher, negative = lower"/>
+                                </DockPanel>
                                 <ItemsControl ItemsSource="{Binding GmActions}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>

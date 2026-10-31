@@ -206,6 +206,16 @@ public class ParsingTests
     }
 
     [Fact]
+    public void MergeFlags_SkipsFlagsAlreadyListed()
+    {
+        var list = Parsing.ParseFlagList("Flag ID: 1 X=1 Y=2 Z=3\nFlag ID: 2 X=4 Y=5 Z=6");
+        var page2 = Parsing.ParseFlagList("Flag ID: 2 X=4 Y=5 Z=6\nFlag ID: 3 X=7 Y=8 Z=9\nX=10 Y=11 Z=12");
+        Assert.Equal(2, Parsing.MergeFlags(list, page2));
+        Assert.Equal(new[] { "1", "2", "3", "" }, list.Select(f => f.Id));
+        Assert.Equal(0, Parsing.MergeFlags(list, page2));
+    }
+
+    [Fact]
     public void VehicleList_ReadsIdBlueprintAndPosition()
     {
         var vehicles = Parsing.ParseVehicleList("ID: 4411 BPC_RIS X=100.5 Y=-200 Z=3000\nVehicle ID 12 | BP_Quad_01_B | X=1 Y=2 Z=3");

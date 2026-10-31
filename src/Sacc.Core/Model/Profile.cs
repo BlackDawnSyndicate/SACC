@@ -49,7 +49,13 @@ public sealed class Settings
     public bool GmHeightFromMarkers { get; set; } = true;
     public bool GmHeightFromMe { get; set; } = true;
     public bool GmHeightFromPlayers { get; set; } = true;
-    public bool GmHeightFromVehicles { get; set; } = true;    /// <summary>Z used when teleporting to a clicked map spot that has no known height (scum-map.com uses 0).</summary>
+    public bool GmHeightFromVehicles { get; set; } = true;
+    public bool GmHeightFromLocations { get; set; } = true;
+    /// <summary>When on, GM spawns use <see cref="GmSetHeight"/> and ignore every other source.</summary>
+    public bool GmUseSetHeight { get; set; }
+    public double GmSetHeight { get; set; }
+    /// <summary>Added to whichever height is chosen (world units, cm), e.g. to drop things from above the ground.</summary>
+    public double GmHeightOffset { get; set; }    /// <summary>Z used when teleporting to a clicked map spot that has no known height (scum-map.com uses 0).</summary>
     public double MapTeleportZ { get; set; }
     public GridStyle MapGrid { get; set; } = GridStyle.Sectors;
 }

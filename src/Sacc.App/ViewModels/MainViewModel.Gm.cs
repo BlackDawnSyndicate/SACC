@@ -118,12 +118,27 @@ public sealed partial class MainViewModel
         if (MapPoint is not { } p) { _gmSpot = null; GmHeightText = ""; return; }
         string source;
         double z;
-        if (Settings.GmHeightFromMarkers && MapPointMarker?.Height is { } mh) { z = mh; source = $"from {MapPointMarker.Title}"; }
+        if (Settings.GmUseSetHeight) { z = Settings.GmSetHeight; source = "set height"; }
+        else if (Settings.GmHeightFromMarkers && MapPointMarker?.Height is { } mh) { z = mh; source = $"from {MapPointMarker.Title}"; }
         else if (NearbyGround(p) is { } g) { z = g.Z; source = g.Source; }
         else { z = Settings.MapTeleportZ; source = "nothing within 300 m: the Map Z setting"; }
+        if (Settings.GmHeightOffset != 0)
+        {
+            z += Settings.GmHeightOffset;
+            source += FormattableString.Invariant($", {Settings.GmHeightOffset:+0;-0} offset");
+        }
         _gmSpot = p with { Z = z };
         GmHeightText = FormattableString.Invariant($"Spawn at {Grid.KeypadName(p.X, p.Y)}, Z {z:0} ({source})");
     }
+
+    public bool GmUseSetHeight { get => Settings.GmUseSetHeight; set { Settings.GmUseSetHeight = value; Raise(); UpdateGmSpot(); } }
+    public string GmSetHeight { get => Num(Settings.GmSetHeight); set { if (TryNum(value, out var v)) { Settings.GmSetHeight = v; Raise(); UpdateGmSpot(); } } }
+    public string GmHeightOffset { get => Num(Settings.GmHeightOffset); set { if (TryNum(value, out var v)) { Settings.GmHeightOffset = v; Raise(); UpdateGmSpot(); } } }
+    public bool GmHeightFromLocations { get => Settings.GmHeightFromLocations; set { Settings.GmHeightFromLocations = value; Raise(); UpdateGmSpot(); } }
+
+    private static string Num(double v) => v.ToString("0.###", CultureInfo.InvariantCulture);
+    private static bool TryNum(string? s, out double v) =>
+        double.TryParse((s ?? "").Trim().Length == 0 ? "0" : s, NumberStyles.Float, CultureInfo.InvariantCulture, out v);
 
     public bool GmHeightFromMarkers { get => Settings.GmHeightFromMarkers; set { Settings.GmHeightFromMarkers = value; Raise(); UpdateGmSpot(); } }
     public bool GmHeightFromMe { get => Settings.GmHeightFromMe; set { Settings.GmHeightFromMe = value; Raise(); UpdateGmSpot(); } }
@@ -199,6 +214,15 @@ public sealed partial class MainViewModel
             var who = mine ? "your position" : $"{(string.IsNullOrWhiteSpace(pl.Nickname) ? pl.SteamId : pl.Nickname)}'s position";
             best = (loc.Z, FormattableString.Invariant($"from {who} {d / 100:0} m away, seen {pl.LastSeen:MMM d HH:mm}"));
         }
+
+        if (Settings.GmHeightFromLocations)
+            foreach (var b in Bookmarks)
+            {
+                var d = Math.Sqrt((b.X - p.X) * (b.X - p.X) + (b.Y - p.Y) * (b.Y - p.Y));
+                if (d > bestDist) continue;
+                bestDist = d;
+                best = (b.Z, FormattableString.Invariant($"from saved location '{b.Name}' {d / 100:0} m away"));
+            }
 
         if (Settings.GmHeightFromVehicles)
             foreach (var v in _profile.Vehicles)

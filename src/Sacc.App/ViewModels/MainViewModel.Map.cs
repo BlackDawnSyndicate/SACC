@@ -166,28 +166,49 @@ public sealed partial class MainViewModel
     {
         var text = GameLink.TryGetClipboardText();
         if (string.IsNullOrWhiteSpace(text)) { Status = "Clipboard is empty. Copy the #ListFlags output first."; return; }
-        ReplaceFlags(text);
+        // Pasting adds to the list, so several pages can be pasted one after another.
+        var parsed = Parsing.ParseFlagList(text);
+        if (parsed.Count == 0) { Status = "No flag locations (X= Y= Z=) found in that text."; return; }
+        var added = Parsing.MergeFlags(Flags, parsed);
+        FlagsUpdated($"Read {parsed.Count} flag(s), {added} new; {Flags.Count} in total. Paste the next page, or Refresh to re-read them all.");
     });
 
+    /// <summary>Upper bound on #ListFlags pages read by one Refresh.</summary>
+    private const int MaxFlagPages = 30;
+
+    /// <summary>#ListFlags is paged: read page 1, 2, … until a page has no new flags.</summary>
     private async Task RefreshFlagsAsync()
     {
         var def = _catalog.Find("list-flags-copy");
         if (def == null) { Status = "The command catalog has no 'list-flags-copy' entry."; return; }
-        var output = await CaptureAsync(def.Template);
-        if (output != null) ReplaceFlags(output);
+
+        var all = new List<FlagRecord>();
+        int page;
+        for (page = 1; page <= MaxFlagPages; page++)
+        {
+            var r = TemplateRenderer.Render(def, new Dictionary<string, string?> { ["page"] = page.ToString(CultureInfo.InvariantCulture) });
+            if (!r.Ok) { Status = $"{def.Name}: {string.Join("  ", r.Errors)}"; return; }
+            var output = await CaptureAsync(r.Text);
+            if (output == null) break;
+            if (Parsing.MergeFlags(all, Parsing.ParseFlagList(output)) == 0) break;
+        }
+        if (all.Count == 0)
+        {
+            if (!Settings.DryRun) Status = "No flag locations found in the #ListFlags output.";
+            return;
+        }
+        Flags.Clear();
+        foreach (var f in all) Flags.Add(f);
+        FlagsUpdated($"Read {all.Count} flag(s) from {page - 1} page(s).");
     }
 
-    private void ReplaceFlags(string text)
+    private void FlagsUpdated(string status)
     {
-        var parsed = Parsing.ParseFlagList(text);
-        if (parsed.Count == 0) { Status = "No flag locations (X= Y= Z=) found in that text."; return; }
-        Flags.Clear();
-        foreach (var f in parsed) Flags.Add(f);
         _profile.FlagsListedAt = DateTime.Now;
         Raise(nameof(MapFlagsLabel));
         Raise(nameof(MapFlagsTip));
         MapShowFlags = true;
-        Status = $"Read {parsed.Count} flag(s).";
+        Status = status;
         Save();
     }
 
