@@ -22,4 +22,25 @@ public static class CommandLine
             : null;
         return new(true, text, null, warning);
     }
+
+    private static readonly System.Text.RegularExpressions.Regex SpawnAmount = new(
+        @"^(#SpawnItem\s+\S+\s+)(\d+)(\s.*)?$",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
+    /// <summary>
+    /// Splits "#SpawnItem code 23 [...]" into lines of at most <paramref name="maxPerLine"/>
+    /// (10, 10, 3), the same chunking kits use. Anything else comes back unchanged.
+    /// </summary>
+    public static IEnumerable<string> SplitSpawn(string line, int maxPerLine)
+    {
+        var m = SpawnAmount.Match(line);
+        var chunk = Math.Max(1, maxPerLine);
+        if (!m.Success || !int.TryParse(m.Groups[2].Value, out var amount) || amount <= chunk)
+        {
+            yield return line;
+            yield break;
+        }
+        for (var left = amount; left > 0; left -= chunk)
+            yield return m.Groups[1].Value + Math.Min(chunk, left) + m.Groups[3].Value;
+    }
 }

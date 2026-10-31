@@ -36,7 +36,9 @@ public sealed class Settings
     public int MaxSpawnPerCommand { get; set; } = 10;
     /// <summary>StackCount sent for "Full". No magazine holds more than 100, and the game caps overflow.</summary>
     public int FullStackCount { get; set; } = 200;
-    /// <summary>Regex identifying magazine codes, for a kit's "Fill magazines" option.</summary>
+    /// <summary>Spawner: send the Full StackCount for magazines when no StackCount is entered.</summary>
+    public bool SpawnerFillMagazines { get; set; } = true;
+    /// <summary>Regex identifying magazine codes, for the "Fill magazines" options.</summary>
     public string MagazinePattern { get; set; } = "^(Magazine_.*|M1_Clip)$";
     /// <summary>scum-map.com marker categories shown on the Map tab.</summary>
     public List<int> MapVisibleCategories { get; set; } = new();
@@ -127,7 +129,7 @@ public sealed class Kit
     /// <summary>Non-spawn admin commands run after the items (from text loadouts).</summary>
     public List<string> ExtraCommands { get; set; } = new();
     /// <summary>Spawn every magazine in the kit with the Full StackCount, whatever its own row says.</summary>
-    public bool FillMagazines { get; set; }
+    public bool FillMagazines { get; set; } = true;
     /// <summary>Where the kit was imported from (file name, or zip!entry); empty for kits made in SACC.</summary>
     public string Source { get; set; } = "";
     public DateTime? SourceDate { get; set; }
@@ -199,7 +201,18 @@ public sealed class HistoryEntry
 
 public sealed class Profile
 {
+    public const int CurrentVersion = 1;
+    /// <summary>0 = saved before SACC 0.3.3, which added versioning; <see cref="Migrate"/> brings it up to date.</summary>
+    public int Version { get; set; }
     public Settings Settings { get; set; } = new();
+
+    public void Migrate()
+    {
+        // 1: magazines spawn full by default. Older profiles saved every kit with Fill magazines off.
+        if (Version < 1) foreach (var k in Kits) k.FillMagazines = true;
+        Version = CurrentVersion;
+    }
+
     public List<PlayerRecord> Players { get; set; } = new();
     /// <summary>When the last #ListPlayers output was read; players seen then were online.</summary>
     public DateTime? PlayersListedAt { get; set; }

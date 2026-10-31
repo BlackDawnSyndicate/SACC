@@ -264,6 +264,8 @@
                                      ToolTip="Optional: rounds in a magazine or units in a stack. Leave empty for the game default."/>
                             <CheckBox Content="Full" IsChecked="{Binding ItemStackFull}" VerticalAlignment="Center" Margin="10,0,0,0"
                                       ToolTip="Send the 'full' StackCount from Settings (200 by default); the game caps it at the item's maximum"/>
+                            <CheckBox Content="Fill magazines" IsChecked="{Binding Settings.SpawnerFillMagazines}" VerticalAlignment="Center" Margin="10,0,0,0"
+                                      ToolTip="Magazines spawn full unless you enter a StackCount. Which codes count as magazines is set in Settings."/>
                         </StackPanel>
                         <WrapPanel DockPanel.Dock="Top">
                             <Button Style="{StaticResource PrimaryButton}" Command="{Binding SpawnItemCommand}" Content="Spawn"/>

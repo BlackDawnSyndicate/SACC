@@ -5,6 +5,23 @@ namespace Sacc.Core.Tests;
 
 public class CommandLineTests
 {
+    [Fact]
+    public void SplitSpawn_ChunksLargeAmountsAndKeepsTheRest() =>
+        Assert.Equal(
+            new[] { "#SpawnItem Magazine_M16 10 StackCount 200", "#SpawnItem Magazine_M16 10 StackCount 200", "#SpawnItem Magazine_M16 3 StackCount 200" },
+            CommandLine.SplitSpawn("#SpawnItem Magazine_M16 23 StackCount 200", 10));
+
+    [Theory]
+    [InlineData("#SpawnItem Apple 10")]
+    [InlineData("#SpawnItem Apple")]
+    [InlineData("#SetFamePoints 500 76561198000000009")]
+    [InlineData("#SpawnVehicle BPC_Rager")]
+    public void SplitSpawn_LeavesOtherLinesAlone(string line) => Assert.Equal(new[] { line }, CommandLine.SplitSpawn(line, 10));
+
+    [Fact]
+    public void SplitSpawn_IsCaseInsensitive() =>
+        Assert.Equal(new[] { "#spawnitem Apple 10", "#spawnitem Apple 2" }, CommandLine.SplitSpawn("#spawnitem Apple 12", 10));
+
     [Theory]
     [InlineData("#ListPlayers", true)]
     [InlineData("  #SetTime 12  ", true)]
@@ -256,6 +273,27 @@ public class CatalogTests
             var back = JsonStore.LoadOrDefault<Profile>(path);
             Assert.Equal(new Vec3(1, 2, 3), back.Players[0].Location);
             Assert.Equal(InputMode.Type, back.Settings.InputMode);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public void Migrate_TurnsFillMagazinesOnOnceForOldProfiles()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"sacc-test-{Guid.NewGuid():N}.json");
+        try
+        {
+            File.WriteAllText(path, """{"kits":[{"name":"Old","fillMagazines":false}]}""");
+            var old = JsonStore.LoadOrDefault<Profile>(path);
+            old.Migrate();
+            Assert.True(old.Kits[0].FillMagazines);
+
+            // After migration, turning it off sticks.
+            old.Kits[0].FillMagazines = false;
+            JsonStore.Save(path, old);
+            var back = JsonStore.LoadOrDefault<Profile>(path);
+            back.Migrate();
+            Assert.False(back.Kits[0].FillMagazines);
         }
         finally { File.Delete(path); }
     }

@@ -71,7 +71,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             ["item"] = o as string ?? ItemCode,
             ["amount"] = ItemAmount,
-            ["stack"] = ItemStackFull ? Settings.FullStackCount.ToString(System.Globalization.CultureInfo.InvariantCulture) : ItemStack,
+            ["stack"] = SpawnerStack(o as string ?? ItemCode),
         }));
         SpawnVehicleCommand = new AsyncCommand(o => RunCatalogAsync("spawn-vehicle", new() { ["vehicle"] = o as string ?? VehicleCode }));
         ListItemsCommand = new AsyncCommand(() => RunCatalogAsync("list-items", new() { ["filter"] = ItemCode }));
@@ -210,6 +210,15 @@ public sealed partial class MainViewModel : ObservableObject
     private bool _itemStackFull;
     public bool ItemStackFull { get => _itemStackFull; set => Set(ref _itemStackFull, value); }
 
+    /// <summary>Full when ticked; else the typed StackCount; else Full for a magazine if "Fill magazines" is on.</summary>
+    private string SpawnerStack(string code)
+    {
+        var full = Settings.FullStackCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        if (ItemStackFull) return full;
+        if (!string.IsNullOrWhiteSpace(ItemStack)) return ItemStack;
+        return Settings.SpawnerFillMagazines && ItemCatalog.MagazineMatcher(Settings.MagazinePattern)(code.Trim()) ? full : "";
+    }
+
     private string _vehicleCode = "";
     public string VehicleCode { get => _vehicleCode; set { if (Set(ref _vehicleCode, value)) RefreshVehicleMatches(); } }
 
@@ -345,6 +354,8 @@ public sealed partial class MainViewModel : ObservableObject
 
     private async Task<bool> ExecuteAsync(IReadOnlyList<string> lines)
     {
+        // Every send path (Console, Spawner, raw box, macros, kits) passes here, so large spawns split once.
+        lines = lines.SelectMany(l => CommandLine.SplitSpawn(l, Settings.MaxSpawnPerCommand)).ToList();
         if (lines.Count == 0) return false;
         if (Settings.DryRun)
         {
@@ -633,7 +644,12 @@ public sealed partial class MainViewModel : ObservableObject
 
     private static Profile LoadProfile()
     {
-        try { return JsonStore.LoadOrDefault<Profile>(AppPaths.Profile); }
+        try
+        {
+            var profile = JsonStore.LoadOrDefault<Profile>(AppPaths.Profile);
+            profile.Migrate();
+            return profile;
+        }
         catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException)
         {
             // Keep the unreadable file for the user rather than silently overwriting it.
