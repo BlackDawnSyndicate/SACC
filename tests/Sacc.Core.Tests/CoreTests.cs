@@ -160,6 +160,36 @@ public class ParsingTests
 
     [Fact]
     public void PlayerList_IgnoresTextWithoutIds() => Assert.Empty(Parsing.ParsePlayerList("nobody online"));
+
+    [Fact]
+    public void FlagList_OneLinePerFlag()
+    {
+        var flags = Parsing.ParseFlagList(
+            "Flag ID: 12 | Owner: Zed (76561198000000009) | X=-1000.5 Y=2000 Z=30\n" +
+            "Flag ID: 13 | Owner: Kane (76561198000000010) | X=5 Y=6 Z=7");
+        Assert.Equal(2, flags.Count);
+        Assert.Equal("12", flags[0].Id);
+        Assert.Equal("Zed", flags[0].OwnerName);
+        Assert.Equal("76561198000000009", flags[0].OwnerSteamId);
+        Assert.Equal(new Vec3(-1000.5, 2000, 30), flags[0].Location);
+        Assert.Equal("13", flags[1].Id);
+    }
+
+    [Fact]
+    public void FlagList_MultiLineRecords_SteamIdIsNotTheFlagId()
+    {
+        var flags = Parsing.ParseFlagList(
+            "SteamID: 76561198000000009\nID: 7\nLocation: X=1 Y=2 Z=3\n\n" +
+            "SteamID: 76561198000000010\nLocation: X=4 Y=5 Z=6\n");
+        Assert.Equal(2, flags.Count);
+        Assert.Equal("7", flags[0].Id);
+        Assert.Equal("", flags[1].Id);
+        Assert.Equal("76561198000000010", flags[1].OwnerSteamId);
+        Assert.Equal("Flag · 76561198000000010", flags[1].Label);
+    }
+
+    [Fact]
+    public void FlagList_IgnoresTextWithoutCoordinates() => Assert.Empty(Parsing.ParseFlagList("Flag ID: 1 Owner: Zed"));
 }
 
 public class MacroScriptTests

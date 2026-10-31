@@ -135,8 +135,61 @@ public sealed partial class MainViewModel
     /// <summary>Who "Teleport here" moves; empty = you (no player argument).</summary>
     public string MapTarget { get => _mapTarget; set => Set(ref _mapTarget, value); }
 
-    private bool _mapShowPlayers = true;
+    private bool _mapShowOnline = true;
+    /// <summary>Players in the last #ListPlayers output, at the position it gave.</summary>
+    public bool MapShowOnline { get => _mapShowOnline; set { if (Set(ref _mapShowOnline, value)) MapChanged?.Invoke(); } }
+
+    private bool _mapShowPlayers;
+    /// <summary>Everyone else, at their last known position.</summary>
     public bool MapShowPlayers { get => _mapShowPlayers; set { if (Set(ref _mapShowPlayers, value)) MapChanged?.Invoke(); } }
+
+    private bool _mapShowFlags;
+    public bool MapShowFlags { get => _mapShowFlags; set { if (Set(ref _mapShowFlags, value)) MapChanged?.Invoke(); } }
+
+    public DateTime? PlayersListedAt => _profile.PlayersListedAt;
+
+    public string MapOnlineLabel => $"Online players ({Players.Count(p => PlayersListedAt is { } at && p.LastSeen >= at)})";
+    public string MapOnlineTip => _profile.PlayersListedAt is { } at
+        ? $"Players in the #ListPlayers output read {at:MMM d HH:mm}, where it placed them (green)"
+        : "No #ListPlayers output read yet: press Refresh";
+
+    public string MapFlagsLabel => $"Flags ({Flags.Count})";
+    public string MapFlagsTip => _profile.FlagsListedAt is { } at
+        ? $"Base flags from the #ListFlags output read {at:MMM d HH:mm}"
+        : "No #ListFlags output read yet: press Refresh, or Paste output you copied";
+
+    // ---- flags (#ListFlags)
+
+    private ICommand? _refreshFlags, _pasteFlags;
+    public ICommand RefreshFlagsCommand => _refreshFlags ??= new AsyncCommand(RefreshFlagsAsync);
+    public ICommand PasteFlagsCommand => _pasteFlags ??= new RelayCommand(() =>
+    {
+        var text = GameLink.TryGetClipboardText();
+        if (string.IsNullOrWhiteSpace(text)) { Status = "Clipboard is empty. Copy the #ListFlags output first."; return; }
+        ReplaceFlags(text);
+    });
+
+    private async Task RefreshFlagsAsync()
+    {
+        var def = _catalog.Find("list-flags-copy");
+        if (def == null) { Status = "The command catalog has no 'list-flags-copy' entry."; return; }
+        var output = await CaptureAsync(def.Template);
+        if (output != null) ReplaceFlags(output);
+    }
+
+    private void ReplaceFlags(string text)
+    {
+        var parsed = Parsing.ParseFlagList(text);
+        if (parsed.Count == 0) { Status = "No flag locations (X= Y= Z=) found in that text."; return; }
+        Flags.Clear();
+        foreach (var f in parsed) Flags.Add(f);
+        _profile.FlagsListedAt = DateTime.Now;
+        Raise(nameof(MapFlagsLabel));
+        Raise(nameof(MapFlagsTip));
+        MapShowFlags = true;
+        Status = $"Read {parsed.Count} flag(s).";
+        Save();
+    }
 
     private bool _mapShowBookmarks = true;
     public bool MapShowBookmarks { get => _mapShowBookmarks; set { if (Set(ref _mapShowBookmarks, value)) MapChanged?.Invoke(); } }

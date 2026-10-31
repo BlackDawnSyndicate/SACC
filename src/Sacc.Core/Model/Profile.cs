@@ -60,6 +60,26 @@ public sealed class PlayerRecord
     public string Display => string.IsNullOrWhiteSpace(Nickname) ? SteamId : $"{Nickname}  ({SteamId})";
 }
 
+/// <summary>A base flag from #ListFlags.</summary>
+public sealed class FlagRecord
+{
+    public string Id { get; set; } = "";
+    public string OwnerSteamId { get; set; } = "";
+    public string OwnerName { get; set; } = "";
+    public Vec3 Location { get; set; }
+
+    [JsonIgnore]
+    public string Label
+    {
+        get
+        {
+            var owner = !string.IsNullOrWhiteSpace(OwnerName) ? OwnerName : OwnerSteamId;
+            var id = Id.Length > 0 ? $"Flag {Id}" : "Flag";
+            return owner.Length > 0 ? $"{id} · {owner}" : id;
+        }
+    }
+}
+
 public readonly record struct Vec3(double X, double Y, double Z)
 {
     public override string ToString() =>
@@ -181,6 +201,11 @@ public sealed class Profile
 {
     public Settings Settings { get; set; } = new();
     public List<PlayerRecord> Players { get; set; } = new();
+    /// <summary>When the last #ListPlayers output was read; players seen then were online.</summary>
+    public DateTime? PlayersListedAt { get; set; }
+    /// <summary>The last #ListFlags result; each read replaces the whole list.</summary>
+    public List<FlagRecord> Flags { get; set; } = new();
+    public DateTime? FlagsListedAt { get; set; }
     public List<Bookmark> Bookmarks { get; set; } = new();
     public List<Macro> Macros { get; set; } = new();
     public List<Kit> Kits { get; set; } = new();

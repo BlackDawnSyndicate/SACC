@@ -31,6 +31,9 @@ public sealed partial class MainViewModel : ObservableObject
         _profile = LoadProfile();
 
         Players = new(_profile.Players);
+        Flags = new(_profile.Flags);
+        // A separate view: the Map tab binds Players directly and must stay unfiltered.
+        PlayersView = new ListCollectionView(Players) { Filter = o => PlayerVisible((PlayerRecord)o) };
         Bookmarks = new(_profile.Bookmarks);
         Macros = new(_profile.Macros.Select(m => new MacroViewModel(m)));
         if (Macros.Count == 0) Macros.Add(new MacroViewModel(SampleMacro));
@@ -50,7 +53,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         RefreshPlayersCommand = new AsyncCommand(RefreshPlayersAsync);
         PastePlayersCommand = new RelayCommand(PastePlayers);
-        ClearPlayersCommand = new RelayCommand(() => { Players.Clear(); Save(); });
+        ClearPlayersCommand = new RelayCommand(() => { Players.Clear(); _profile.PlayersListedAt = null; RefreshPlayersView(); Save(); });
         PlayerActionCommand = new AsyncCommand(PlayerActionAsync, _ => SelectedPlayer != null);
         UsePlayerAsTargetCommand = new RelayCommand(() => { BookmarkTarget = MacroTarget = SelectedPlayer?.SteamId ?? ""; }, () => SelectedPlayer != null);
 
@@ -104,6 +107,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     public Settings Settings => _profile.Settings;
     public ObservableCollection<PlayerRecord> Players { get; }
+    public ObservableCollection<FlagRecord> Flags { get; }
     public ObservableCollection<Bookmark> Bookmarks { get; }
     public ObservableCollection<MacroViewModel> Macros { get; }
     public ObservableCollection<string> FavoriteItems { get; }
@@ -442,8 +446,47 @@ public sealed partial class MainViewModel : ObservableObject
         var parsed = Parsing.ParsePlayerList(text);
         if (parsed.Count == 0) { Status = "No SteamID64s found in that text."; return; }
         SahImport.MergePlayers(Players, parsed);
+        // #ListPlayers lists who is online, so this batch is the new "online now" set.
+        _profile.PlayersListedAt = parsed.Max(p => p.LastSeen);
+        RefreshPlayersView();
         Status = $"Imported {parsed.Count} player(s).";
         Save();
+    }
+
+    public ListCollectionView PlayersView { get; }
+
+    private bool _playersOnlineOnly = true;
+    public bool PlayersOnlineOnly { get => _playersOnlineOnly; set { if (Set(ref _playersOnlineOnly, value)) RefreshPlayersView(); } }
+
+    private string _playerSearch = "";
+    public string PlayerSearch { get => _playerSearch; set { if (Set(ref _playerSearch, value ?? "")) RefreshPlayersView(); } }
+
+    public string PlayersOnlineLabel
+    {
+        get
+        {
+            var at = _profile.PlayersListedAt;
+            if (at == null) return "Online now (not listed yet)";
+            var count = Players.Count(p => p.LastSeen >= at.Value);
+            return $"Online now ({count}, listed {at.Value:MMM d HH:mm})";
+        }
+    }
+
+    private bool PlayerVisible(PlayerRecord p)
+    {
+        if (_playersOnlineOnly && (_profile.PlayersListedAt is not { } at || p.LastSeen < at)) return false;
+        if (_playerSearch.Length == 0) return true;
+        return p.Nickname.Contains(_playerSearch, StringComparison.OrdinalIgnoreCase)
+            || p.SteamId.Contains(_playerSearch, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void RefreshPlayersView()
+    {
+        PlayersView.Refresh();
+        Raise(nameof(PlayersOnlineLabel));
+        Raise(nameof(MapOnlineLabel));
+        Raise(nameof(MapOnlineTip));
+        MapChanged?.Invoke();
     }
 
     private Task PlayerActionAsync(object? parameter)
@@ -604,6 +647,7 @@ public sealed partial class MainViewModel : ObservableObject
     public void Save()
     {
         _profile.Players = Players.ToList();
+        _profile.Flags = Flags.ToList();
         _profile.Bookmarks = Bookmarks.ToList();
         _profile.Macros = Macros.Select(m => m.ToModel()).ToList();
         _profile.Kits = Kits.ToList();

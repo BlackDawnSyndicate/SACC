@@ -189,6 +189,10 @@
                         <Button Command="{Binding ImportSahFilesCommand}" Content="Import SAH players…"
                                 ToolTip="Import a 'SAH Players (date).json' export"/>
                         <Button Command="{Binding ClearPlayersCommand}" Content="Clear"/>
+                        <CheckBox Content="{Binding PlayersOnlineLabel}" IsChecked="{Binding PlayersOnlineOnly}" VerticalAlignment="Center" Margin="12,0,0,0"
+                                  ToolTip="Only players in the last #ListPlayers output (Refresh from game or Paste list)"/>
+                        <TextBox Text="{Binding PlayerSearch, UpdateSourceTrigger=PropertyChanged}" Width="220" Margin="12,0,0,0" VerticalContentAlignment="Center"
+                                 ToolTip="Filter by name or SteamID64"/>
                     </StackPanel>
                     <Border DockPanel.Dock="Right" Width="260" Margin="10,0,0,0" Padding="10" Background="White" BorderBrush="#DADFE2" BorderThickness="1">
                         <StackPanel>
@@ -219,7 +223,7 @@
                             </WrapPanel>
                         </StackPanel>
                     </Border>
-                    <DataGrid ItemsSource="{Binding Players}" SelectedItem="{Binding SelectedPlayer}" IsReadOnly="True">
+                    <DataGrid ItemsSource="{Binding PlayersView}" SelectedItem="{Binding SelectedPlayer}" IsReadOnly="True">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Name" Binding="{Binding Nickname}" Width="2*"/>
                             <DataGridTextColumn Header="SteamID64" Binding="{Binding SteamId}" Width="150"/>
@@ -496,7 +500,22 @@
                                     </TextBox.InputBindings>
                                 </TextBox>
                             </DockPanel>
-                            <CheckBox Content="Show players (last known positions)" IsChecked="{Binding MapShowPlayers}" Margin="0,0,0,4"/>
+                            <DockPanel Margin="0,0,0,4">
+                                <Button DockPanel.Dock="Right" Command="{Binding RefreshPlayersCommand}" Content="Refresh" Padding="6,0" Margin="4,0,0,0"
+                                        ToolTip="Sends #ListPlayers true and reads the clipboard"/>
+                                <CheckBox Content="{Binding MapOnlineLabel}" IsChecked="{Binding MapShowOnline}" VerticalAlignment="Center"
+                                          ToolTip="{Binding MapOnlineTip}"/>
+                            </DockPanel>
+                            <CheckBox Content="Offline players (last known)" IsChecked="{Binding MapShowPlayers}" Margin="0,0,0,4"
+                                      ToolTip="Everyone else, where they were last seen (grey)"/>
+                            <DockPanel Margin="0,0,0,4">
+                                <Button DockPanel.Dock="Right" Command="{Binding PasteFlagsCommand}" Content="Paste" Padding="6,0" Margin="4,0,0,0"
+                                        ToolTip="Read #ListFlags output you copied yourself"/>
+                                <Button DockPanel.Dock="Right" Command="{Binding RefreshFlagsCommand}" Content="Refresh" Padding="6,0" Margin="4,0,0,0"
+                                        ToolTip="Sends #ListFlags true and reads the clipboard"/>
+                                <CheckBox Content="{Binding MapFlagsLabel}" IsChecked="{Binding MapShowFlags}" VerticalAlignment="Center"
+                                          ToolTip="{Binding MapFlagsTip}"/>
+                            </DockPanel>
                             <CheckBox Content="Show saved locations" IsChecked="{Binding MapShowBookmarks}" Margin="0,0,0,8"/>
                             <TextBlock Text="Teleport target" Style="{StaticResource SectionLabel}" Margin="0,0,0,4"/>
                             <ComboBox IsEditable="True" TextSearch.TextPath="SteamId" ItemsSource="{Binding Players}"

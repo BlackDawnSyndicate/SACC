@@ -118,5 +118,44 @@ public static partial class Parsing
         return Regex.Replace(first, @"\s{2,}", " ");
     }
 
+    [GeneratedRegex(@"(?<!Steam\s*)\b(?:Flag\s*)?ID\s*[:=#]?\s*(\d{1,9})\b", RegexOptions.IgnoreCase)]
+    private static partial Regex FlagId();
+
+    [GeneratedRegex(@"\bOwner(?:\s*name)?\s*[:=]\s*([^,|\t\r\n(]+)", RegexOptions.IgnoreCase)]
+    private static partial Regex OwnerName();
+
+    /// <summary>
+    /// #ListFlags output. Its layout is undocumented, so a record is every line up to and
+    /// including the next X/Y/Z triple; the flag id, owner SteamID64 and owner name are
+    /// picked out of those lines wherever they appear.
+    /// </summary>
+    public static List<FlagRecord> ParseFlagList(string? text)
+    {
+        var result = new List<FlagRecord>();
+        if (string.IsNullOrWhiteSpace(text)) return result;
+
+        var block = new List<string>();
+        foreach (var line in text.Split('\n').Select(l => l.TrimEnd('\r')))
+        {
+            if (line.Trim().Length == 0) continue;
+            block.Add(line);
+            var joined = string.Join("\n", block);
+            if (Xyz().Match(joined) is not { Success: true } xyz) continue;
+            block.Clear();
+
+            var flag = new FlagRecord
+            {
+                Id = FlagId().Match(joined) is { Success: true } id ? id.Groups[1].Value : "",
+                OwnerSteamId = SteamId().Match(joined) is { Success: true } s ? s.Groups[1].Value : "",
+                Location = new Vec3(Num(xyz.Groups[1].Value), Num(xyz.Groups[2].Value), Num(xyz.Groups[3].Value)),
+            };
+            var owner = OwnerName().Match(joined);
+            if (!owner.Success) owner = ExplicitName().Match(joined);
+            if (owner.Success) flag.OwnerName = owner.Groups[1].Value.Trim();
+            result.Add(flag);
+        }
+        return result;
+    }
+
     private static double Num(string s) => double.Parse(s, NumberStyles.Float, CultureInfo.InvariantCulture);
 }

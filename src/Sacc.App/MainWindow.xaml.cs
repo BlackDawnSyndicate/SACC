@@ -28,6 +28,7 @@ public partial class MainWindow : Window
         MapCanvas.Data = _vm.MapDataService;
         MapCanvas.Players = _vm.Players;
         MapCanvas.Bookmarks = _vm.Bookmarks;
+        MapCanvas.Flags = _vm.Flags;
         MapCanvas.Hover += _vm.MapHovered;
         MapCanvas.Clicked += _vm.MapPointPicked;
         MapCanvas.ContextRequested += _vm.MapPointPicked;
@@ -47,7 +48,10 @@ public partial class MainWindow : Window
         if (_vm.MapTemplate is { } t && _vm.ActiveTileTemplate is { } tiles) MapCanvas.SetMap(t, tiles);
         MapCanvas.Categories = _vm.MapCategoryLookup;
         MapCanvas.Markers = _vm.VisibleMapMarkers;
+        MapCanvas.PlayersListedAt = _vm.PlayersListedAt;
+        MapCanvas.ShowOnline = _vm.MapShowOnline;
         MapCanvas.ShowPlayers = _vm.MapShowPlayers;
+        MapCanvas.ShowFlags = _vm.MapShowFlags;
         MapCanvas.ShowBookmarks = _vm.MapShowBookmarks;
         MapCanvas.GridStyle = _vm.MapGrid;
         if (Sacc.App.Map.MapDataService.WebpUnsupported) _vm.NoteWebpMissing();

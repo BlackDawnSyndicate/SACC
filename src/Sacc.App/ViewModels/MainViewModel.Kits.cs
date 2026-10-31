@@ -132,7 +132,7 @@ public sealed partial class MainViewModel
             Kits.Remove(stale);
         foreach (var kit in result.Kits) Kits.Add(kit);
 
-        if (result.Players.Count > 0) SahImport.MergePlayers(Players, result.Players);
+        if (result.Players.Count > 0) { SahImport.MergePlayers(Players, result.Players); RefreshPlayersView(); }
 
         RebuildItemCatalog();
         foreach (var w in result.Warnings) FileLog.Write("IMPORT", w);

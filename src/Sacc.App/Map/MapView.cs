@@ -29,6 +29,9 @@ public sealed class MapView : FrameworkElement
     private static readonly Brush PlaceholderFill = Frozen(new SolidColorBrush(Color.FromRgb(0x1F, 0x2A, 0x30)));
     private static readonly Pen MarkerOutline = Frozen(new Pen(Brushes.Black, 1));
     private static readonly Brush PlayerFill = Frozen(new SolidColorBrush(Color.FromRgb(0x4C, 0xFF, 0x7A)));
+    private static readonly Brush OfflineFill = Frozen(new SolidColorBrush(Color.FromRgb(0xB0, 0xB0, 0xB0)));
+    private static readonly Brush FlagFill = Frozen(new SolidColorBrush(Color.FromRgb(0xE8, 0x3A, 0x3A)));
+    private static readonly Pen FlagPole = Frozen(new Pen(Brushes.Black, 2));
     private static readonly Brush BookmarkFill = Frozen(new SolidColorBrush(Color.FromRgb(0xFF, 0xA0, 0x2E)));
     private static readonly Brush LabelBack = Frozen(new SolidColorBrush(Color.FromArgb(0xB0, 0, 0, 0)));
     private static readonly Typeface LabelFace = new("Segoe UI");
@@ -45,8 +48,20 @@ public sealed class MapView : FrameworkElement
     public IEnumerable<Bookmark>? Bookmarks { get => _bookmarks; set { Rebind(ref _bookmarks, value); } }
     private IEnumerable<Bookmark>? _bookmarks;
 
+    public IEnumerable<FlagRecord>? Flags { get => _flags; set { Rebind(ref _flags, value); } }
+    private IEnumerable<FlagRecord>? _flags;
+
+    /// <summary>When the last #ListPlayers was read; players seen then count as online.</summary>
+    public DateTime? PlayersListedAt { get => _listedAt; set { _listedAt = value; InvalidateVisual(); } }
+    private DateTime? _listedAt;
+
+    public bool ShowOnline { get => _showOnline; set { _showOnline = value; InvalidateVisual(); } }
+    private bool _showOnline = true;
+    /// <summary>Players not in the last list, at their last known position.</summary>
     public bool ShowPlayers { get => _showPlayers; set { _showPlayers = value; InvalidateVisual(); } }
-    private bool _showPlayers = true;
+    private bool _showPlayers;
+    public bool ShowFlags { get => _showFlags; set { _showFlags = value; InvalidateVisual(); } }
+    private bool _showFlags;
     public bool ShowBookmarks { get => _showBookmarks; set { _showBookmarks = value; InvalidateVisual(); } }
     private bool _showBookmarks = true;
 
@@ -178,13 +193,33 @@ public sealed class MapView : FrameworkElement
                 Label(dc, b.Name, p, 8);
             }
 
-        if (_showPlayers && _players != null)
+        if (_showFlags && _flags != null)
+            foreach (var f in _flags)
+            {
+                var (mx, my) = _projection.ToMap(f.Location.X, f.Location.Y);
+                var p = ToScreen(mx, my);
+                // A pole with a pennant; the pole's foot is the flag's position.
+                var g = new StreamGeometry();
+                using (var ctx = g.Open())
+                {
+                    ctx.BeginFigure(new Point(p.X, p.Y - 14), true, true);
+                    ctx.PolyLineTo(new[] { new Point(p.X + 10, p.Y - 10), new Point(p.X, p.Y - 6) }, true, true);
+                }
+                g.Freeze();
+                dc.DrawLine(FlagPole, new Point(p.X, p.Y), new Point(p.X, p.Y - 14));
+                dc.DrawGeometry(FlagFill, MarkerOutline, g);
+                if (_zoom >= 3) Label(dc, f.Label, p, 6);
+            }
+
+        if ((_showPlayers || _showOnline) && _players != null)
             foreach (var pl in _players)
             {
                 if (pl.Location is not { } loc) continue;
+                var online = _listedAt is { } at && pl.LastSeen >= at;
+                if (online ? !_showOnline : !_showPlayers) continue;
                 var (mx, my) = _projection.ToMap(loc.X, loc.Y);
                 var p = ToScreen(mx, my);
-                dc.DrawEllipse(PlayerFill, MarkerOutline, p, 6, 6);
+                dc.DrawEllipse(online ? PlayerFill : OfflineFill, MarkerOutline, p, 6, 6);
                 Label(dc, string.IsNullOrWhiteSpace(pl.Nickname) ? pl.SteamId : pl.Nickname, p, 6);
             }
     }
