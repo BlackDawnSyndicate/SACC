@@ -26,6 +26,7 @@ If SCUM runs as administrator, Windows blocks keystrokes from non-elevated progr
 | Spawner | Item and vehicle spawning. Type any part of a code ("m16 mag") to filter the full list of known codes. Down moves into the list, Enter picks or spawns, double-click spawns. Favorites work the same way (double-click to spawn). Amounts above 10 are sent as several lines of at most 10 (23 → 10, 10, 3; configurable in Settings). This applies to every `#SpawnItem` SACC sends, including the Console form, the raw box and macros. An optional **StackCount** sets rounds in a magazine or units in a stack. **Full** sends a large value (200 by default), which the game caps at the item's maximum. **Fill magazines** (on by default) spawns magazines full unless you type a StackCount. **Search in game** sends `#ListItems <filter>`. |
 | Kits | Named item loadouts, grouped by folder. **Spawn kit** sends each item; counts above 10 are split into several lines (configurable). **Fill magazines** (on by default) spawns every magazine in a kit with the Full StackCount; the magazine pattern is a setting. **Clone** makes an editable copy of any kit or imported pack in the same folder. Re-importing the original never touches the copy. Items can be edited in place, including a per-item StackCount or Full: type in the last row to add one, or press Delete to remove one. **Copy to macro** turns a kit into an editable macro. **New kit** creates an empty kit in the current folder; rename it and pick or type a folder (`/` for subfolders). The add-item row has the same type-ahead and icons as the Spawner, plus Amount, StackCount and Full. Enter takes the top suggestion, then adds. Adding the same item with the same stack settings increases the existing row's amount. **Remove item** (or Delete) removes the selected row. Kits can also be created by importing (see below) or cloning. |
 | Map | The SCUM island map and its points of interest from [scum-map.com](https://scum-map.com), shown with their permission. Tick layers on the left (bunkers, caves, outposts…). On top: **Online players** (green, from the last `#ListPlayers`; **Refresh** re-reads it), **Offline players** at their last known position (grey), **Flags** (red pennants from `#ListFlags`; **Refresh** sends `#ListFlags true` and reads the clipboard, **Paste** reads output you copied yourself), and your saved locations. Scroll to zoom and drag to pan; the corner shows the X/Y under the cursor. Right-click a spot (or a marker, to use its exact height) to **Teleport target here**, copy the `#Teleport` command, save it as a location, or open the same spot on scum-map.com. **Grid** overlays: the game's sectors (B2), sectors with keypad lines, keypads (B27, numbered like a numeric keypad: 7-8-9 on top), or the 15×15 "map keypads" (A0 top-left, or inverted). The cursor and clicked spot always show their keypad. **Go to** accepts a sector, keypad, `X Y` coordinates or a player name. |
+| Map → GM spawn | Right-click a spot → **GM spawn here** to spawn at that spot. The **GM spawn** sidebar tab sets what each action spawns and how many (up to 50); click a spot and press ▶ to repeat. The actions:<br>• **Animals**, **NPC squads** (Drifters/Guards), **zombie groups**: type lists come from the bundled spawn codes.<br>• **Beepers** (suicide-vest zombies), **Razors**, **cargo drops**.<br>• **Vehicles**.<br>• **A kit**: every `#SpawnItem` gets `Location "X Y Z"`.<br>**Ground height:** a spot clicked on open ground has no height, so SACC borrows one from the closest enabled source within 300 m:<br>• the nearest scum-map marker (or the clicked marker itself)<br>• your own last known position<br>• the nearest player's last known position<br>• the nearest vehicle (**Refresh vehicles** reads `#ListSpawnedVehicles`)<br>Otherwise it uses the Map Z setting. The right-click menu shows the height and where it came from. The `Location` forms come from WhalleyBot's task docs and are Unverified until tried. |
 | Locations | Saved X/Y/Z bookmarks. Capture a player's location, or teleport a target to a bookmark. |
 | Macros | Plain-text scripts: one command per line, `wait 500` to pause, `//` for comments, and `{player}` / `{me}` variables. |
 | Log | Every command sent or dry-run, with resend and edit. |
@@ -40,6 +41,36 @@ Commands live in `data/commands.json`, not in code. Each entry has a confidence 
 - **Unverified**: community knowledge with no public source found, including the `true` clipboard flag on `#ListPlayers` and `#Location`.
 
 If the game rejects a command, use **Settings → Edit command catalog**. This copies the catalog to your data folder, where your edits survive updates. Fix the template there, then press **Reload catalog**. Typing `#` in game chat shows the server's own command list.
+
+## WhalleyBot
+
+SACC never connects to WhalleyBot. It copies text in WhalleyBot's own formats for you to paste into its panel:
+
+- **Macros → Copy as WhalleyBot task.** Comments and `#` lines carry over unchanged. Other conversions:
+  - `wait 1500` becomes `#taskpause 2` (seconds, rounded up).
+  - `{player}` becomes `<argument>`, the SteamID a pack passes when it runs `#ftask taskname [SteamID]`.
+  - `{me}` becomes your SteamID64 from Settings.
+  - Any other `{x}` becomes a `<x>` task variable, to define with `#var_x`.
+  - Spawns over 10 split as usual.
+  
+  The status bar explains anything that needs a look. WhalleyBot sends a task's in-game lines as one batch, so a pause may not space out game commands.
+- **Kits → Copy as WhalleyBot pack.** The kit's spawn lines, split and with magazines filled, for a pack in the Packs tab.
+- **Map → right-click → WhalleyBot.** Copies the clicked spot in one of these forms:
+  - `X Y Z` for the panel's location fields (taxis, dead drops, world events)
+  - `#location "X Y Z"`
+  - `#map X Y Z "Event"`
+  - `#spawnrazor "X Y Z"`
+  - `#spawnarmedNPC … Location "X Y Z"`
+  
+  **Add spot to coordinate list** collects several spots. **Copy coordinate list** then gives `#var_coords {X Y Z;X Y Z;…}`, and WhalleyBot picks one of those spots each time a task uses `"<coords>"`. A spot clicked on open ground has Z = 0 (or the Map Z setting); right-click a marker to use its height.
+
+The catalog also has commands learned from WhalleyBot's task docs (Unverified until tried from SACC):
+- `#SpawnItem … Location <player>` and `Location "X Y Z"`
+- `#SpawnZombie`
+- `#SpawnArmedNPC`
+- `#SpawnRazor`
+- `#ScheduleWorldEvent`
+- `#DestroyAllItemsWithinRadius` (radius in meters; 25000 covers the map)
 
 ## Importing from SCUM Admin Helper
 

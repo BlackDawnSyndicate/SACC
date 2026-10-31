@@ -43,7 +43,13 @@ public sealed class Settings
     /// <summary>scum-map.com marker categories shown on the Map tab.</summary>
     public List<int> MapVisibleCategories { get; set; } = new();
     public string MapType { get; set; } = "Regular";
-    /// <summary>Z used when teleporting to a clicked map spot that has no known height (scum-map.com uses 0).</summary>
+    /// <summary>The Map tab's GM spawn choices, by action key (animals, npcs, zombies, …).</summary>
+    public Dictionary<string, GmChoice> Gm { get; set; } = new();
+    /// <summary>GM spawn height sources; the closest enabled one within 300 m wins.</summary>
+    public bool GmHeightFromMarkers { get; set; } = true;
+    public bool GmHeightFromMe { get; set; } = true;
+    public bool GmHeightFromPlayers { get; set; } = true;
+    public bool GmHeightFromVehicles { get; set; } = true;    /// <summary>Z used when teleporting to a clicked map spot that has no known height (scum-map.com uses 0).</summary>
     public double MapTeleportZ { get; set; }
     public GridStyle MapGrid { get; set; } = GridStyle.Sectors;
 }
@@ -60,6 +66,20 @@ public sealed class PlayerRecord
 
     [JsonIgnore]
     public string Display => string.IsNullOrWhiteSpace(Nickname) ? SteamId : $"{Nickname}  ({SteamId})";
+}
+
+public sealed class GmChoice
+{
+    public string Type { get; set; } = "";
+    public int Count { get; set; } = 1;
+}
+
+/// <summary>A vehicle from #ListSpawnedVehicles.</summary>
+public sealed class VehicleRecord
+{
+    public string Id { get; set; } = "";
+    public string Code { get; set; } = "";
+    public Vec3 Location { get; set; }
 }
 
 /// <summary>A base flag from #ListFlags.</summary>
@@ -219,6 +239,9 @@ public sealed class Profile
     /// <summary>The last #ListFlags result; each read replaces the whole list.</summary>
     public List<FlagRecord> Flags { get; set; } = new();
     public DateTime? FlagsListedAt { get; set; }
+    /// <summary>The last #ListSpawnedVehicles result; used for GM spawn heights.</summary>
+    public List<VehicleRecord> Vehicles { get; set; } = new();
+    public DateTime? VehiclesListedAt { get; set; }
     public List<Bookmark> Bookmarks { get; set; } = new();
     public List<Macro> Macros { get; set; } = new();
     public List<Kit> Kits { get; set; } = new();

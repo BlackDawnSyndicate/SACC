@@ -67,7 +67,7 @@ public sealed partial class MainViewModel
     private SectorGrid Grid => _map == null ? SectorGrid.Island : new SectorGrid(new MapProjection(_map.Template.Settings));
 
     private string _mapGoTo = "";
-    public string MapGoTo { get => _mapGoTo; set => Set(ref _mapGoTo, value); }
+    public string MapGoTo { get => _mapGoTo; set { if (Set(ref _mapGoTo, value)) CommandManager.InvalidateRequerySuggested(); } }
 
     private ICommand? _goTo;
     public ICommand MapGoToCommand => _goTo ??= new RelayCommand(GoTo, () => !string.IsNullOrWhiteSpace(MapGoTo));
@@ -303,6 +303,7 @@ public sealed partial class MainViewModel
         }
         else MapPoint = world with { Z = Settings.MapTeleportZ };
         MapPointMarker = marker;
+        UpdateGmSpot();
         var p = MapPoint.Value;
         MapPointText = (marker != null ? $"{marker.Title}: " : "")
                        + Grid.KeypadName(p.X, p.Y) + "   "

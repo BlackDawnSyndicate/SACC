@@ -402,6 +402,8 @@
                                 <Button Command="{Binding CloneKitCommand}" Content="Clone"
                                         ToolTip="Make an editable copy of this kit/pack in the same folder"/>
                                 <Button Command="{Binding KitToMacroCommand}" Content="Copy to macro"/>
+                                <Button Command="{Binding CopyKitAsPackCommand}" Content="Copy as WhalleyBot pack"
+                                        ToolTip="Copies the kit's spawn lines (split, magazines filled) for a pack in WhalleyBot's panel"/>
                                 <Button Style="{StaticResource DangerButton}" Command="{Binding DeleteKitCommand}" Content="Delete"/>
                                 <Button Style="{StaticResource DangerButton}" Command="{Binding DeleteKitGroupCommand}" Content="Delete folder"/>
                             </WrapPanel>
@@ -495,7 +497,7 @@
                                       SelectedValue="{Binding MapGrid}" Margin="0,0,0,6" ToolTip="Sector / keypad grid overlay"/>
                             <DockPanel Margin="0,0,0,8">
                                 <Button DockPanel.Dock="Right" Command="{Binding MapGoToCommand}" Content="Go" Margin="6,0,0,0" MinWidth="0"/>
-                                <TextBox Text="{Binding MapGoTo, UpdateSourceTrigger=PropertyChanged}"
+                                <TextBox Text="{Binding MapGoTo, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Go to"
                                          ToolTip="Go to a sector (B2), keypad (B27), coordinates (X Y) or a player name">
                                     <TextBox.InputBindings>
                                         <KeyBinding Key="Enter" Command="{Binding MapGoToCommand}"/>
@@ -527,37 +529,92 @@
                                     <DataTemplate><TextBlock Text="{Binding Display}"/></DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
-                            <TextBlock Text="Layers" Style="{StaticResource SectionLabel}" Margin="0,0,0,4"/>
-                            <TextBox Text="{Binding MapCategorySearch, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,4" ToolTip="Filter layers"/>
-                            <WrapPanel>
-                                <Button Command="{Binding ShowAllMapCategoriesCommand}" Content="Show listed" MinWidth="0"/>
-                                <Button Command="{Binding HideAllMapCategoriesCommand}" Content="Hide listed" MinWidth="0"/>
-                            </WrapPanel>
                         </StackPanel>
                         <TextBlock DockPanel.Dock="Bottom" Text="{Binding MapStatus}" Style="{StaticResource Muted}" Margin="0,6,0,0"/>
-                        <ListBox ItemsSource="{Binding MapCategoriesView}" VirtualizingPanel.IsVirtualizingWhenGrouping="True"
-                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                            <ListBox.GroupStyle>
-                                <GroupStyle>
-                                    <GroupStyle.HeaderTemplate>
+                        <TabControl>
+                            <TabItem Header="Layers">
+                                <DockPanel Margin="0,4,0,0">
+                                    <StackPanel DockPanel.Dock="Top">
+                                        <TextBox Text="{Binding MapCategorySearch, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,4" ToolTip="Filter layers"/>
+                                        <WrapPanel>
+                                            <Button Command="{Binding ShowAllMapCategoriesCommand}" Content="Show listed" MinWidth="0"/>
+                                            <Button Command="{Binding HideAllMapCategoriesCommand}" Content="Hide listed" MinWidth="0"/>
+                                        </WrapPanel>
+                                    </StackPanel>
+                                    <ListBox ItemsSource="{Binding MapCategoriesView}" VirtualizingPanel.IsVirtualizingWhenGrouping="True"
+                                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                        <ListBox.GroupStyle>
+                                            <GroupStyle>
+                                                <GroupStyle.HeaderTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" Margin="2,6,0,2"/>
+                                                    </DataTemplate>
+                                                </GroupStyle.HeaderTemplate>
+                                            </GroupStyle>
+                                        </ListBox.GroupStyle>
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <CheckBox IsChecked="{Binding IsVisible}">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Ellipse Width="10" Height="10" Margin="0,0,6,0" Stroke="Black" StrokeThickness="1"
+                                                                 Fill="{Binding Category.Background}"/>
+                                                        <TextBlock Text="{Binding Label}"/>
+                                                    </StackPanel>
+                                                </CheckBox>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </DockPanel>
+                            </TabItem>
+                            <TabItem Header="GM spawn">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel Margin="0,6,0,0">
+                                <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,6"
+                                           Text="Right-click a spot on the map → GM spawn here, or click a spot and press ▶."/>
+                                <TextBlock Text="Ground height from (closest within 300 m)" Style="{StaticResource SectionLabel}" Margin="0,0,0,2"/>
+                                <CheckBox Content="Nearest ground marker" IsChecked="{Binding GmHeightFromMarkers}" Margin="0,0,0,2"
+                                          ToolTip="The right-clicked marker, or the nearest scum-map marker that has a height"/>
+                                <CheckBox Content="My height" IsChecked="{Binding GmHeightFromMe}" Margin="0,0,0,2"
+                                          ToolTip="Your last known position (Settings → your SteamID64; refresh Players to update it)"/>
+                                <CheckBox Content="Nearest player height" IsChecked="{Binding GmHeightFromPlayers}" Margin="0,0,0,2"
+                                          ToolTip="The nearest player's last known position, online or not"/>
+                                <CheckBox IsChecked="{Binding GmHeightFromVehicles}" Margin="0,0,0,2"
+                                          ToolTip="The nearest vehicle from the last #ListSpawnedVehicles output">
+                                    <TextBlock Text="{Binding GmVehiclesLabel}" TextWrapping="Wrap"/>
+                                </CheckBox>
+                                <WrapPanel Margin="18,0,0,6">
+                                    <Button Command="{Binding RefreshVehiclesCommand}" Content="Refresh vehicles" MinWidth="0"
+                                            ToolTip="Sends #ListSpawnedVehicles true and reads the clipboard"/>
+                                    <Button Command="{Binding PasteVehiclesCommand}" Content="Paste" MinWidth="0"
+                                            ToolTip="Read #ListSpawnedVehicles output you copied yourself"/>
+                                </WrapPanel>
+                                <ItemsControl ItemsSource="{Binding GmActions}">
+                                    <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" Margin="2,6,0,2"/>
+                                            <Grid Margin="0,0,0,3">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="78"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="42"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding Label}" VerticalAlignment="Center"/>
+                                                <ComboBox Grid.Column="1" IsEditable="True" ItemsSource="{Binding Types}" Margin="0,0,4,0"
+                                                          Text="{Binding Type, UpdateSourceTrigger=PropertyChanged}"
+                                                          Visibility="{Binding HasType, Converter={StaticResource BoolToVisibility}}"/>
+                                                <TextBox Grid.Column="2" Text="{Binding Count, UpdateSourceTrigger=PropertyChanged}" ToolTip="How many (1–50)"/>
+                                                <Button Grid.Column="3" Content="▶" MinWidth="0" Padding="6,0" Margin="4,0,0,0"
+                                                        Command="{Binding SpawnCommand}" CommandParameter="{Binding}"
+                                                        AutomationProperties.Name="{Binding Label, StringFormat='Spawn {0}'}"
+                                                        ToolTip="Spawn at the last clicked spot"/>
+                                            </Grid>
                                         </DataTemplate>
-                                    </GroupStyle.HeaderTemplate>
-                                </GroupStyle>
-                            </ListBox.GroupStyle>
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <CheckBox IsChecked="{Binding IsVisible}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <Ellipse Width="10" Height="10" Margin="0,0,6,0" Stroke="Black" StrokeThickness="1"
-                                                     Fill="{Binding Category.Background}"/>
-                                            <TextBlock Text="{Binding Label}"/>
-                                        </StackPanel>
-                                    </CheckBox>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                </StackPanel>
+                                </ScrollViewer>
+                            </TabItem>
+                        </TabControl>
                     </DockPanel>
 
                     <DockPanel Grid.Column="2">
@@ -575,9 +632,31 @@
                             <map:MapView x:Name="MapCanvas">
                                 <map:MapView.ContextMenu>
                                     <ContextMenu>
+                                        <MenuItem Header="GM spawn here" ItemsSource="{Binding GmActions}">
+                                            <MenuItem.ItemContainerStyle>
+                                                <Style TargetType="MenuItem">
+                                                    <Setter Property="Header" Value="{Binding MenuHeader}"/>
+                                                    <Setter Property="Command" Value="{Binding SpawnCommand}"/>
+                                                    <Setter Property="CommandParameter" Value="{Binding}"/>
+                                                </Style>
+                                            </MenuItem.ItemContainerStyle>
+                                        </MenuItem>
+                                        <MenuItem Header="{Binding GmHeightText}" IsEnabled="False"/>
+                                        <Separator/>
                                         <MenuItem Header="Teleport target here" Command="{Binding TeleportHereCommand}"/>
                                         <MenuItem Header="Copy teleport command" Command="{Binding CopyTeleportCommand}"/>
                                         <MenuItem Header="Save as location" Command="{Binding SaveHereCommand}"/>
+                                        <MenuItem Header="WhalleyBot">
+                                            <MenuItem Header="Copy X Y Z (panel location fields)" Command="{Binding CopySpotLineCommand}" CommandParameter="xyz"/>
+                                            <MenuItem Header="Copy #location &quot;X Y Z&quot;" Command="{Binding CopySpotLineCommand}" CommandParameter="location"/>
+                                            <MenuItem Header="Copy #map X Y Z" Command="{Binding CopySpotLineCommand}" CommandParameter="map"/>
+                                            <MenuItem Header="Copy #spawnrazor here" Command="{Binding CopySpotLineCommand}" CommandParameter="razor"/>
+                                            <MenuItem Header="Copy #spawnarmedNPC here" Command="{Binding CopySpotLineCommand}" CommandParameter="npc"/>
+                                            <Separator/>
+                                            <MenuItem Header="{Binding AddCoordHeader}" Command="{Binding AddCoordCommand}"/>
+                                            <MenuItem Header="{Binding CopyCoordsHeader}" Command="{Binding CopyCoordsCommand}"/>
+                                            <MenuItem Header="Clear coordinate list" Command="{Binding ClearCoordsCommand}"/>
+                                        </MenuItem>
                                         <Separator/>
                                         <MenuItem Header="View this spot on scum-map.com" Click="ViewOnScumMap_Click"/>
                                     </ContextMenu>
@@ -653,6 +732,8 @@
                             <TextBox Width="200" Margin="0,0,6,6" Text="{Binding MacroTarget, UpdateSourceTrigger=PropertyChanged}"/>
                             <Button Command="{Binding CheckMacroCommand}" Content="Check"/>
                             <Button Style="{StaticResource PrimaryButton}" Command="{Binding RunMacroCommand}" Content="Run"/>
+                            <Button Command="{Binding CopyMacroAsTaskCommand}" Content="Copy as WhalleyBot task"
+                                    ToolTip="wait → #taskpause, {player} → &lt;argument&gt; (the buyer's SteamID when a pack runs #ftask name [SteamID]), {me} → your SteamID64"/>
                         </WrapPanel>
                         <TextBox Text="{Binding SelectedMacro.Script, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" AcceptsTab="True"
                                  VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" FontFamily="Cascadia Mono, Consolas"/>

@@ -206,6 +206,16 @@ public class ParsingTests
     }
 
     [Fact]
+    public void VehicleList_ReadsIdBlueprintAndPosition()
+    {
+        var vehicles = Parsing.ParseVehicleList("ID: 4411 BPC_RIS X=100.5 Y=-200 Z=3000\nVehicle ID 12 | BP_Quad_01_B | X=1 Y=2 Z=3");
+        Assert.Equal(2, vehicles.Count);
+        Assert.Equal(("4411", "BPC_RIS"), (vehicles[0].Id, vehicles[0].Code));
+        Assert.Equal(new Vec3(100.5, -200, 3000), vehicles[0].Location);
+        Assert.Equal("BP_Quad_01_B", vehicles[1].Code);
+    }
+
+    [Fact]
     public void FlagList_IgnoresTextWithoutCoordinates() => Assert.Empty(Parsing.ParseFlagList("Flag ID: 1 Owner: Zed"));
 }
 

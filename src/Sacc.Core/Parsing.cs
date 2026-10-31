@@ -129,11 +129,37 @@ public static partial class Parsing
     /// including the next X/Y/Z triple; the flag id, owner SteamID64 and owner name are
     /// picked out of those lines wherever they appear.
     /// </summary>
-    public static List<FlagRecord> ParseFlagList(string? text)
-    {
-        var result = new List<FlagRecord>();
-        if (string.IsNullOrWhiteSpace(text)) return result;
+    public static List<FlagRecord> ParseFlagList(string? text) =>
+        LocatedBlocks(text).Select(b =>
+        {
+            var flag = new FlagRecord
+            {
+                Id = FlagId().Match(b.Text) is { Success: true } id ? id.Groups[1].Value : "",
+                OwnerSteamId = SteamId().Match(b.Text) is { Success: true } s ? s.Groups[1].Value : "",
+                Location = b.Location,
+            };
+            var owner = OwnerName().Match(b.Text);
+            if (!owner.Success) owner = ExplicitName().Match(b.Text);
+            if (owner.Success) flag.OwnerName = owner.Groups[1].Value.Trim();
+            return flag;
+        }).ToList();
 
+    [GeneratedRegex(@"\bBPC?_\w+")]
+    private static partial Regex Blueprint();
+
+    /// <summary>#ListSpawnedVehicles output, read the same tolerant way as flags: id, blueprint and X/Y/Z.</summary>
+    public static List<VehicleRecord> ParseVehicleList(string? text) =>
+        LocatedBlocks(text).Select(b => new VehicleRecord
+        {
+            Id = FlagId().Match(b.Text) is { Success: true } id ? id.Groups[1].Value : "",
+            Code = Blueprint().Match(b.Text) is { Success: true } c ? c.Value : "",
+            Location = b.Location,
+        }).ToList();
+
+    /// <summary>Records of undocumented layout: every line up to and including the next X/Y/Z triple.</summary>
+    private static IEnumerable<(string Text, Vec3 Location)> LocatedBlocks(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) yield break;
         var block = new List<string>();
         foreach (var line in text.Split('\n').Select(l => l.TrimEnd('\r')))
         {
@@ -142,19 +168,8 @@ public static partial class Parsing
             var joined = string.Join("\n", block);
             if (Xyz().Match(joined) is not { Success: true } xyz) continue;
             block.Clear();
-
-            var flag = new FlagRecord
-            {
-                Id = FlagId().Match(joined) is { Success: true } id ? id.Groups[1].Value : "",
-                OwnerSteamId = SteamId().Match(joined) is { Success: true } s ? s.Groups[1].Value : "",
-                Location = new Vec3(Num(xyz.Groups[1].Value), Num(xyz.Groups[2].Value), Num(xyz.Groups[3].Value)),
-            };
-            var owner = OwnerName().Match(joined);
-            if (!owner.Success) owner = ExplicitName().Match(joined);
-            if (owner.Success) flag.OwnerName = owner.Groups[1].Value.Trim();
-            result.Add(flag);
+            yield return (joined, new Vec3(Num(xyz.Groups[1].Value), Num(xyz.Groups[2].Value), Num(xyz.Groups[3].Value)));
         }
-        return result;
     }
 
     private static double Num(string s) => double.Parse(s, NumberStyles.Float, CultureInfo.InvariantCulture);
