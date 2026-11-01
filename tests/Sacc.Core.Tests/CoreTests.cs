@@ -108,6 +108,15 @@ public class TemplateRendererTests
     }
 
     [Fact]
+    public void LocationCopyWithoutPlayerIsYourOwn()
+    {
+        var def = new CommandDef { Id = "location-copy", Template = "#Location[ {player}] true" };
+        def.Params.Add(new ParamDef { Name = "player", Kind = ParamKind.Player, Optional = true });
+        Assert.Equal("#Location true", TemplateRenderer.Render(def, V(("player", ""))).Text);
+        Assert.Equal("#Location 76561198000000001 true", TemplateRenderer.Render(def, V(("player", "76561198000000001"))).Text);
+    }
+
+    [Fact]
     public void UsesDefault()
     {
         var def = Spawn();

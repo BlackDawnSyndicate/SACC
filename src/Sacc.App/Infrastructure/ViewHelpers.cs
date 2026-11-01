@@ -69,6 +69,19 @@ public sealed class InverseBoolConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => value is not true;
 }
 
+/// <summary>Visible for an item code the game's #ListItems list doesn't contain.</summary>
+public sealed class UnlistedCodeVisibilityConverter : IValueConverter
+{
+    /// <summary>Set by the view model whenever the item catalog is rebuilt.</summary>
+    public static Func<string, bool> IsUnlisted { get; set; } = _ => false;
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is string code && IsUnlisted(code) ? Visibility.Visible : Visibility.Collapsed;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
 public sealed class NotEmptyToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>

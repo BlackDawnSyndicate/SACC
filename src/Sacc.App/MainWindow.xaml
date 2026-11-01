@@ -271,6 +271,7 @@
                         <WrapPanel DockPanel.Dock="Top">
                             <Button Style="{StaticResource PrimaryButton}" Command="{Binding SpawnItemCommand}" Content="Spawn"/>
                             <Button Command="{Binding ListItemsCommand}" Content="Search in game" ToolTip="Sends #ListItems with the text as a filter"/>
+                            <Button Command="{Binding RefreshGameItemsCommand}" Content="Refresh list from game" ToolTip="{Binding GameItemsTip}"/>
                             <Button Command="{Binding AddFavoriteItemCommand}" Content="☆ Favorite"/>
                         </WrapPanel>
                         <ListBox x:Name="ItemFavorites" DockPanel.Dock="Bottom" Height="140" ItemsSource="{Binding FavoriteItems}" MouseDoubleClick="ItemFavorites_DoubleClick">
@@ -521,6 +522,14 @@
                                 <CheckBox Content="{Binding MapFlagsLabel}" IsChecked="{Binding MapShowFlags}" VerticalAlignment="Center"
                                           ToolTip="{Binding MapFlagsTip}"/>
                             </DockPanel>
+                            <DockPanel Margin="0,0,0,4">
+                                <Button DockPanel.Dock="Right" Command="{Binding PasteVehiclesCommand}" Content="Paste" Padding="6,0" Margin="4,0,0,0"
+                                        ToolTip="Read #ListSpawnedVehicles output you copied yourself"/>
+                                <Button DockPanel.Dock="Right" Command="{Binding RefreshVehiclesCommand}" Content="Refresh" Padding="6,0" Margin="4,0,0,0"
+                                        ToolTip="Sends #ListSpawnedVehicles true and reads the clipboard"/>
+                                <CheckBox Content="{Binding MapVehiclesLabel}" IsChecked="{Binding MapShowVehicles}" VerticalAlignment="Center"
+                                          ToolTip="{Binding MapVehiclesTip}"/>
+                            </DockPanel>
                             <CheckBox Content="Show saved locations" IsChecked="{Binding MapShowBookmarks}" Margin="0,0,0,8"/>
                             <TextBlock Text="Teleport target" Style="{StaticResource SectionLabel}" Margin="0,0,0,4"/>
                             <ComboBox IsEditable="True" TextSearch.TextPath="SteamId" ItemsSource="{Binding Players}"
@@ -591,12 +600,6 @@
                                           ToolTip="The nearest vehicle from the last #ListSpawnedVehicles output">
                                     <TextBlock Text="{Binding GmVehiclesLabel}" TextWrapping="Wrap"/>
                                 </CheckBox>
-                                <WrapPanel Margin="18,0,0,2">
-                                    <Button Command="{Binding RefreshVehiclesCommand}" Content="Refresh vehicles" MinWidth="0"
-                                            ToolTip="Sends #ListSpawnedVehicles true and reads the clipboard"/>
-                                    <Button Command="{Binding PasteVehiclesCommand}" Content="Paste" MinWidth="0"
-                                            ToolTip="Read #ListSpawnedVehicles output you copied yourself"/>
-                                </WrapPanel>
                                 <CheckBox Content="Nearest saved location height" IsChecked="{Binding GmHeightFromLocations}" Margin="0,0,0,2"
                                           ToolTip="The nearest bookmark on the Locations tab (its X Y Z)"/>
                                 <DockPanel Margin="0,4,0,2">
@@ -708,8 +711,8 @@
                 <DockPanel>
                     <WrapPanel DockPanel.Dock="Top">
                         <Button Command="{Binding AddBookmarkCommand}" Content="Add"/>
-                        <Button Command="{Binding CaptureLocationCommand}" Content="Capture target's location"
-                                ToolTip="Sends #Location &lt;target&gt; true and saves the coordinates it returns"/>
+                        <Button Command="{Binding CaptureLocationCommand}" Content="{Binding CaptureLocationLabel}"
+                                ToolTip="Sends #Location &lt;target&gt; true and saves the coordinates it returns. With no target it captures your own location."/>
                         <Button Style="{StaticResource DangerButton}" Command="{Binding DeleteBookmarkCommand}" Content="Delete"/>
                         <TextBlock Text="Target:" VerticalAlignment="Center" Margin="12,0,6,6"/>
                         <TextBox Width="200" Margin="0,0,6,6" Text="{Binding BookmarkTarget, UpdateSourceTrigger=PropertyChanged}"

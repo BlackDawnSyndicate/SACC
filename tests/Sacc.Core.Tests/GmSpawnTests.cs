@@ -64,4 +64,26 @@ public class GmSpawnTests
         Assert.Equal(4500, GmSpawn.NearbyHeight(markers, 100, 100, 6));
         Assert.Null(GmSpawn.NearbyHeight(markers, 200, 200, 6));
     }
+
+    [Theory]
+    [InlineData("#spawnanimal BP_Wolf3", "#spawnanimal BP_Wolf")]
+    [InlineData("#SpawnAnimal BP_Bear2 3", "#SpawnAnimal BP_Bear 3")]
+    [InlineData("#SpawnAnimal BP_Wolf_Mutant 2", "#SpawnAnimal BP_Wolf_Mutant 2")]
+    [InlineData("#SpawnItem BP_Wolf3 1", "#SpawnItem BP_Wolf3 1")]
+    public void FixAnimalCommand_RenamesOldBlueprints(string line, string expected) =>
+        Assert.Equal(expected, GmSpawn.FixAnimalCommand(line));
+
+    [Fact]
+    public void Migrate_FixesOldAnimalNames()
+    {
+        var p = new Profile { Version = 1 };
+        p.Settings.Gm["animals"] = new GmChoice { Type = "BP_Wolf3", Count = 3 };
+        p.Kits.Add(new Kit { Items = { new KitItem { Code = "#spawnanimal BP_Deer2" }, new KitItem { Code = "Magazine_M16" } } });
+        p.Macros.Add(new Macro { Script = "// zoo\r\n#SpawnAnimal BP_Horse2 2\r\nwait 500" });
+        p.Migrate();
+        Assert.Equal("BP_Wolf", p.Settings.Gm["animals"].Type);
+        Assert.Equal("#spawnanimal BP_Deer", p.Kits[0].Items[0].Code);
+        Assert.Equal("Magazine_M16", p.Kits[0].Items[1].Code);
+        Assert.Equal("// zoo\r\n#SpawnAnimal BP_Horse 2\r\nwait 500", p.Macros[0].Script);
+    }
 }

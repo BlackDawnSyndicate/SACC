@@ -52,6 +52,8 @@ public partial class MainWindow : Window
         MapCanvas.ShowOnline = _vm.MapShowOnline;
         MapCanvas.ShowPlayers = _vm.MapShowPlayers;
         MapCanvas.ShowFlags = _vm.MapShowFlags;
+        MapCanvas.Vehicles = _vm.MapVehicles;
+        MapCanvas.ShowVehicles = _vm.MapShowVehicles;
         MapCanvas.ShowBookmarks = _vm.MapShowBookmarks;
         MapCanvas.GridStyle = _vm.MapGrid;
         if (Sacc.App.Map.MapDataService.WebpUnsupported) _vm.NoteWebpMissing();

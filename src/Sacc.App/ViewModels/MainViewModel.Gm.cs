@@ -60,7 +60,7 @@ public sealed partial class MainViewModel
 
     private static readonly Dictionary<string, (string Type, int Count)> GmDefaults = new()
     {
-        ["animals"] = ("BP_Wolf3", 3),
+        ["animals"] = ("BP_Wolf", 3),
         ["npcs"] = ("BP_Drifter_Lvl_3", 3),
         ["zombies"] = ("BP_Zombie_Military_Armored", 5),
         ["beepers"] = ("", 1),
@@ -97,7 +97,7 @@ public sealed partial class MainViewModel
             }
             IReadOnlyList<string> fixedTypes = a.Key switch
             {
-                "animals" => After("#spawnanimal "),
+                "animals" => GmSpawn.Animals,
                 "npcs" => After("#SpawnArmedNPC "),
                 "zombies" => After("#spawnzombie "),
                 "vehicle" => After("#spawnvehicle "),
@@ -145,13 +145,23 @@ public sealed partial class MainViewModel
     public bool GmHeightFromPlayers { get => Settings.GmHeightFromPlayers; set { Settings.GmHeightFromPlayers = value; Raise(); UpdateGmSpot(); } }
     public bool GmHeightFromVehicles { get => Settings.GmHeightFromVehicles; set { Settings.GmHeightFromVehicles = value; Raise(); UpdateGmSpot(); } }
 
-    // ---- vehicles (#ListSpawnedVehicles), only used for heights
+    // ---- vehicles (#ListSpawnedVehicles): a map layer, and one of the GM height sources
 
     private ICommand? _refreshVehicles, _pasteVehicles;
 
     public string GmVehiclesLabel => _profile.VehiclesListedAt is { } at
         ? $"Nearest vehicle height ({_profile.Vehicles.Count}, listed {at:MMM d HH:mm})"
-        : "Nearest vehicle height (not listed yet)";
+        : "Nearest vehicle height (list them under Layers → Vehicles)";
+
+    public IReadOnlyList<VehicleRecord> MapVehicles => _profile.Vehicles;
+
+    private bool _mapShowVehicles;
+    public bool MapShowVehicles { get => _mapShowVehicles; set { if (Set(ref _mapShowVehicles, value)) MapChanged?.Invoke(); } }
+
+    public string MapVehiclesLabel => $"Vehicles ({_profile.Vehicles.Count})";
+    public string MapVehiclesTip => _profile.VehiclesListedAt is { } at
+        ? $"Spawned vehicles from the #ListSpawnedVehicles output read {at:MMM d HH:mm}"
+        : "No #ListSpawnedVehicles output read yet: press Refresh, or Paste output you copied";
 
     public ICommand RefreshVehiclesCommand => _refreshVehicles ??= new AsyncCommand(async () =>
     {
@@ -174,6 +184,10 @@ public sealed partial class MainViewModel
         _profile.Vehicles = parsed;
         _profile.VehiclesListedAt = DateTime.Now;
         Raise(nameof(GmVehiclesLabel));
+        Raise(nameof(MapVehiclesLabel));
+        Raise(nameof(MapVehiclesTip));
+        MapShowVehicles = true;
+        MapChanged?.Invoke();
         UpdateGmSpot();
         Status = $"Read {parsed.Count} vehicle position(s).";
         Save();

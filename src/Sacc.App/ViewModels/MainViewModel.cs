@@ -190,7 +190,8 @@ public sealed partial class MainViewModel : ObservableObject
     public Bookmark? SelectedBookmark { get => _selectedBookmark; set { if (Set(ref _selectedBookmark, value)) CommandManager.InvalidateRequerySuggested(); } }
 
     private string _bookmarkTarget = "";
-    public string BookmarkTarget { get => _bookmarkTarget; set => Set(ref _bookmarkTarget, value); }
+    public string BookmarkTarget { get => _bookmarkTarget; set { if (Set(ref _bookmarkTarget, value)) Raise(nameof(CaptureLocationLabel)); } }
+    public string CaptureLocationLabel => string.IsNullOrWhiteSpace(_bookmarkTarget) ? "Capture my location" : "Capture target's location";
 
     private MacroViewModel? _selectedMacro;
     public MacroViewModel? SelectedMacro { get => _selectedMacro; set { if (Set(ref _selectedMacro, value)) CommandManager.InvalidateRequerySuggested(); } }
@@ -530,8 +531,8 @@ public sealed partial class MainViewModel : ObservableObject
 
     private async Task CaptureLocationAsync()
     {
-        var target = string.IsNullOrWhiteSpace(BookmarkTarget) ? Settings.MySteamId : BookmarkTarget;
-        if (string.IsNullOrWhiteSpace(target)) { Status = "Set a target player, or your own SteamID64 in Settings."; return; }
+        // No target = you: your SteamID64 if Settings has it, else #Location with no player (the game's own default).
+        var target = (string.IsNullOrWhiteSpace(BookmarkTarget) ? Settings.MySteamId : BookmarkTarget).Trim();
 
         string? output;
         if (Settings.DryRun)
@@ -549,8 +550,14 @@ public sealed partial class MainViewModel : ObservableObject
             output = await CaptureAsync(r.Text);
         }
 
-        if (!Parsing.TryParseLocation(output, out var v)) { Status = "Couldn't find X/Y/Z coordinates in the clipboard."; return; }
-        var b = new Bookmark { Name = $"Captured {DateTime.Now:HH:mm:ss}", X = v.X, Y = v.Y, Z = v.Z };
+        if (!Parsing.TryParseLocation(output, out var v))
+        {
+            Status = "Couldn't find X/Y/Z coordinates in the clipboard."
+                     + (target.Length == 0 ? " If the game wants a player, set your SteamID64 in Settings." : "");
+            return;
+        }
+        var who = target.Length == 0 || target == Settings.MySteamId.Trim() ? "Me" : target;
+        var b = new Bookmark { Name = $"{who} {DateTime.Now:HH:mm:ss}", X = v.X, Y = v.Y, Z = v.Z };
         Bookmarks.Add(b);
         SelectedBookmark = b;
         Status = $"Saved location {v}.";

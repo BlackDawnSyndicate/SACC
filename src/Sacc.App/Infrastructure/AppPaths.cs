@@ -24,6 +24,15 @@ public static class AppPaths
         File.Exists(Path.Combine(Root, "sah-item-ids.json"))
             ? Path.Combine(Root, "sah-item-ids.json")
             : Path.Combine(AppContext.BaseDirectory, "data", "sah-item-ids.json");
+
+    /// <summary>The game's #ListItems list; Spawner → Refresh from game writes a newer copy to the data folder.</summary>
+    public static string UserGameItems => Path.Combine(Root, "game-items.json");
+    public static string ActiveGameItems =>
+        File.Exists(UserGameItems) ? UserGameItems : Path.Combine(AppContext.BaseDirectory, "data", "game-items.json");
+
+    /// <summary>SCUM's client log, where #ListItems output ends up.</summary>
+    public static string ScumClientLog =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SCUM", "Saved", "Logs", "SCUM.log");
 }
 
 public static class FileLog

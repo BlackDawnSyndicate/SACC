@@ -230,7 +230,7 @@ public sealed class HistoryEntry
 
 public sealed class Profile
 {
-    public const int CurrentVersion = 1;
+    public const int CurrentVersion = 2;
     /// <summary>0 = saved before SACC 0.3.3, which added versioning; <see cref="Migrate"/> brings it up to date.</summary>
     public int Version { get; set; }
     public Settings Settings { get; set; } = new();
@@ -239,6 +239,17 @@ public sealed class Profile
     {
         // 1: magazines spawn full by default. Older profiles saved every kit with Fill magazines off.
         if (Version < 1) foreach (var k in Kits) k.FillMagazines = true;
+        // 2: animal blueprints renamed to what the game accepts (BP_Wolf3 → BP_Wolf, …).
+        if (Version < 2)
+        {
+            if (Settings.Gm.TryGetValue("animals", out var a)) a.Type = GmSpawn.CurrentAnimal(a.Type);
+            foreach (var k in Kits)
+            {
+                foreach (var i in k.Items) if (i.Code != null) i.Code = GmSpawn.FixAnimalCommand(i.Code);
+                k.ExtraCommands = k.ExtraCommands.Select(GmSpawn.FixAnimalCommand).ToList();
+            }
+            foreach (var m in Macros) m.Script = string.Join("\n", m.Script.Split('\n').Select(GmSpawn.FixAnimalCommand));
+        }
         Version = CurrentVersion;
     }
 

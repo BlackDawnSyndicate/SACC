@@ -25,6 +25,33 @@ public static partial class GmSpawn
         new Action("kit", "Kit", "spawn-item", null, null),
     };
 
+    /// <summary>The #SpawnAnimal blueprints the game's own chat autocomplete offers (read off it in game, 2026-11-01).</summary>
+    public static readonly IReadOnlyList<string> Animals = new[]
+    {
+        "BP_Bear", "BP_Boar", "BP_Chicken", "BP_Deer", "BP_Donkey", "BP_Goat", "BP_Horse", "BP_Rabbit", "BP_Wolf",
+        "BP_Bear_Mutant", "BP_Boar_Mutant", "BP_Deer_Mutant", "BP_Wolf_Mutant", "BP_BTBear_Mutant_ApexHunt",
+    };
+
+    /// <summary>Older animal blueprint names (SAH's table) the game no longer accepts, and their current names.</summary>
+    private static readonly Dictionary<string, string> RenamedAnimals = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["BP_Bear2"] = "BP_Bear", ["BP_Deer2"] = "BP_Deer", ["BP_Donkey2"] = "BP_Donkey", ["BP_Goat2"] = "BP_Goat",
+        ["BP_Horse2"] = "BP_Horse", ["BP_Rabbit2"] = "BP_Rabbit", ["BP_Wolf3"] = "BP_Wolf",
+    };
+
+    /// <summary>The current name for an animal blueprint, or the name unchanged.</summary>
+    public static string CurrentAnimal(string name) => RenamedAnimals.GetValueOrDefault(name.Trim(), name);
+
+    /// <summary>Fixes the animal in a "#SpawnAnimal BP_x [n]" line; anything else is returned unchanged.</summary>
+    public static string FixAnimalCommand(string line)
+    {
+        var m = SpawnAnimalLine().Match(line);
+        return m.Success ? m.Groups[1].Value + CurrentAnimal(m.Groups[2].Value) + m.Groups[3].Value : line;
+    }
+
+    [GeneratedRegex(@"^(\s*#SpawnAnimal\s+)(\S+)(.*)$", RegexOptions.IgnoreCase)]
+    private static partial Regex SpawnAnimalLine();
+
     /// <summary>
     /// Chat lines for a catalog action at <paramref name="at"/>. Entries with a count parameter
     /// get it once (large item spawns split later, like every send); entries without one are

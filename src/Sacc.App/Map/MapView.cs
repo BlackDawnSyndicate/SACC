@@ -32,6 +32,7 @@ public sealed class MapView : FrameworkElement
     private static readonly Brush OfflineFill = Frozen(new SolidColorBrush(Color.FromRgb(0xB0, 0xB0, 0xB0)));
     private static readonly Brush FlagFill = Frozen(new SolidColorBrush(Color.FromRgb(0xE8, 0x3A, 0x3A)));
     private static readonly Pen FlagPole = Frozen(new Pen(Brushes.Black, 2));
+    private static readonly Brush VehicleFill = Frozen(new SolidColorBrush(Color.FromRgb(0x2E, 0xA8, 0xE0)));
     private static readonly Brush BookmarkFill = Frozen(new SolidColorBrush(Color.FromRgb(0xFF, 0xA0, 0x2E)));
     private static readonly Brush LabelBack = Frozen(new SolidColorBrush(Color.FromArgb(0xB0, 0, 0, 0)));
     private static readonly Typeface LabelFace = new("Segoe UI");
@@ -62,6 +63,11 @@ public sealed class MapView : FrameworkElement
     private bool _showPlayers;
     public bool ShowFlags { get => _showFlags; set { _showFlags = value; InvalidateVisual(); } }
     private bool _showFlags;
+    /// <summary>Vehicles from the last #ListSpawnedVehicles output.</summary>
+    public IReadOnlyList<VehicleRecord> Vehicles { get => _vehicles; set { _vehicles = value ?? Array.Empty<VehicleRecord>(); InvalidateVisual(); } }
+    private IReadOnlyList<VehicleRecord> _vehicles = Array.Empty<VehicleRecord>();
+    public bool ShowVehicles { get => _showVehicles; set { _showVehicles = value; InvalidateVisual(); } }
+    private bool _showVehicles;
     public bool ShowBookmarks { get => _showBookmarks; set { _showBookmarks = value; InvalidateVisual(); } }
     private bool _showBookmarks = true;
 
@@ -209,6 +215,15 @@ public sealed class MapView : FrameworkElement
                 dc.DrawLine(FlagPole, new Point(p.X, p.Y), new Point(p.X, p.Y - 14));
                 dc.DrawGeometry(FlagFill, MarkerOutline, g);
                 if (_zoom >= 3) Label(dc, f.Label, p, 6);
+            }
+
+        if (_showVehicles)
+            foreach (var v in _vehicles)
+            {
+                var (mx, my) = _projection.ToMap(v.Location.X, v.Location.Y);
+                var p = ToScreen(mx, my);
+                dc.DrawRoundedRectangle(VehicleFill, MarkerOutline, new Rect(p.X - 6, p.Y - 4, 12, 8), 2, 2);
+                if (_zoom >= 3) Label(dc, v.Code.StartsWith("BPC_", StringComparison.OrdinalIgnoreCase) ? v.Code[4..] : v.Code, p, 6);
             }
 
         if ((_showPlayers || _showOnline) && _players != null)

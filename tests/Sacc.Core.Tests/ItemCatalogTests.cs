@@ -32,6 +32,44 @@ public class ItemCatalogTests
     }
 
     [Fact]
+    public void GameListSpellingWinsAndUnlistedSortLast()
+    {
+        var game = new[] { "magazine_m16", "Weapon_M16", "Animal_skin", "Apex_Jacket_01" };
+        var c = new ItemCatalog(Table.Append("Animal_Skin").Append(""), extraItems: new[] { "Bikers_Logo_Jacket_01" }, gameItems: game);
+        Assert.Equal(new[] { "Animal_skin", "Apex_Jacket_01", "magazine_m16", "Weapon_M16",
+                             "Banana", "Bikers_Logo_Jacket_01", "M1_Clip", "Magazine_AK47", "Magnifying_Glass" }, c.Items);
+        Assert.True(c.IsUnlisted("Banana"));
+        Assert.True(c.IsUnlisted("bikers_logo_jacket_01"));
+        Assert.False(c.IsUnlisted("Animal_Skin"));
+        // Within a rank, codes the game lists come first.
+        Assert.Equal(new[] { "magazine_m16", "Magazine_AK47", "Magnifying_Glass" }, ItemCatalog.Filter(c.Items, "mag", unlisted: c.Unlisted));
+    }
+
+    [Fact]
+    public void NoGameListMeansNothingUnlisted() => Assert.Empty(new ItemCatalog(Table).Unlisted);
+
+    [Fact]
+    public void GameItemList_ReadsFullListsFromTheClientLog()
+    {
+        var log = new System.Text.StringBuilder();
+        void Line(string s) => log.Append($"[2026.11.01-15.52.31:034][879]LogSCUM: {s}\r\n");
+        // A filtered search, then a full list (entries are indented, chat echoes have one space).
+        Line("START OF 'Item' LIST"); Line("    Magazine_M16"); Line("END OF 'Item' LIST");
+        Line("START OF 'Item' LIST");
+        for (int i = 0; i < GameItemList.MinFullList; i++) { Line($"    Item_{i:D4}"); Line($"Sender player state null for message Item_{i:D4}!"); }
+        Line("END OF 'Item' LIST");
+        Line("START OF 'Vehicle' LIST"); Line("    BPC_Rager"); Line("END OF 'Vehicle' LIST");
+        log.Append("[2026.11.01-15.53.00:000][1]LogSCUM: START OF 'Item' LIST\r\n[x]LogSCUM:     Unfinished\r\n");
+
+        var lists = GameItemList.ParseLists(log.ToString());
+        Assert.Equal(new[] { 1, GameItemList.MinFullList }, lists.Select(l => l.Count));
+        var full = GameItemList.LastFullList(log.ToString())!;
+        Assert.Equal("Item_0000", full[0]);
+        Assert.DoesNotContain(full, i => i.StartsWith("Sender"));
+        Assert.Null(GameItemList.LastFullList("nothing here"));
+    }
+
+    [Fact]
     public void MagazineMatcher()
     {
         var isMag = ItemCatalog.MagazineMatcher(new Settings().MagazinePattern);
