@@ -227,7 +227,12 @@ public sealed class MapView : FrameworkElement
                 dc.DrawRoundedRectangle(VehicleFill, MarkerOutline, new Rect(p.X - 6, p.Y - 4, 12, 8), 2, 2);
                 var name = v.Code.StartsWith("BPC_", StringComparison.OrdinalIgnoreCase) ? v.Code[4..] : v.Code;
                 // While filtering by car ID, the few cars left are labelled with their ID at any zoom.
-                if (_labelVehicleIds) Label(dc, v.Id.Length > 0 ? $"{name} #{v.Id}" : name, p, 6);
+                if (_labelVehicleIds)
+                {
+                    var owner = v.OwnerSteamId.Length == 0 ? null
+                        : _players?.FirstOrDefault(pl => pl.SteamId == v.OwnerSteamId) is { } o && o.Nickname.Length > 0 ? o.Nickname : v.OwnerSteamId;
+                    Label(dc, (v.Id.Length > 0 ? $"{name} #{v.Id}" : name) + (owner != null ? $" ({owner})" : ""), p, 6);
+                }
                 else if (_zoom >= 3) Label(dc, name, p, 6);
             }
 

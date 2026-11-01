@@ -266,6 +266,23 @@ public class ParsingTests
     }
 
     [Fact]
+    public void VehicleList_ReadsTheGamesLayout()
+    {
+        // #ListSpawnedVehicles true, as the game prints it (owner SteamIDs replaced).
+        const string text = """
+            #35968063: BPC_Laika   2026-10-27T18:08:29.000Z   X=70692.430 Y=-832217.688 Z=11666.905      0   No owner
+            #36045890: BPC_Kinglet_Duster   2026-10-29T16:10:49.000Z   X=-835068.250 Y=-149938.406 Z=24662.221   STEAMID:76561198000000011   VID:36045890   36045891   Can't Show Player's Id
+            #36123612: BPC_Kinglet_Duster   2026-10-29T16:11:23.000Z   X=-276212.438 Y=-36878.188 Z=35645.125      36123643   No owner
+            #36234277: BP_WheelBarrow_Metal   2026-10-31T10:03:00.000Z   X=-899902.375 Y=-40809.645 Z=35678.430      0   No owner
+            """;
+        var v = Parsing.ParseVehicleList(text);
+        Assert.Equal(new[] { "35968063", "36045890", "36123612", "36234277" }, v.Select(x => x.Id));
+        Assert.Equal(new[] { "BPC_Laika", "BPC_Kinglet_Duster", "BPC_Kinglet_Duster", "BP_WheelBarrow_Metal" }, v.Select(x => x.Code));
+        Assert.Equal(new[] { "", "76561198000000011", "", "" }, v.Select(x => x.OwnerSteamId));
+        Assert.Equal(new Vec3(-835068.250, -149938.406, 24662.221), v[1].Location);
+    }
+
+    [Fact]
     public void FlagList_IgnoresTextWithoutCoordinates() => Assert.Empty(Parsing.ParseFlagList("Flag ID: 1 Owner: Zed"));
 }
 

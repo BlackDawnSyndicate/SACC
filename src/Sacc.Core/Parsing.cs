@@ -166,13 +166,23 @@ public static partial class Parsing
     [GeneratedRegex(@"\bBPC?_\w+")]
     private static partial Regex Blueprint();
 
-    /// <summary>#ListSpawnedVehicles output, read the same tolerant way as flags: id, blueprint and X/Y/Z.</summary>
+    // The game's layout, one line per vehicle:
+    // "#36045890: BPC_Kinglet_Duster   2026-10-29T16:10:49.000Z   X=… Y=… Z=…   STEAMID:7656…   VID:36045890   36045891   Can't Show Player's Id"
+    [GeneratedRegex(@"^\s*#(\d+)\s*:", RegexOptions.Multiline)]
+    private static partial Regex VehicleId();
+
+    [GeneratedRegex(@"\bSTEAMID\s*:\s*(7656119\d{10})\b", RegexOptions.IgnoreCase)]
+    private static partial Regex VehicleOwner();
+
+    /// <summary>#ListSpawnedVehicles output: id ("#36045890:", or an "ID 123" field), blueprint, X/Y/Z and the owner's SteamID64 when it has one.</summary>
     public static List<VehicleRecord> ParseVehicleList(string? text) =>
         LocatedBlocks(text).Select(b => new VehicleRecord
         {
-            Id = FlagId().Match(b.Text) is { Success: true } id ? id.Groups[1].Value : "",
+            Id = VehicleId().Match(b.Text) is { Success: true } v ? v.Groups[1].Value
+               : FlagId().Match(b.Text) is { Success: true } id ? id.Groups[1].Value : "",
             Code = Blueprint().Match(b.Text) is { Success: true } c ? c.Value : "",
             Location = b.Location,
+            OwnerSteamId = VehicleOwner().Match(b.Text) is { Success: true } o ? o.Groups[1].Value : "",
         }).ToList();
 
     /// <summary>Records of undocumented layout: every line up to and including the next X/Y/Z triple.</summary>

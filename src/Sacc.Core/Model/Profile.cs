@@ -98,6 +98,8 @@ public sealed class VehicleRecord
     public string Id { get; set; } = "";
     public string Code { get; set; } = "";
     public Vec3 Location { get; set; }
+    /// <summary>The owner's SteamID64 ("STEAMID:…" in #ListSpawnedVehicles); empty for unowned vehicles.</summary>
+    public string OwnerSteamId { get; set; } = "";
 }
 
 /// <summary>A base flag from #ListFlags.</summary>
