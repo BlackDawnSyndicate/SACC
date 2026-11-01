@@ -65,6 +65,26 @@ public class GmSpawnTests
         Assert.Null(GmSpawn.NearbyHeight(markers, 200, 200, 6));
     }
 
+    [Fact]
+    public void ClimbHeights_GoFromBelowToAboveInSteps()
+    {
+        Assert.Equal(new[] { 9000d, 9300, 9600, 9900, 10200, 10500, 10800 }, GmSpawn.ClimbHeights(10000, 1000, 1000, 300));
+        Assert.Equal(21, GmSpawn.ClimbHeights(0, 3000, 3000, 300).Count);
+        Assert.Equal(new[] { -100d, -50, 0 }, GmSpawn.ClimbHeights(0, 100, 0, 1)); // steps never go below 50 cm
+    }
+
+    [Fact]
+    public void CountRefusals_CountsEachRefusedNpc()
+    {
+        const string log = "[t]LogSCUM: Sender player state null for message Cannot spawn at the specified location.!\r\n"
+                         + "[t]LogSCUM: Sender player state null for message Cannot spawn at the specified location.!\r\n"
+                         + "[t]LogSCUM: Sender player state null for message Spawned Soap.!\r\n";
+        Assert.Equal(2, GmSpawn.CountRefusals(log));
+        Assert.Equal(0, GmSpawn.CountRefusals(""));
+        Assert.True(GmSpawn.Actions.Single(a => a.Key == "npcs").GroundChecked);
+        Assert.False(GmSpawn.Actions.Single(a => a.Key == "zombies").GroundChecked);
+    }
+
     [Theory]
     [InlineData("#spawnanimal BP_Wolf3", "#spawnanimal BP_Wolf")]
     [InlineData("#SpawnAnimal BP_Bear2 3", "#SpawnAnimal BP_Bear 3")]

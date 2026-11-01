@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Globalization;
+using System.IO;
 using System.Windows.Input;
 using Sacc.App.Infrastructure;
 using Sacc.Core;
@@ -273,6 +274,7 @@ public sealed partial class MainViewModel
             if (a.HasType && string.IsNullOrWhiteSpace(a.Type)) { Status = $"Pick a type for {a.Label} in the GM panel first."; return; }
             var def = _catalog.Find(a.Action.CatalogId);
             if (def == null) { Status = $"The command catalog has no '{a.Action.CatalogId}' entry."; return; }
+            if (a.Action.GroundChecked && Settings.GmFindGround) { await GmClimbAsync(a, def, count, at); return; }
             var r = GmSpawn.Render(def, a.Action, a.Type, count, at);
             if (!r.Ok) { Status = $"{a.Label}: {string.Join("  ", r.Errors)}"; return; }
             lines = r.Text.Split('\n').ToList();
@@ -281,5 +283,66 @@ public sealed partial class MainViewModel
         if (lines.Count == 0) { Status = "Nothing to spawn."; return; }
         await ExecuteAsync(lines);
         Status += note;
+    }
+
+    public bool GmFindGround { get => Settings.GmFindGround; set { Settings.GmFindGround = value; Raise(); Save(); } }
+
+    /// <summary>
+    /// Ground-checked spawns (NPC squads) climb to the surface: send the spawn from below the height
+    /// guess upwards, step by step. The game refuses every step with no ground near it, which costs
+    /// nothing, and the first step it accepts is within one step of the ground, so the squad lands on it
+    /// instead of dropping from up to 30 m. See spikes/npc-spawn-ground.
+    /// </summary>
+    private async Task GmClimbAsync(GmActionViewModel a, CommandDef def, int count, Vec3 at)
+    {
+        // The guess without the height offset: the climb finds the surface itself.
+        var guess = at.Z - Settings.GmHeightOffset;
+        var heights = GmSpawn.ClimbHeights(guess, Settings.GmClimbRange, Settings.GmClimbRange, Settings.GmClimbStep);
+        var lines = new List<string>();
+        foreach (var z in heights)
+        {
+            var r = GmSpawn.Render(def, a.Action, a.Type, count, at with { Z = z });
+            if (!r.Ok) { Status = $"{a.Label}: {string.Join("  ", r.Errors)}"; return; }
+            lines.Add(r.Text);
+        }
+        var plan = FormattableString.Invariant($"Z {heights[0]:0} to {heights[^1]:0} in {Settings.GmClimbStep:0} cm steps");
+
+        if (Settings.DryRun)
+        {
+            foreach (var l in lines) Record(l, "dry run (climb)");
+            Status = $"Dry run: {a.Label} would climb {lines.Count} steps ({plan}), stopping at the first one the game accepts. Nothing sent.";
+            return;
+        }
+
+        var log = AppPaths.ScumClientLog;
+        if (!File.Exists(log)) { Status = $"Can't find the ground without SCUM's log ({log}). Turn off Find ground, or start SCUM once."; return; }
+
+        long seen = new FileInfo(log).Length;
+        var stoppedAt = -1;
+        var ok = await GuardedAsync(async ct =>
+        {
+            stoppedAt = await _game.SendUntilAsync(Settings, lines, async (i, token) =>
+            {
+                // A refusal shows up in the log almost at once; silence for the whole wait means it spawned.
+                for (var waited = 0; waited < Settings.GmClimbWaitMs; waited += 150)
+                {
+                    var length = new FileInfo(log).Length;
+                    if (length < seen) seen = 0; // the game restarted with a new log
+                    if (length > seen)
+                    {
+                        var refusals = GmSpawn.CountRefusals(await ReadSharedAsync(log, seen));
+                        seen = length;
+                        if (refusals > 0) { Record(lines[i], "refused (no ground near)"); return false; }
+                    }
+                    await Task.Delay(150, token);
+                }
+                Record(lines[i], "sent");
+                return true;
+            }, _ownWindow(), ct);
+        });
+        if (!ok) return;
+        Status = stoppedAt >= 0
+            ? FormattableString.Invariant($"{a.Label} spawned at Z {heights[stoppedAt]:0} after {stoppedAt} refused step(s): the ground is within about 3 m below that.")
+            : $"{a.Label}: the game refused every step ({plan}). The ground is further from the height guess; widen the climb range or set a height.";
     }
 }

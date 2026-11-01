@@ -10,13 +10,20 @@ namespace Sacc.Core;
 /// </summary>
 public static partial class GmSpawn
 {
-    /// <summary>One GM action: which catalog entry it uses and which of its parameters take the type and count.</summary>
-    public sealed record Action(string Key, string Label, string CatalogId, string? TypeParam, string? CountParam, string? FixedType = null);
+    /// <summary>
+    /// One GM action: which catalog entry it uses and which of its parameters take the type and count.
+    /// <paramref name="GroundChecked"/>: the game refuses this spawn ("Cannot spawn at the specified
+    /// location.") when no ground is near the given Z, so SACC can climb to the surface (see <see cref="ClimbHeights"/>).
+    /// </summary>
+    public sealed record Action(string Key, string Label, string CatalogId, string? TypeParam, string? CountParam, string? FixedType = null,
+                                bool GroundChecked = false);
 
+    // Ground-checked was measured in game (spikes/npc-spawn-ground): #SpawnArmedNPC refuses a spot 10 m underground;
+    // #SpawnZombie, #SpawnAnimal and #SpawnRazor accept it.
     public static readonly IReadOnlyList<Action> Actions = new[]
     {
         new Action("animals", "Animals", "spawn-animal", "animal", "amount"),
-        new Action("npcs", "NPC squad", "spawn-armed-npc", "npc", "amount"),
+        new Action("npcs", "NPC squad", "spawn-armed-npc", "npc", "amount", GroundChecked: true),
         new Action("zombies", "Zombie group", "spawn-zombie", "zombie", "amount"),
         new Action("beepers", "Beepers", "spawn-zombie", "zombie", "amount", FixedType: "BP_Zombie_SuicideVest"),
         new Action("razors", "Razors", "spawn-razor", null, null),
@@ -69,6 +76,31 @@ public static partial class GmSpawn
             return new TemplateRenderer.Result(r.Text, new[] { $"The '{def.Id}' catalog entry has no {{coords}} parameter, so it can't spawn at a spot." });
         var repeat = action.CountParam == null ? Math.Max(1, count) : 1;
         return new TemplateRenderer.Result(string.Join("\n", Enumerable.Repeat(r.Text, repeat)), r.Errors);
+    }
+
+    /// <summary>What the game says, once per NPC, when there's no ground near the requested Z. A successful spawn says nothing.</summary>
+    public const string RefusalText = "Cannot spawn at the specified location.";
+
+    public static int CountRefusals(string? logText)
+    {
+        if (string.IsNullOrEmpty(logText)) return 0;
+        int n = 0, i = 0;
+        while ((i = logText.IndexOf(RefusalText, i, StringComparison.Ordinal)) >= 0) { n++; i += RefusalText.Length; }
+        return n;
+    }
+
+    /// <summary>
+    /// Heights to try, lowest first. The game accepts a ground-checked spawn when the ground is from about
+    /// 3 m above to 20-30 m below Z, never spawns it underground, and spawns it in mid-air when Z is high.
+    /// Climbing up from below the lowest likely ground means every step under the surface is refused (free),
+    /// and the first accepted step is within one <paramref name="step"/> of it, so the spawn lands on the ground.
+    /// </summary>
+    public static List<double> ClimbHeights(double guess, double below, double above, double step)
+    {
+        step = Math.Max(50, Math.Abs(step));
+        var heights = new List<double>();
+        for (var z = guess - Math.Abs(below); z <= guess + Math.Abs(above) + 0.001; z += step) heights.Add(Math.Round(z, 2));
+        return heights;
     }
 
     [GeneratedRegex(@"^#SpawnItem\s", RegexOptions.IgnoreCase)]

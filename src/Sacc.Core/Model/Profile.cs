@@ -50,6 +50,15 @@ public sealed class Settings
     public bool GmHeightFromMe { get; set; } = true;
     public bool GmHeightFromPlayers { get; set; } = true;
     public bool GmHeightFromVehicles { get; set; } = true;
+    /// <summary>
+    /// Ground-checked GM spawns (NPC squads) climb to the surface: from the height guess minus
+    /// <see cref="GmClimbRange"/> up to plus it, in <see cref="GmClimbStep"/> steps, stopping at the first
+    /// step the game doesn't refuse. Each step waits up to <see cref="GmClimbWaitMs"/> for a refusal in SCUM's log.
+    /// </summary>
+    public bool GmFindGround { get; set; } = true;
+    public double GmClimbRange { get; set; } = 3000;
+    public double GmClimbStep { get; set; } = 300;
+    public int GmClimbWaitMs { get; set; } = 2000;
     public bool GmHeightFromLocations { get; set; } = true;
     /// <summary>When on, GM spawns use <see cref="GmSetHeight"/> and ignore every other source.</summary>
     public bool GmUseSetHeight { get; set; }

@@ -614,6 +614,10 @@
                                     <TextBlock Text="Height offset (cm)" VerticalAlignment="Center"
                                                ToolTip="Added to whichever height is used; 100 = 1 m higher, negative = lower"/>
                                 </DockPanel>
+                                <CheckBox IsChecked="{Binding GmFindGround}" Margin="0,0,0,6"
+                                          ToolTip="The game refuses an NPC spawn with no ground near its Z, and spawns it in mid-air when Z is high. With this on, NPC squads are sent from 30 m below the height guess upwards in 3 m steps; refused steps cost nothing, and the first accepted one is on the ground. Needs SCUM's log (%LOCALAPPDATA%\SCUM\Saved\Logs). Zombies, animals and razors aren't checked by the game, so they use the height as-is.">
+                                    <TextBlock Text="Find the ground for NPC squads (climb until the game accepts)" TextWrapping="Wrap"/>
+                                </CheckBox>
                                 <ItemsControl ItemsSource="{Binding GmActions}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>

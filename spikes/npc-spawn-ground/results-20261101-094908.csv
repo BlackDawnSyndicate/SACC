@@ -1,0 +1,4 @@
+"Sweep","DistM","DzCm","X","Y","Z","Result","Note","Line"
+"height","5","1000","-112570.203","-58977.457","38432.148","spawned","","#SpawnArmedNPC BP_Drifter_Lvl_1 1 Location ""-112570.2 -58977.46 38432.15"""
+"height","5","2000","-112570.203","-58977.457","39432.148","spawned","","#SpawnArmedNPC BP_Drifter_Lvl_1 1 Location ""-112570.2 -58977.46 39432.15"""
+"height","5","3000","-112570.203","-58977.457","40432.148","REFUSED","","#SpawnArmedNPC BP_Drifter_Lvl_1 1 Location ""-112570.2 -58977.46 40432.15"""

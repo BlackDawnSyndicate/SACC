@@ -63,6 +63,28 @@ public sealed class GameLink
         }
     }
 
+    /// <summary>
+    /// Sends lines one at a time in one chat session. After each one, <paramref name="stopAfter"/> decides
+    /// whether to stop (e.g. the game accepted it). Returns the index it stopped at, or -1 if it sent them all.
+    /// </summary>
+    public async Task<int> SendUntilAsync(Settings settings, IReadOnlyList<string> lines, Func<int, CancellationToken, Task<bool>> stopAfter,
+                                          IntPtr returnTo, CancellationToken ct)
+    {
+        await _gate.WaitAsync(ct);
+        string? saved = settings.RestoreClipboard && settings.InputMode == InputMode.Paste ? TryGetClipboardText() : null;
+        try
+        {
+            var game = RequireGame(settings);
+            return await SendBatchAsync(settings, game, lines, ct, stopAfter: stopAfter);
+        }
+        finally
+        {
+            if (saved != null) SetClipboardText(saved);
+            _gate.Release();
+            if (settings.ReturnFocusToSacc && returnTo != IntPtr.Zero) SetForegroundWindow(returnTo);
+        }
+    }
+
     /// <summary>Send one line and wait for the game to place its output on the clipboard.</summary>
     public async Task<string?> SendAndCaptureAsync(Settings settings, string line, IntPtr returnTo, CancellationToken ct)
     {
@@ -109,7 +131,8 @@ public sealed class GameLink
     /// open-chat key again would type it into the box ("t#SpawnItem …" as plain chat).
     /// Instead: open chat once, select-all + enter each line, and Escape at the end.
     /// </summary>
-    private async Task SendBatchAsync(Settings s, GameStatus game, IReadOnlyList<string> lines, CancellationToken ct, Action? afterEnter = null)
+    private async Task<int> SendBatchAsync(Settings s, GameStatus game, IReadOnlyList<string> lines, CancellationToken ct, Action? afterEnter = null,
+                                           Func<int, CancellationToken, Task<bool>>? stopAfter = null)
     {
         if (!await FocusAsync(game, ct))
         {
@@ -154,7 +177,9 @@ public sealed class GameLink
                 afterEnter?.Invoke();
                 if (!s.ChatStaysOpenAfterSend) chatOpen = false;
                 await Task.Delay(s.AfterSendDelayMs, ct);
+                if (stopAfter != null && await stopAfter(i, ct)) return i;
             }
+            return -1;
         }
         finally
         {
