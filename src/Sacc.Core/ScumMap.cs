@@ -140,7 +140,8 @@ public sealed class ScumMapClient
                 m.TryGetProperty("categoryId", out var c) && c.ValueKind == JsonValueKind.Number ? c.GetInt32() : 0,
                 Str(m, "title") ?? "",
                 Num(m, "longitude"), Num(m, "latitude"),
-                m.TryGetProperty("ingameHeight", out var h) && h.ValueKind == JsonValueKind.Number ? h.GetDouble() : null))
+                // About 220 markers (fishing spots, villages, POIs) have a height of exactly 0: never measured, not sea level.
+                m.TryGetProperty("ingameHeight", out var h) && h.ValueKind == JsonValueKind.Number && h.GetDouble() != 0 ? h.GetDouble() : null))
             .ToList();
     }
 

@@ -74,6 +74,44 @@ public class GmSpawnTests
     }
 
     [Fact]
+    public void ClimbPlan_TriesTheGuessThenAboveThenBelow()
+    {
+        var plan = GmSpawn.ClimbPlan(10000, 1000, 500);
+        Assert.Equal(new[] { 9000d, 9500, 10000, 10500, 11000 }, plan.Take(5));                       // guess ± range, from below
+        Assert.Equal(new[] { 11500d, 12000, 12500, 13000, 13500, 14000 }, plan.Skip(5).Take(6));    // then up to guess + 4×range
+        Assert.Equal(new[] { 6000d, 6500, 7000, 7500, 8000, 8500 }, plan.Skip(11));                  // then guess − 4×range … − range
+        Assert.Equal(plan.Count, plan.Distinct().Count());
+    }
+
+    [Fact]
+    public void EstimateHeight_WeighsTheNearestMarkersAtAnyDistance()
+    {
+        var markers = new[]
+        {
+            new MapMarker(1, 1, "a", 0, 0, 1000),
+            new MapMarker(2, 1, "b", 10, 0, 3000),
+            new MapMarker(3, 1, "no height", 5, 0, null),
+            new MapMarker(4, 1, "far", 300, 300, 99999),
+        };
+        Assert.Equal(2000, GmSpawn.EstimateHeight(markers, 5, 0, out var far, k: 2)!.Value, 6); // equidistant → average
+        Assert.Equal(5, far);
+        Assert.True(GmSpawn.EstimateHeight(markers, 1, 0, out _, k: 2) < 1100);                    // closer marker dominates
+        Assert.Null(GmSpawn.EstimateHeight(Array.Empty<MapMarker>(), 0, 0, out _));
+    }
+
+    [Fact]
+    public void ParseMarkers_TreatsZeroHeightAsUnknown()
+    {
+        const string json = """
+            {"data":{"mapTemplate":{"layer":{"markerList":[
+            {"id":1,"categoryId":2,"title":"Village","longitude":1,"latitude":2,"ingameHeight":0},
+            {"id":2,"categoryId":2,"title":"Cave","longitude":1,"latitude":2,"ingameHeight":-120.5},
+            {"id":3,"categoryId":2,"title":"Bunker","longitude":1,"latitude":2,"ingameHeight":36967}]}}}}
+            """;
+        Assert.Equal(new double?[] { null, -120.5, 36967 }, ScumMapClient.ParseMarkers(json).Select(m => m.Height));
+    }
+
+    [Fact]
     public void CountRefusals_CountsEachRefusedNpc()
     {
         const string log = "[t]LogSCUM: Sender player state null for message Cannot spawn at the specified location.!\r\n"

@@ -67,6 +67,8 @@ public sealed class MapView : FrameworkElement
     public IReadOnlyList<VehicleRecord> Vehicles { get => _vehicles; set { _vehicles = value ?? Array.Empty<VehicleRecord>(); InvalidateVisual(); } }
     private IReadOnlyList<VehicleRecord> _vehicles = Array.Empty<VehicleRecord>();
     public bool ShowVehicles { get => _showVehicles; set { _showVehicles = value; InvalidateVisual(); } }
+    public bool LabelVehicleIds { get => _labelVehicleIds; set { _labelVehicleIds = value; InvalidateVisual(); } }
+    private bool _labelVehicleIds;
     private bool _showVehicles;
     public bool ShowBookmarks { get => _showBookmarks; set { _showBookmarks = value; InvalidateVisual(); } }
     private bool _showBookmarks = true;
@@ -223,7 +225,10 @@ public sealed class MapView : FrameworkElement
                 var (mx, my) = _projection.ToMap(v.Location.X, v.Location.Y);
                 var p = ToScreen(mx, my);
                 dc.DrawRoundedRectangle(VehicleFill, MarkerOutline, new Rect(p.X - 6, p.Y - 4, 12, 8), 2, 2);
-                if (_zoom >= 3) Label(dc, v.Code.StartsWith("BPC_", StringComparison.OrdinalIgnoreCase) ? v.Code[4..] : v.Code, p, 6);
+                var name = v.Code.StartsWith("BPC_", StringComparison.OrdinalIgnoreCase) ? v.Code[4..] : v.Code;
+                // While filtering by car ID, the few cars left are labelled with their ID at any zoom.
+                if (_labelVehicleIds) Label(dc, v.Id.Length > 0 ? $"{name} #{v.Id}" : name, p, 6);
+                else if (_zoom >= 3) Label(dc, name, p, 6);
             }
 
         if ((_showPlayers || _showOnline) && _players != null)

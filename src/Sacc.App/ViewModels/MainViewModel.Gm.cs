@@ -122,7 +122,8 @@ public sealed partial class MainViewModel
         if (Settings.GmUseSetHeight) { z = Settings.GmSetHeight; source = "set height"; }
         else if (Settings.GmHeightFromMarkers && MapPointMarker?.Height is { } mh) { z = mh; source = $"from {MapPointMarker.Title}"; }
         else if (NearbyGround(p) is { } g) { z = g.Z; source = g.Source; }
-        else { z = Settings.MapTeleportZ; source = "nothing within 300 m: the Map Z setting"; }
+        else if (EstimatedGround(p) is { } e) { z = e.Z; source = e.Source; }
+        else { z = Settings.MapTeleportZ; source = "no map markers: the Map Z setting"; }
         if (Settings.GmHeightOffset != 0)
         {
             z += Settings.GmHeightOffset;
@@ -154,12 +155,33 @@ public sealed partial class MainViewModel
         ? $"Nearest vehicle height ({_profile.Vehicles.Count}, listed {at:MMM d HH:mm})"
         : "Nearest vehicle height (list them under Layers → Vehicles)";
 
-    public IReadOnlyList<VehicleRecord> MapVehicles => _profile.Vehicles;
+    /// <summary>The vehicles the map draws: all of them, or those whose ID starts with <see cref="MapVehicleIdFilter"/>.</summary>
+    public IReadOnlyList<VehicleRecord> MapVehicles => _mapVehicleIdFilter.Length == 0
+        ? _profile.Vehicles
+        : _profile.Vehicles.Where(v => v.Id.StartsWith(_mapVehicleIdFilter, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    private string _mapVehicleIdFilter = "";
+    /// <summary>Car ID typed in the Vehicles layer; narrows the map as you type and centres on the car once one is left.</summary>
+    public string MapVehicleIdFilter
+    {
+        get => _mapVehicleIdFilter;
+        set
+        {
+            if (!Set(ref _mapVehicleIdFilter, (value ?? "").Trim())) return;
+            var shown = MapVehicles;
+            Raise(nameof(MapVehiclesLabel));
+            if (_mapVehicleIdFilter.Length > 0) MapShowVehicles = true;
+            MapChanged?.Invoke();
+            if (_mapVehicleIdFilter.Length > 0 && shown.Count == 1) MapGoRequested?.Invoke(shown[0].Location, 4);
+        }
+    }
 
     private bool _mapShowVehicles;
     public bool MapShowVehicles { get => _mapShowVehicles; set { if (Set(ref _mapShowVehicles, value)) MapChanged?.Invoke(); } }
 
-    public string MapVehiclesLabel => $"Vehicles ({_profile.Vehicles.Count})";
+    public string MapVehiclesLabel => _mapVehicleIdFilter.Length == 0
+        ? $"Vehicles ({_profile.Vehicles.Count})"
+        : $"Vehicles ({MapVehicles.Count} of {_profile.Vehicles.Count})";
     public string MapVehiclesTip => _profile.VehiclesListedAt is { } at
         ? $"Spawned vehicles from the #ListSpawnedVehicles output read {at:MMM d HH:mm}"
         : "No #ListSpawnedVehicles output read yet: press Refresh, or Paste output you copied";
@@ -251,6 +273,18 @@ public sealed partial class MainViewModel
         return best;
     }
 
+    /// <summary>Nothing within 300 m: estimate from the nearest map markers with a height, however far.</summary>
+    private (double Z, string Source)? EstimatedGround(Vec3 p)
+    {
+        if (_map == null) return null;
+        var projection = new MapProjection(_map.Template.Settings);
+        var (mx, my) = projection.ToMap(p.X, p.Y);
+        var (ex, _) = projection.ToMap(p.X + 100, p.Y);
+        var mapUnitsPerMetre = Math.Abs(ex - mx);
+        if (GmSpawn.EstimateHeight(_map.Markers, mx, my, out var farthest) is not { } h) return null;
+        return (h, FormattableString.Invariant($"estimated from the 6 nearest map markers, up to {farthest / mapUnitsPerMetre:0} m away"));
+    }
+
     private async Task GmSpawnAsync(GmActionViewModel a)
     {
         if (_gmSpot is not { } at) return;
@@ -297,7 +331,7 @@ public sealed partial class MainViewModel
     {
         // The guess without the height offset: the climb finds the surface itself.
         var guess = at.Z - Settings.GmHeightOffset;
-        var heights = GmSpawn.ClimbHeights(guess, Settings.GmClimbRange, Settings.GmClimbRange, Settings.GmClimbStep);
+        var heights = GmSpawn.ClimbPlan(guess, Settings.GmClimbRange, Settings.GmClimbStep);
         var lines = new List<string>();
         foreach (var z in heights)
         {
@@ -305,12 +339,14 @@ public sealed partial class MainViewModel
             if (!r.Ok) { Status = $"{a.Label}: {string.Join("  ", r.Errors)}"; return; }
             lines.Add(r.Text);
         }
-        var plan = FormattableString.Invariant($"Z {heights[0]:0} to {heights[^1]:0} in {Settings.GmClimbStep:0} cm steps");
+        var range = Settings.GmClimbRange;
+        var plan = FormattableString.Invariant(
+            $"Z {guess - range:0} to {guess + range:0}, then up to {guess + 4 * range:0}, then {guess - 4 * range:0} to {guess - range:0}, in {Settings.GmClimbStep:0} cm steps");
 
         if (Settings.DryRun)
         {
             foreach (var l in lines) Record(l, "dry run (climb)");
-            Status = $"Dry run: {a.Label} would climb {lines.Count} steps ({plan}), stopping at the first one the game accepts. Nothing sent.";
+            Status = $"Dry run: {a.Label} would climb up to {lines.Count} steps ({plan}), stopping at the first one the game accepts. Guess: {GmHeightText}. Nothing sent.";
             return;
         }
 
@@ -343,6 +379,6 @@ public sealed partial class MainViewModel
         if (!ok) return;
         Status = stoppedAt >= 0
             ? FormattableString.Invariant($"{a.Label} spawned at Z {heights[stoppedAt]:0} after {stoppedAt} refused step(s): the ground is within about 3 m below that.")
-            : $"{a.Label}: the game refused every step ({plan}). The ground is further from the height guess; widen the climb range or set a height.";
+            : $"{a.Label}: the game refused every step ({plan}). The ground is further from the height guess ({GmHeightText}); widen the climb range or set a height.";
     }
 }

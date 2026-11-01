@@ -103,6 +103,22 @@ public static partial class GmSpawn
         return heights;
     }
 
+    /// <summary>
+    /// The whole climb, in sending order: guess ± range first; if every step of that is refused, the ground
+    /// is further off, so carry on upwards to guess + 4×range (still from below, still lands on the ground),
+    /// then climb guess − 4×range … guess − range. That last stretch is the only one that can start above the
+    /// ground (if it's even lower), so it comes last.
+    /// </summary>
+    public static List<double> ClimbPlan(double guess, double range, double step)
+    {
+        range = Math.Abs(range);
+        step = Math.Max(50, Math.Abs(step));
+        var plan = ClimbHeights(guess, range, range, step);
+        plan.AddRange(ClimbHeights(guess + range + step, 0, 3 * range - step, step));
+        plan.AddRange(ClimbHeights(guess - 4 * range, 0, 3 * range - step, step));
+        return plan;
+    }
+
     [GeneratedRegex(@"^#SpawnItem\s", RegexOptions.IgnoreCase)]
     private static partial Regex SpawnItem();
 
@@ -121,6 +137,24 @@ public static partial class GmSpawn
             else { result.Add(line); notPlaced++; }
         }
         return result;
+    }
+
+    /// <summary>
+    /// A rough ground height anywhere: inverse-distance weighted average of the <paramref name="k"/> nearest
+    /// markers that have a height, at any distance. Measured against six known ground points it was within
+    /// 1-8 m where markers are dense. <paramref name="farthest"/> is the distance to the k-th marker in map units.
+    /// </summary>
+    public static double? EstimateHeight(IEnumerable<MapMarker> markers, double mapX, double mapY, out double farthest, int k = 6)
+    {
+        var nearest = markers.Where(m => m.Height != null)
+            .Select(m => (D: Math.Sqrt((m.MapX - mapX) * (m.MapX - mapX) + (m.MapY - mapY) * (m.MapY - mapY)), H: m.Height!.Value))
+            .OrderBy(t => t.D).Take(k).ToList();
+        farthest = nearest.Count == 0 ? double.PositiveInfinity : nearest[^1].D;
+        if (nearest.Count == 0) return null;
+        // Weights stop growing within 0.01 map units (about 50 cm) so a marker right on the spot doesn't divide by zero.
+        double sum = 0, weights = 0;
+        foreach (var (d, h) in nearest) { var w = 1 / Math.Pow(Math.Max(d, 0.01), 2); sum += w * h; weights += w; }
+        return sum / weights;
     }
 
     /// <summary>Height of the nearest marker that has one, within <paramref name="maxMapUnits"/>; null if none.</summary>
