@@ -29,6 +29,38 @@ public sealed class MapCategoryToggle : ObservableObject
     public string Section => Category.Section ?? "Other";
     public string Label => $"{Category.Name}  ({Count})";
     public bool IsVisible { get => _visible; set { if (Set(ref _visible, value)) _changed(); } }
+    /// <summary>The checkbox in this category's group header (shared by every category in the section).</summary>
+    public MapSectionToggle? SectionToggle { get; set; }
+
+    /// <summary>Changes visibility without saving; the caller saves once for the whole batch.</summary>
+    internal void SetQuietly(bool visible) { if (_visible != visible) { _visible = visible; Raise(nameof(IsVisible)); } }
+}
+
+/// <summary>A section's header checkbox: ticked when all its categories are shown, half-ticked when some are.</summary>
+public sealed class MapSectionToggle : ObservableObject
+{
+    private readonly Action<IEnumerable<MapCategoryToggle>, bool> _setMany;
+
+    public MapSectionToggle(string name, Action<IEnumerable<MapCategoryToggle>, bool> setMany)
+    {
+        Name = name;
+        _setMany = setMany;
+    }
+
+    public string Name { get; }
+    public List<MapCategoryToggle> Members { get; } = new();
+    public bool? IsChecked { get => State(Members); set => _setMany(Members, ClickTurnsOn(Members, value)); }
+    public void Refresh() => Raise(nameof(IsChecked));
+
+    public static bool? State(IEnumerable<MapCategoryToggle> items)
+    {
+        bool any = false, all = true;
+        foreach (var c in items) { any |= c.IsVisible; all &= c.IsVisible; }
+        return all ? true : any ? null : false;
+    }
+
+    /// <summary>WPF turns a half-ticked box off when clicked; here it shows the rest instead.</summary>
+    public static bool ClickTurnsOn(IEnumerable<MapCategoryToggle> items, bool? value) => value == true || State(items) == null;
 }
 
 /// <summary>The Map tab: scum-map.com layers (with their permission and attribution), players, saved locations, click-to-teleport.</summary>
@@ -249,8 +281,17 @@ public sealed partial class MainViewModel
             var counts = _map.Markers.GroupBy(m => m.CategoryId).ToDictionary(g => g.Key, g => g.Count());
             var visible = Settings.MapVisibleCategories.ToHashSet();
             MapCategories.Clear();
+            _mapSections.Clear();
             foreach (var c in _map.Categories.Where(c => counts.ContainsKey(c.Id)))
-                MapCategories.Add(new MapCategoryToggle(c, counts[c.Id], visible.Contains(c.Id), OnCategoryToggled));
+            {
+                var toggle = new MapCategoryToggle(c, counts[c.Id], visible.Contains(c.Id), OnCategoryToggled);
+                if (!_mapSections.TryGetValue(toggle.Section, out var section))
+                    _mapSections[toggle.Section] = section = new MapSectionToggle(toggle.Section, SetCategories);
+                section.Members.Add(toggle);
+                toggle.SectionToggle = section;
+                MapCategories.Add(toggle);
+            }
+            Raise(nameof(MapAllLayers));
             MapCategoriesView = new ListCollectionView(MapCategories);
             MapCategoriesView.GroupDescriptions.Add(new PropertyGroupDescription(nameof(MapCategoryToggle.Section)));
             Raise(nameof(MapCategoriesView));
@@ -280,14 +321,28 @@ public sealed partial class MainViewModel
     private void OnCategoryToggled()
     {
         Settings.MapVisibleCategories = MapCategories.Where(c => c.IsVisible).Select(c => c.Category.Id).ToList();
+        foreach (var s in _mapSections.Values) s.Refresh();
+        Raise(nameof(MapAllLayers));
         RecomputeVisibleMarkers();
         Save();
     }
 
-    private void SetAllCategories(bool on)
+    private readonly Dictionary<string, MapSectionToggle> _mapSections = new();
+
+    /// <summary>The "All layers" checkbox: half-ticked when some layers are shown.</summary>
+    public bool? MapAllLayers
     {
-        foreach (var c in MapCategories.Where(c => MapCategoriesView.PassesFilter(c))) c.IsVisible = on;
+        get => MapCategories.Count == 0 ? false : MapSectionToggle.State(MapCategories);
+        set => SetCategories(MapCategories, MapSectionToggle.ClickTurnsOn(MapCategories, value));
     }
+
+    private void SetCategories(IEnumerable<MapCategoryToggle> categories, bool on)
+    {
+        foreach (var c in categories) c.SetQuietly(on);
+        OnCategoryToggled();
+    }
+
+    private void SetAllCategories(bool on) => SetCategories(MapCategories.Where(c => MapCategoriesView.PassesFilter(c)).ToList(), on);
 
     private string _mapCategorySearch = "";
     public string MapCategorySearch
