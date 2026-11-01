@@ -226,6 +226,7 @@
                     <DataGrid ItemsSource="{Binding PlayersView}" SelectedItem="{Binding SelectedPlayer}" IsReadOnly="True">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Name" Binding="{Binding Nickname}" Width="2*"/>
+                            <DataGridTextColumn Header="Steam name" Binding="{Binding PlatformName}" Width="1.5*"/>
                             <DataGridTextColumn Header="SteamID64" Binding="{Binding SteamId}" Width="150"/>
                             <DataGridTextColumn Header="Fame" Binding="{Binding Fame}" Width="70"/>
                             <DataGridTextColumn Header="Account" Binding="{Binding Account}" Width="90"/>

@@ -27,16 +27,20 @@ public static partial class Parsing
     [GeneratedRegex(@"\bFame(?:\s*points)?\s*[:=]\s*(-?\d+)", RegexOptions.IgnoreCase)]
     private static partial Regex Fame();
 
-    [GeneratedRegex(@"\b(?:Account(?:\s*balance)?|Balance|Money|Cash)\s*[:=]\s*(-?\d+(?:\.\d+)?)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"\b(?:Account(?:\s*balance)?|(?<!Gold\s*)Balance|Money|Cash)\s*[:=]\s*(-?\d+(?:\.\d+)?)", RegexOptions.IgnoreCase)]
     private static partial Regex Account();
 
-    [GeneratedRegex(@"\bGold\s*[:=]\s*(-?\d+)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"\bGold(?:\s*balance)?\s*[:=]\s*(-?\d+)", RegexOptions.IgnoreCase)]
     private static partial Regex Gold();
 
-    [GeneratedRegex(@"\b(?:Name|Character|Nickname)\s*[:=]\s*([^,|\t\r\n]+)", RegexOptions.IgnoreCase)]
+    // "Platform Name" in #ListPlayers is the Steam name, not the character name.
+    [GeneratedRegex(@"(?<!(?:Platform|Steam)\s*)\b(?:Name|Character|Nickname)\s*[:=]\s*([^,|\t\r\n]+)", RegexOptions.IgnoreCase)]
     private static partial Regex ExplicitName();
 
-    [GeneratedRegex(@"\b(?:Fame(?:\s*points)?|Account(?:\s*balance)?|Balance|Money|Cash|Gold|Steam(?:\s*ID(?:64)?)?|Location|ID)\s*[:=]\s*\S*", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"\b(?:Platform\s*Name|Steam(?:\s*Name)?)\s*[:=]\s*([^,|\t\r\n(]+)", RegexOptions.IgnoreCase)]
+    private static partial Regex PlatformName();
+
+    [GeneratedRegex(@"\b(?:Fame(?:\s*points)?|Account(?:\s*balance)?|Gold(?:\s*balance)?|Balance|Money|Cash|Steam(?:\s*ID(?:64)?)?|Platform\s*(?:ID|Name)|Location|ID)\s*[:=]\s*\S*", RegexOptions.IgnoreCase)]
     private static partial Regex KeyValue();
 
     public static bool TryParseLocation(string? text, out Vec3 location)
@@ -91,6 +95,7 @@ public static partial class Parsing
 
             var rec = new PlayerRecord { SteamId = id.Groups[1].Value, LastSeen = now };
             rec.Nickname = GuessName(block, rec.SteamId);
+            if (PlatformName().Match(joined) is { Success: true } pn) rec.PlatformName = pn.Groups[1].Value.Trim();
             if (Fame().Match(joined) is { Success: true } f) rec.Fame = long.Parse(f.Groups[1].Value, CultureInfo.InvariantCulture);
             if (Account().Match(joined) is { Success: true } a) rec.Account = Num(a.Groups[1].Value);
             if (Gold().Match(joined) is { Success: true } g) rec.Gold = long.Parse(g.Groups[1].Value, CultureInfo.InvariantCulture);

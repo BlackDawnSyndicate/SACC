@@ -159,6 +159,37 @@ public class ParsingTests
     }
 
     [Fact]
+    public void PlayerList_RealGameLayout()
+    {
+        // The layout SCUM's #ListPlayers actually prints (names and ids replaced).
+        const string text = """
+             3. Phoenix
+            Platform Name: System
+            Platform ID: 76561198000000003
+            Fame: 4577
+            Account balance: 2360205
+            Gold balance: 72
+            Location: X=-112277.945 Y=-66957.859 Z=36996.480
+
+             4. Behemoth
+            Platform Name: Thor bot
+            Platform ID: 76561198000000004
+            Fame: 12709
+            Account balance: 322183
+            Gold balance: 0
+            Location: X=-823184.188 Y=-416238.875 Z=6999.885
+            """;
+        var players = Parsing.ParsePlayerList(text);
+        Assert.Equal(new[] { "Phoenix", "Behemoth" }, players.Select(p => p.Nickname));
+        Assert.Equal(new[] { "System", "Thor bot" }, players.Select(p => p.PlatformName));
+        Assert.Equal(new[] { "76561198000000003", "76561198000000004" }, players.Select(p => p.SteamId));
+        Assert.Equal(new long?[] { 4577, 12709 }, players.Select(p => p.Fame));
+        Assert.Equal(new double?[] { 2360205, 322183 }, players.Select(p => p.Account));
+        Assert.Equal(new long?[] { 72, 0 }, players.Select(p => p.Gold));
+        Assert.Equal(36996.480, players[0].Location!.Value.Z);
+    }
+
+    [Fact]
     public void PlayerList_OneLinePerPlayer()
     {
         const string text = "Alice 76561198000000001 Fame: 3\nBob 76561198000000002 Fame: 4\r\n";

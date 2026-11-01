@@ -130,7 +130,8 @@ public sealed partial class MainViewModel
 
         var player = Players.FirstOrDefault(pl => pl.SteamId == text)
                      ?? Players.FirstOrDefault(pl => string.Equals(pl.Nickname, text, StringComparison.OrdinalIgnoreCase))
-                     ?? Players.FirstOrDefault(pl => pl.Nickname.Contains(text, StringComparison.OrdinalIgnoreCase));
+                     ?? Players.FirstOrDefault(pl => pl.Nickname.Contains(text, StringComparison.OrdinalIgnoreCase))
+                     ?? Players.FirstOrDefault(pl => pl.PlatformName.Contains(text, StringComparison.OrdinalIgnoreCase));
         if (player?.Location is { } loc)
         {
             MapGoRequested?.Invoke(loc, 5);

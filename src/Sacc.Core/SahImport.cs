@@ -244,6 +244,7 @@ public static partial class SahImport
             {
                 SteamId = p.SteamId,
                 Nickname = string.IsNullOrWhiteSpace(newer.Nickname) ? older.Nickname : newer.Nickname,
+                PlatformName = string.IsNullOrWhiteSpace(newer.PlatformName) ? older.PlatformName : newer.PlatformName,
                 Fame = newer.Fame ?? older.Fame,
                 Account = newer.Account ?? older.Account,
                 Gold = newer.Gold ?? older.Gold,

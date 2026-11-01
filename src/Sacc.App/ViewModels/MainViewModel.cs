@@ -488,6 +488,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (_playersOnlineOnly && (_profile.PlayersListedAt is not { } at || p.LastSeen < at)) return false;
         if (_playerSearch.Length == 0) return true;
         return p.Nickname.Contains(_playerSearch, StringComparison.OrdinalIgnoreCase)
+            || p.PlatformName.Contains(_playerSearch, StringComparison.OrdinalIgnoreCase)
             || p.SteamId.Contains(_playerSearch, StringComparison.OrdinalIgnoreCase);
     }
 

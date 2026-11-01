@@ -63,7 +63,10 @@ public sealed class Settings
 public sealed class PlayerRecord
 {
     public string SteamId { get; set; } = "";
+    /// <summary>The in-game character name.</summary>
     public string Nickname { get; set; } = "";
+    /// <summary>The Steam name ("Platform Name" in #ListPlayers).</summary>
+    public string PlatformName { get; set; } = "";
     public long? Fame { get; set; }
     public double? Account { get; set; }
     public long? Gold { get; set; }
