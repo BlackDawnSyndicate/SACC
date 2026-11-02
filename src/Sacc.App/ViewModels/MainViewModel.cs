@@ -532,37 +532,71 @@ public sealed partial class MainViewModel : ObservableObject
 
     private async Task CaptureLocationAsync()
     {
-        // No target = you: your SteamID64 if Settings has it, else #Location with no player (the game's own default).
-        var target = (string.IsNullOrWhiteSpace(BookmarkTarget) ? Settings.MySteamId : BookmarkTarget).Trim();
+        // No target = you: a bare "#Location" answers with your own position.
+        var target = BookmarkTarget.Trim();
 
-        string? output;
+        Vec3 v;
         if (Settings.DryRun)
         {
             // Without a live game, accept coordinates the user copied by hand.
-            output = GameLink.TryGetClipboardText();
-            Status = "Dry run: read coordinates from the current clipboard instead of the game.";
+            if (!Parsing.TryParseLocation(GameLink.TryGetClipboardText(), out v))
+            { Status = "Dry run: couldn't find X/Y/Z coordinates in the clipboard."; return; }
+        }
+        else if (File.Exists(AppPaths.ScumClientLog))
+        {
+            // The reply only goes to chat, but SCUM.log echoes it, so read it from there.
+            var def = _catalog.Find("location");
+            if (def == null) { Status = "The command catalog has no 'location' entry."; return; }
+            var r = TemplateRenderer.Render(def, new Dictionary<string, string?> { ["player"] = target });
+            if (!r.Ok) { Status = string.Join("  ", r.Errors); return; }
+            if (await LocationFromLogAsync(r.Text) is not { } found)
+            {
+                Status = $"{r.Text} sent, but no location reply reached SCUM's log within 5 s."
+                         + (target.Length > 0 ? " Check the player's name or SteamID64." : "");
+                return;
+            }
+            v = found;
         }
         else
         {
+            // No log to read: fall back to the clipboard form, which needs a player ("#Location true" looks for a player named 'true').
+            var who = target.Length > 0 ? target : Settings.MySteamId.Trim();
+            if (who.Length == 0) { Status = $"Can't read SCUM's log ({AppPaths.ScumClientLog}); set your SteamID64 in Settings to use the clipboard instead."; return; }
             var def = _catalog.Find("location-copy");
             if (def == null) { Status = "The command catalog has no 'location-copy' entry."; return; }
-            var r = TemplateRenderer.Render(def, new Dictionary<string, string?> { ["player"] = target });
+            var r = TemplateRenderer.Render(def, new Dictionary<string, string?> { ["player"] = who });
             if (!r.Ok) { Status = string.Join("  ", r.Errors); return; }
-            output = await CaptureAsync(r.Text);
+            if (!Parsing.TryParseLocation(await CaptureAsync(r.Text), out v))
+            { Status = "Couldn't find X/Y/Z coordinates in the clipboard."; return; }
         }
 
-        if (!Parsing.TryParseLocation(output, out var v))
-        {
-            Status = "Couldn't find X/Y/Z coordinates in the clipboard."
-                     + (target.Length == 0 ? " If the game wants a player, set your SteamID64 in Settings." : "");
-            return;
-        }
-        var who = target.Length == 0 || target == Settings.MySteamId.Trim() ? "Me" : target;
-        var b = new Bookmark { Name = $"{who} {DateTime.Now:HH:mm:ss}", X = v.X, Y = v.Y, Z = v.Z };
+        var name = target.Length == 0 || target == Settings.MySteamId.Trim() ? "Me" : target;
+        var b = new Bookmark { Name = $"{name} {DateTime.Now:HH:mm:ss}", X = v.X, Y = v.Y, Z = v.Z };
         Bookmarks.Add(b);
         SelectedBookmark = b;
         Status = $"Saved location {v}.";
         Save();
+    }
+
+    /// <summary>Sends <paramref name="line"/> and waits up to 5 s for its X/Y/Z reply to show up in SCUM.log.</summary>
+    private async Task<Vec3?> LocationFromLogAsync(string line)
+    {
+        var log = AppPaths.ScumClientLog;
+        long seen = new FileInfo(log).Length;
+        Vec3? found = null;
+        await GuardedAsync(async ct =>
+        {
+            await _game.SendAsync(Settings, new[] { line }, _ownWindow(), ct);
+            Record(line, "sent");
+            for (var waited = 0; waited < 5000 && found == null; waited += 150)
+            {
+                await Task.Delay(150, ct);
+                var length = new FileInfo(log).Length;
+                if (length < seen) seen = 0; // the game restarted with a new log
+                if (length > seen && Parsing.TryParseLogLocation(await ReadSharedAsync(log, seen), out var v)) found = v;
+            }
+        });
+        return found;
     }
 
     // ---------------------------------------------------------------- macros

@@ -43,6 +43,21 @@ public static partial class Parsing
     [GeneratedRegex(@"\b(?:Fame(?:\s*points)?|Account(?:\s*balance)?|Gold(?:\s*balance)?|Balance|Money|Cash|Steam(?:\s*ID(?:64)?)?|Platform\s*(?:ID|Name)|Location|ID)\s*[:=]\s*\S*", RegexOptions.IgnoreCase)]
     private static partial Regex KeyValue();
 
+    // SCUM.log echoes chat replies, e.g. "LogSCUM: Sender player state null for message Phoenix: X=-525564.188 Y=-275570.000 Z=13831.640!"
+    [GeneratedRegex(@"for message .*?X=(-?\d+(?:\.\d+)?) Y=(-?\d+(?:\.\d+)?) Z=(-?\d+(?:\.\d+)?)")]
+    private static partial Regex LogLocationReply();
+
+    /// <summary>The last #Location reply in a chunk of SCUM.log (not the game's own "slot location" errors, which also carry X=…).</summary>
+    public static bool TryParseLogLocation(string? logText, out Vec3 location)
+    {
+        location = default;
+        if (string.IsNullOrEmpty(logText)) return false;
+        var m = LogLocationReply().Matches(logText).LastOrDefault();
+        if (m == null) return false;
+        location = new Vec3(Num(m.Groups[1].Value), Num(m.Groups[2].Value), Num(m.Groups[3].Value));
+        return true;
+    }
+
     public static bool TryParseLocation(string? text, out Vec3 location)
     {
         location = default;

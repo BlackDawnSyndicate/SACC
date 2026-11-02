@@ -50,6 +50,8 @@ public sealed class Settings
     public bool GmHeightFromMe { get; set; } = true;
     public bool GmHeightFromPlayers { get; set; } = true;
     public bool GmHeightFromVehicles { get; set; } = true;
+    /// <summary>Ground measured by earlier climbs (ground.json); within 30 m it beats every other source.</summary>
+    public bool GmHeightFromLearned { get; set; } = true;
     /// <summary>
     /// Ground-checked GM spawns (NPC squads, zombies) climb to the surface: from the height guess minus
     /// <see cref="GmClimbRange"/> up to plus it, in <see cref="GmClimbStep"/> steps, stopping at the first

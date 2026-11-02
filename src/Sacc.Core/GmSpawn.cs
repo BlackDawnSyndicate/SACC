@@ -109,12 +109,16 @@ public static partial class GmSpawn
     /// is further off, so carry on upwards to guess + 4×range (still from below, still lands on the ground),
     /// then climb guess − 4×range … guess − range. That last stretch is the only one that can start above the
     /// ground (if it's even lower), so it comes last.
+    /// With <paramref name="quickBelow"/> &gt; 0 (a guess from measured ground), a short climb from that many steps
+    /// below the guess to one step above goes first; it usually lands within a few steps instead of ten.
+    /// If all of it is refused, the full climb follows.
     /// </summary>
-    public static List<double> ClimbPlan(double guess, double range, double step)
+    public static List<double> ClimbPlan(double guess, double range, double step, int quickBelow = 0)
     {
         range = Math.Abs(range);
         step = Math.Max(50, Math.Abs(step));
-        var plan = ClimbHeights(guess, range, range, step);
+        var plan = quickBelow > 0 ? ClimbHeights(guess, quickBelow * step, step, step) : new List<double>();
+        plan.AddRange(ClimbHeights(guess, range, range, step));
         plan.AddRange(ClimbHeights(guess + range + step, 0, 3 * range - step, step));
         plan.AddRange(ClimbHeights(guess - 4 * range, 0, 3 * range - step, step));
         return plan;

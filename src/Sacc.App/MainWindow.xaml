@@ -668,6 +668,14 @@
                                 <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,6"
                                            Text="Right-click a spot on the map → GM spawn here, or click a spot and press ▶."/>
                                 <TextBlock Text="Ground height from (closest within 300 m)" Style="{StaticResource SectionLabel}" Margin="0,0,0,2"/>
+                                <DockPanel Margin="0,0,0,2">
+                                    <Button DockPanel.Dock="Right" Content="Forget" Command="{Binding ForgetGroundCommand}" Padding="6,0"
+                                            ToolTip="Delete every learned ground height (ground.json)"/>
+                                    <CheckBox IsChecked="{Binding GmHeightFromLearned}" VerticalAlignment="Center"
+                                              ToolTip="Ground measured by earlier NPC and zombie climbs. Within 30 m it beats the other sources, and the climb starts just below it.">
+                                        <TextBlock Text="{Binding GmLearnedLabel}" TextWrapping="Wrap"/>
+                                    </CheckBox>
+                                </DockPanel>
                                 <CheckBox Content="Nearest ground marker" IsChecked="{Binding GmHeightFromMarkers}" Margin="0,0,0,2"
                                           ToolTip="The right-clicked marker, or the nearest scum-map marker that has a height"/>
                                 <CheckBox Content="My height" IsChecked="{Binding GmHeightFromMe}" Margin="0,0,0,2"

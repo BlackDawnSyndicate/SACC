@@ -84,6 +84,46 @@ public class GmSpawnTests
     }
 
     [Fact]
+    public void ClimbPlan_FromLearnedGroundTriesAroundTheGuessFirst()
+    {
+        var plan = GmSpawn.ClimbPlan(10000, 1000, 500, quickBelow: 2);
+        Assert.Equal(new[] { 9000d, 9500, 10000, 10500 }, plan.Take(4));      // quick: 2 steps below to 1 above
+        Assert.Equal(GmSpawn.ClimbPlan(10000, 1000, 500), plan.Skip(4));       // then the full climb, unchanged
+    }
+
+    [Fact]
+    public void Ground_AcceptedAfterARefusalPinsItToOneStep()
+    {
+        var s = GroundMap.FromClimb(100, 200, refusedZ: 9700, acceptedZ: 10000, step: 300, "npcs", DateTime.Now)!;
+        Assert.Equal(9700 + GroundMap.AcceptAbove, s.Low);
+        Assert.Equal(10000 + GroundMap.AcceptAbove, s.High);
+        // Steps that aren't neighbours (start of a climb stretch) say nothing about how far below the ground is.
+        Assert.Null(GroundMap.FromClimb(0, 0, refusedZ: 13000, acceptedZ: 7000, step: 300, "npcs", DateTime.Now));
+        Assert.Null(GroundMap.FromClimb(0, 0, refusedZ: 9000, acceptedZ: 10000, step: 300, "npcs", DateTime.Now));
+    }
+
+    [Fact]
+    public void Ground_RepeatMeasurementsNarrowAndFarOnesStayApart()
+    {
+        var map = new GroundMap();
+        map.Add(new GroundSample { X = 0, Y = 0, Low = 1000, High = 1300, Source = "npcs" });
+        var merged = map.Add(new GroundSample { X = 200, Y = 0, Low = 1150, High = 1450, Source = "zombies" });
+        Assert.Single(map.Samples);
+        Assert.Equal((1150d, 1300d, 2), (merged.Low, merged.High, merged.Hits));
+        Assert.Equal("npcs,zombies", merged.Source);
+
+        // Bounds that disagree: the newer measurement wins.
+        map.Add(new GroundSample { X = 0, Y = 100, Low = 2000, High = 2300 });
+        Assert.Equal((2000d, 2300d), (map.Samples[0].Low, map.Samples[0].High));
+
+        map.Add(new GroundSample { X = 10_000, Y = 0, Low = 0, High = 300 });
+        Assert.Equal(2, map.Samples.Count);
+        Assert.Equal(10_000, map.Nearest(9_000, 0, 3000, out var d)!.X);
+        Assert.Equal(1000, d);
+        Assert.Null(map.Nearest(5_000, 0, 3000, out _));
+    }
+
+    [Fact]
     public void EstimateHeight_WeighsTheNearestMarkersAtAnyDistance()
     {
         var markers = new[]

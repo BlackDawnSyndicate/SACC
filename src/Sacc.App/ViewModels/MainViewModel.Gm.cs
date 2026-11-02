@@ -119,7 +119,13 @@ public sealed partial class MainViewModel
         if (MapPoint is not { } p) { _gmSpot = null; GmHeightText = ""; return; }
         string source;
         double z;
+        _gmGuessLearned = false;
         if (Settings.GmUseSetHeight) { z = Settings.GmSetHeight; source = "set height"; }
+        else if (LearnedGround(p, LearnedWinsWithin) is { } lg)
+        {
+            z = lg.Z; source = lg.Source;
+            _gmGuessLearned = true;
+        }
         else if (Settings.GmHeightFromMarkers && MapPointMarker?.Height is { } mh) { z = mh; source = $"from {MapPointMarker.Title}"; }
         else if (NearbyGround(p) is { } g) { z = g.Z; source = g.Source; }
         else if (EstimatedGround(p) is { } e) { z = e.Z; source = e.Source; }
@@ -146,6 +152,57 @@ public sealed partial class MainViewModel
     public bool GmHeightFromMe { get => Settings.GmHeightFromMe; set { Settings.GmHeightFromMe = value; Raise(); UpdateGmSpot(); } }
     public bool GmHeightFromPlayers { get => Settings.GmHeightFromPlayers; set { Settings.GmHeightFromPlayers = value; Raise(); UpdateGmSpot(); } }
     public bool GmHeightFromVehicles { get => Settings.GmHeightFromVehicles; set { Settings.GmHeightFromVehicles = value; Raise(); UpdateGmSpot(); } }
+    public bool GmHeightFromLearned { get => Settings.GmHeightFromLearned; set { Settings.GmHeightFromLearned = value; Raise(); UpdateGmSpot(); } }
+
+    // ---- learned ground (ground.json): every climb that pins the ground down is kept, and later guesses use it
+
+    /// <summary>A learned spot this close (30 m) beats every other source, and the climb starts just below it.</summary>
+    private const double LearnedWinsWithin = 3000;
+    /// <summary>Steps below a learned guess that the quick climb starts from.</summary>
+    private const int LearnedQuickSteps = 3;
+
+    private GroundMap? _ground;
+    private bool _gmGuessLearned;
+    private ICommand? _forgetGround;
+
+    private GroundMap Ground
+    {
+        get
+        {
+            if (_ground != null) return _ground;
+            try { _ground = JsonStore.LoadOrDefault<GroundMap>(AppPaths.Ground); }
+            catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException)
+            {
+                FileLog.Write("WARN", $"Learned ground unreadable, starting empty: {ex.Message}");
+                _ground = new GroundMap();
+            }
+            return _ground;
+        }
+    }
+
+    public string GmLearnedLabel => $"Learned ground ({Ground.Samples.Count} spot{(Ground.Samples.Count == 1 ? "" : "s")} measured)";
+
+    public ICommand ForgetGroundCommand => _forgetGround ??= new RelayCommand(() =>
+    {
+        if (Ground.Samples.Count == 0 || !_confirm($"Forget all {Ground.Samples.Count} learned ground height(s)?")) return;
+        Ground.Samples.Clear();
+        SaveGround();
+        UpdateGmSpot();
+    });
+
+    private void SaveGround()
+    {
+        try { JsonStore.Save(AppPaths.Ground, Ground); }
+        catch (IOException ex) { Status = $"Couldn't save learned ground: {ex.Message}"; }
+        Raise(nameof(GmLearnedLabel));
+    }
+
+    private (double Z, string Source)? LearnedGround(Vec3 p, double within)
+    {
+        if (!Settings.GmHeightFromLearned || Ground.Nearest(p.X, p.Y, within, out var d) is not { } s) return null;
+        return (s.Z, FormattableString.Invariant(
+            $"learned ground {d / 100:0} m away, ±{(s.High - s.Low) / 200:0.#} m, measured {s.Hits}×"));
+    }
 
     // ---- vehicles (#ListSpawnedVehicles): a map layer, and one of the GM height sources
 
@@ -270,6 +327,10 @@ public sealed partial class MainViewModel
                 bestDist = d;
                 best = (loc.Z, FormattableString.Invariant($"from vehicle {(v.Code.Length > 0 ? v.Code : v.Id)} {d / 100:0} m away"));
             }
+
+        // Past 30 m a learned spot is just another nearby height, like the rest.
+        if (Settings.GmHeightFromLearned && Ground.Nearest(p.X, p.Y, bestDist, out var ld) is not null)
+            best = LearnedGround(p, ld);
         return best;
     }
 
@@ -331,7 +392,8 @@ public sealed partial class MainViewModel
     {
         // The guess without the height offset: the climb finds the surface itself.
         var guess = at.Z - Settings.GmHeightOffset;
-        var heights = GmSpawn.ClimbPlan(guess, Settings.GmClimbRange, Settings.GmClimbStep);
+        // A guess from measured ground is usually right to a step: try just around it before the full climb.
+        var heights = GmSpawn.ClimbPlan(guess, Settings.GmClimbRange, Settings.GmClimbStep, _gmGuessLearned ? LearnedQuickSteps : 0);
         var lines = new List<string>();
         foreach (var z in heights)
         {
@@ -359,6 +421,7 @@ public sealed partial class MainViewModel
         // Then only the refused ones go on to the next step (when the command has a count to lower).
         var remaining = count;
         var partly = new List<string>();
+        var firstAccepted = -1;
         var ok = await GuardedAsync(async ct =>
         {
             stoppedAt = await _game.SendUntilAsync(Settings, lines, async (i, token) =>
@@ -377,6 +440,7 @@ public sealed partial class MainViewModel
                     }
                     await Task.Delay(150, token);
                 }
+                if (refusals < remaining && firstAccepted < 0) firstAccepted = i;
                 if (refusals == 0) { Record(lines[i], "sent"); return true; }
                 if (refusals >= remaining || a.Action.CountParam == null) { Record(lines[i], "refused (no ground near)"); return false; }
 
@@ -389,11 +453,24 @@ public sealed partial class MainViewModel
             }, _ownWindow(), ct);
         });
         if (!ok) return;
+
+        // The first step anything spawned at, right after a refused step below it, pins the ground to one step.
+        var learned = "";
+        if (firstAccepted > 0 && GroundMap.FromClimb(at.X, at.Y, heights[firstAccepted - 1], heights[firstAccepted],
+                Math.Max(50, Math.Abs(Settings.GmClimbStep)), a.Action.Key, DateTime.Now) is { } sample)
+        {
+            var s = Ground.Add(sample);
+            SaveGround();
+            learned = FormattableString.Invariant($" Learned the ground here: Z {s.Z:0} ±{(s.High - s.Low) / 200:0.#} m.");
+        }
+        UpdateGmSpot();
+
         var earlier = partly.Count > 0 ? $" ({string.Join(", ", partly)} before that)" : "";
         Status = stoppedAt >= 0
             ? FormattableString.Invariant($"{a.Label}: {remaining} spawned at Z {heights[stoppedAt]:0} after {stoppedAt} refused step(s){earlier}: the ground is within about 3 m below that.")
             : partly.Count > 0
                 ? $"{a.Label}: {string.Join(", ", partly)}; the game refused the other {remaining} at every step ({plan})."
                 : $"{a.Label}: the game refused every step ({plan}). The ground is further from the height guess ({GmHeightText}); widen the climb range or set a height.";
+        Status += learned;
     }
 }

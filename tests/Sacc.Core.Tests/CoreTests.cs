@@ -108,12 +108,17 @@ public class TemplateRendererTests
     }
 
     [Fact]
-    public void LocationCopyWithoutPlayerIsYourOwn()
+    public void LocationReplyFromScumLog()
     {
-        var def = new CommandDef { Id = "location-copy", Template = "#Location[ {player}] true" };
-        def.Params.Add(new ParamDef { Name = "player", Kind = ParamKind.Player, Optional = true });
-        Assert.Equal("#Location true", TemplateRenderer.Render(def, V(("player", ""))).Text);
-        Assert.Equal("#Location 76561198000000001 true", TemplateRenderer.Render(def, V(("player", "76561198000000001"))).Text);
+        const string log =
+            "[2026.11.02-02.58.03:145][511]LogSCUM: Error: Could not update slot location @ X=-522947.500 Y=-275922.719 Z=13389.632\n" +
+            "[2026.11.02-03.33.02:735][775]LogSCUM: Sender player state null for message Failed to find player 'true'!\n" +
+            "[2026.11.02-03.35.10:068][609]LogSCUM: Sender player state null for message Phoenix: X=-525564.188 Y=-275570.000 Z=13831.640!\n";
+        Assert.True(Parsing.TryParseLogLocation(log, out var v));
+        Assert.Equal(-525564.188, v.X, 3);
+        Assert.Equal(-275570.0, v.Y, 3);
+        Assert.Equal(13831.64, v.Z, 3);
+        Assert.False(Parsing.TryParseLogLocation(log.Split('\n')[0], out _));
     }
 
     [Fact]
@@ -320,6 +325,19 @@ public class CatalogTests
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir != null && !File.Exists(Path.Combine(dir.FullName, "SACC.sln"))) dir = dir.Parent;
         return Path.Combine(dir!.FullName, "data", "commands.json");
+    }
+
+    [Fact]
+    public void LocationCopyNeedsAPlayer()
+    {
+        // In game, "#Location true" looks for a player named 'true', so the clipboard form always names one.
+        var def = JsonStore.LoadCatalog(CatalogPath()).Find("location-copy")!;
+        Assert.False(TemplateRenderer.Render(def, new Dictionary<string, string?> { ["player"] = "" }).Ok);
+        Assert.Equal("#Location 76561198000000001 true",
+            TemplateRenderer.Render(def, new Dictionary<string, string?> { ["player"] = "76561198000000001" }).Text);
+        // Without the flag, an empty player is the documented "your own location".
+        var own = JsonStore.LoadCatalog(CatalogPath()).Find("location")!;
+        Assert.Equal("#Location", TemplateRenderer.Render(own, new Dictionary<string, string?> { ["player"] = "" }).Text);
     }
 
     [Fact]
