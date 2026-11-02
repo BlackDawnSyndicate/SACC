@@ -93,12 +93,56 @@ public sealed partial class MainViewModel
 
     private Task SpawnContainerAsync(ContainerPreset p)
     {
-        if (p.Items.Count == 0) { Status = "Add at least one item to fill the container with."; return Task.CompletedTask; }
-        var def = ContainerDef();
-        if (def == null) { Status = $"The command catalog has no '{ContainerFill.CatalogId}' entry."; return Task.CompletedTask; }
+        return ContainerLine(p, out var def) is { } line ? RunDefAsync(def!, line) : Task.CompletedTask;
+    }
+
+    /// <summary>The "#SpawnInventoryFullOf …" line for <paramref name="p"/>; null (with Status set) when it can't be built.</summary>
+    private string? ContainerLine(ContainerPreset p, out CommandDef? def)
+    {
+        def = ContainerDef();
+        if (p.Items.Count == 0) { Status = "Add at least one item to fill the container with."; return null; }
+        if (def == null) { Status = $"The command catalog has no '{ContainerFill.CatalogId}' entry."; return null; }
         var r = TemplateRenderer.Render(def, ContainerFill.Values(p));
-        if (!r.Ok) { Status = $"{def.Name}: {string.Join("  ", r.Errors)}"; return Task.CompletedTask; }
-        return RunDefAsync(def, r.Text);
+        if (!r.Ok) { Status = $"{def.Name}: {string.Join("  ", r.Errors)}"; return null; }
+        return r.Text;
+    }
+
+    // ---- containers in kits: a kit row whose code is the whole "#SpawnInventoryFullOf …" line, sent once per Amount
+
+    private ICommand? _containerToKit, _addContainerToKit;
+
+    public string ContainerToKitLabel => SelectedKit is { } k ? $"→ kit '{k.Name}'" : "→ kit";
+
+    /// <summary>Spawner → Container: put the builder's container into the kit selected on the Kits tab.</summary>
+    public ICommand ContainerToKitCommand => _containerToKit ??= new RelayCommand(() =>
+    {
+        if (SelectedKit == null) { Status = "Select a kit on the Kits tab first (or make one with New kit)."; return; }
+        AddContainerToKit(SelectedKit, CurrentContainer(), 1);
+    });
+
+    private ContainerPreset? _kitContainerChoice;
+    /// <summary>Kits tab: the saved container picked for the add-container row.</summary>
+    public ContainerPreset? KitContainerChoice { get => _kitContainerChoice; set => Set(ref _kitContainerChoice, value); }
+
+    /// <summary>Kits tab: add the picked saved container, as many as the add row's Amount.</summary>
+    public ICommand AddContainerToKitCommand => _addContainerToKit ??= new RelayCommand(() =>
+    {
+        if (SelectedKit == null) return;
+        if (KitContainerChoice == null) { Status = "Pick a saved container first (save one on Spawner → Container)."; return; }
+        if (!int.TryParse(NewItemAmount, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var amount) || amount < 1)
+        { Status = "Amount must be a whole number of 1 or more."; return; }
+        AddContainerToKit(SelectedKit, KitContainerChoice, amount);
+    }, () => SelectedKit != null);
+
+    private void AddContainerToKit(Kit kit, ContainerPreset p, int amount)
+    {
+        if (p.Container.Length == 0) { Status = "The container needs a container code."; return; }
+        if (ContainerLine(p, out _) is not { } line) return;
+        var row = kit.AddItem(line, amount, null, false);
+        RefreshKitItems();
+        SelectedKitItem = row;
+        Save();
+        Status = $"Added {p.Summary} to '{kit.Name}' (×{row.Amount}).";
     }
 
     private CommandDef? _bundledContainerDef;

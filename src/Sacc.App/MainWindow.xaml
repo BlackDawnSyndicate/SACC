@@ -365,6 +365,8 @@
                         <WrapPanel DockPanel.Dock="Bottom">
                             <Button Style="{StaticResource PrimaryButton}" Command="{Binding SpawnContainerCommand}" Content="Spawn"/>
                             <Button Command="{Binding SaveContainerCommand}" Content="☆ Save"/>
+                            <Button Command="{Binding ContainerToKitCommand}" Content="{Binding ContainerToKitLabel}"
+                                    ToolTip="Add this container to the kit selected on the Kits tab (once; change Amount there)"/>
                             <TextBlock Text="Number" VerticalAlignment="Center" Margin="10,0,6,0"/>
                             <TextBox Width="40" Text="{Binding ContainerOption, UpdateSourceTrigger=PropertyChanged}"
                                      ToolTip="The number after the container in #SpawnInventoryFullOf. What it does isn't known yet; 0 works."/>
@@ -508,6 +510,15 @@
                                     </Grid>
                                 </DockPanel>
                             </Border>
+                            <!-- Add-container row: a saved container from Spawner → Container, Amount from the row above. -->
+                            <DockPanel Margin="0,0,0,6">
+                                <TextBlock Text="Container" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <Button DockPanel.Dock="Right" Command="{Binding AddContainerToKitCommand}" Content="Add container" Margin="6,0,0,0" MinWidth="0"
+                                        ToolTip="Add the picked container, as many as Amount above. Each one is a #SpawnInventoryFullOf line."/>
+                                <ComboBox ItemsSource="{Binding ContainerPresets}" SelectedItem="{Binding KitContainerChoice}" DisplayMemberPath="Summary"
+                                          FontFamily="Cascadia Mono, Consolas"
+                                          ToolTip="Saved containers (build and ☆ Save them on Spawner → Container)"/>
+                            </DockPanel>
                         </StackPanel>
                         <ItemsControl DockPanel.Dock="Bottom" ItemsSource="{Binding SelectedKit.ExtraCommands}" Margin="0,6,0,0">
                             <ItemsControl.ItemTemplate>

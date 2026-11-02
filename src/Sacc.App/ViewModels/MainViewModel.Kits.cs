@@ -23,6 +23,7 @@ public sealed partial class MainViewModel
             if (!Set(ref _selectedKit, value)) return;
             Raise(nameof(SelectedKitItems));
             Raise(nameof(SelectedKitFolder));
+            Raise(nameof(ContainerToKitLabel));
             SelectedKitItem = null;
             CommandManager.InvalidateRequerySuggested();
         }

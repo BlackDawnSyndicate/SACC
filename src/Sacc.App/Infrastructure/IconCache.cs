@@ -61,7 +61,9 @@ public static class IconCache
     {
         if (string.IsNullOrWhiteSpace(code)) return null;
         var name = code.Trim();
-        if (name.StartsWith('#')) name = name.Split(' ', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? "";
+        // A filled container shows the container, not the last item it holds.
+        if (Sacc.Core.ContainerFill.Parse(name) is { } container) name = container.Container;
+        else if (name.StartsWith('#')) name = name.Split(' ', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? "";
         return name.Length == 0 || name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || name.StartsWith('#') ? null : name;
     }
 }

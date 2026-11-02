@@ -188,3 +188,19 @@ public class ContainerFillTests
     public void SplitsTypedCodes() =>
         Assert.Equal(new[] { "A", "B", "C" }, ContainerFill.SplitCodes(" A, B\nC "));
 }
+
+public class ContainerInKitTests
+{
+    [Fact]
+    public void AContainerRowIsSentOncePerAmount()
+    {
+        const string line = "#SpawnInventoryFullOf Hiking_Backpack_01_02 0 12_Gauge_Slug Soap";
+        var kit = new Kit();
+        kit.AddItem("Soap", 1, null, false);
+        kit.AddItem(line, 2, null, false);
+        kit.AddItem(line, 1, null, false); // same container again bumps the amount
+        Assert.Equal(2, kit.Items.Count);
+        var lines = SahImport.KitLines(kit, (c, n, s) => $"#SpawnItem {c} {n}", 10, 200, out _);
+        Assert.Equal(new[] { "#SpawnItem Soap 1", line, line, line }, lines);
+    }
+}
