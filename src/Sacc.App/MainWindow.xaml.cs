@@ -220,6 +220,11 @@ public partial class MainWindow : Window
         if (VehicleFavorites.SelectedItem is string code) _vm.SpawnVehicleCommand.Execute(code);
     }
 
+    private void ContainerPresets_DoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is ListBox { SelectedItem: Sacc.Core.Model.ContainerPreset p }) _vm.SpawnContainerPresetCommand.Execute(p);
+    }
+
     private void Bookmarks_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e) =>
         Dispatcher.BeginInvoke(new Action(_vm.Save));
 

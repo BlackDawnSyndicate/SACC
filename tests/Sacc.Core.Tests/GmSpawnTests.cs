@@ -147,3 +147,44 @@ public class GmSpawnTests
         Assert.Equal("// zoo\r\n#SpawnAnimal BP_Horse 2\r\nwait 500", p.Macros[0].Script);
     }
 }
+
+public class ContainerFillTests
+{
+    private static CommandDef Def()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "SACC.sln"))) dir = dir.Parent;
+        return JsonStore.LoadCatalog(Path.Combine(dir!.FullName, "data", "commands.json")).Find(ContainerFill.CatalogId)!;
+    }
+
+    [Fact]
+    public void RendersTheLineTheUserSent()
+    {
+        var p = new ContainerPreset { Container = "Hiking_Backpack_01_02", Items = { "12_Gauge_Slug", "Soap" } };
+        var r = TemplateRenderer.Render(Def(), ContainerFill.Values(p));
+        Assert.True(r.Ok, string.Join(" ", r.Errors));
+        Assert.Equal("#SpawnInventoryFullOf Hiking_Backpack_01_02 0 12_Gauge_Slug Soap", r.Text);
+    }
+
+    [Fact]
+    public void NeedsAContainerAndItems()
+    {
+        Assert.False(TemplateRenderer.Render(Def(), ContainerFill.Values(new ContainerPreset { Items = { "Soap" } })).Ok);
+        Assert.False(TemplateRenderer.Render(Def(), ContainerFill.Values(new ContainerPreset { Container = "Hiking_Backpack_01_02" })).Ok);
+    }
+
+    [Fact]
+    public void ParsesALineBack()
+    {
+        var p = ContainerFill.Parse("  #spawninventoryfullof Hiking_Backpack_01_02 0 12_Gauge_Slug   Soap ")!;
+        Assert.Equal("Hiking_Backpack_01_02", p.Container);
+        Assert.Equal("0", p.Option);
+        Assert.Equal(new[] { "12_Gauge_Slug", "Soap" }, p.Items);
+        Assert.Null(ContainerFill.Parse("#SpawnItem Soap 1"));
+        Assert.Null(ContainerFill.Parse("#SpawnInventoryFullOf Hiking_Backpack_01_02 0"));
+    }
+
+    [Fact]
+    public void SplitsTypedCodes() =>
+        Assert.Equal(new[] { "A", "B", "C" }, ContainerFill.SplitCodes(" A, B\nC "));
+}

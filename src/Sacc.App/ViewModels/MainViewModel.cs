@@ -41,6 +41,7 @@ public sealed partial class MainViewModel : ObservableObject
         FavoriteVehicles = new(_profile.FavoriteVehicles);
         History = new(_profile.History);
         InitKits();
+        InitContainers();
         RebuildItemCatalog();
 
         CommandsView = new ListCollectionView(new List<CommandDef>());
@@ -677,6 +678,7 @@ public sealed partial class MainViewModel : ObservableObject
         _profile.Kits = Kits.ToList();
         _profile.FavoriteItems = FavoriteItems.ToList();
         _profile.FavoriteVehicles = FavoriteVehicles.ToList();
+        _profile.Containers = ContainerPresets.ToList();
         _profile.History = History.ToList();
         try { JsonStore.Save(AppPaths.Profile, _profile); }
         catch (IOException ex) { Status = $"Couldn't save profile: {ex.Message}"; }

@@ -278,5 +278,19 @@ public sealed class Profile
     public List<Kit> Kits { get; set; } = new();
     public List<string> FavoriteItems { get; set; } = new();
     public List<string> FavoriteVehicles { get; set; } = new();
+    /// <summary>Saved containers for the Spawner's "Container" builder (#SpawnInventoryFullOf).</summary>
+    public List<ContainerPreset> Containers { get; set; } = new();
     public List<HistoryEntry> History { get; set; } = new();
+}
+
+/// <summary>A container the game fills with stacks of <see cref="Items"/>: "#SpawnInventoryFullOf Container Option Items…".</summary>
+public sealed class ContainerPreset
+{
+    public string Container { get; set; } = "";
+    /// <summary>The number after the container. What it does is unknown; 0 works.</summary>
+    public string Option { get; set; } = "0";
+    public List<string> Items { get; set; } = new();
+
+    [JsonIgnore]
+    public string Summary => Items.Count == 0 ? Container : $"{Container}: {string.Join(", ", Items)}";
 }

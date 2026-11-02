@@ -246,6 +246,8 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="16"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <DockPanel>
                         <DockPanel DockPanel.Dock="Top">
@@ -320,6 +322,66 @@
                                  PreviewMouseLeftButtonUp="VehicleMatches_Click" MouseDoubleClick="VehicleMatches_DoubleClick"
                                  KeyDown="VehicleMatches_KeyDown"
                                  ToolTip="Click to pick, double-click to spawn, Enter to pick"/>
+                    </DockPanel>
+                    <DockPanel Grid.Column="4">
+                        <TextBlock DockPanel.Dock="Top" Text="Container" FontSize="16" FontWeight="SemiBold"/>
+                        <DockPanel DockPanel.Dock="Top" Margin="0,6,0,6">
+                            <Button DockPanel.Dock="Right" Content="← picked item" Margin="6,0,0,0" Command="{Binding ContainerFromPickedCommand}"
+                                    ToolTip="Use the item in the Items box as the container"/>
+                            <TextBox Text="{Binding ContainerCode, UpdateSourceTrigger=PropertyChanged}" FontFamily="Cascadia Mono, Consolas"
+                                     ToolTip="The container to spawn, e.g. Hiking_Backpack_01_02. Find it in Items, then press ← picked item."/>
+                        </DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,4"
+                                   Text="Filled to its space and weight limit with stacks of:"/>
+                        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                            <Button DockPanel.Dock="Right" Content="Add" Margin="6,0,0,0" Command="{Binding AddContainerItemCommand}"/>
+                            <TextBox Text="{Binding ContainerNewItem, UpdateSourceTrigger=PropertyChanged}" FontFamily="Cascadia Mono, Consolas"
+                                     ToolTip="Item codes to add, separated by spaces or commas; Enter adds them">
+                                <TextBox.InputBindings>
+                                    <KeyBinding Key="Enter" Command="{Binding AddContainerItemCommand}"/>
+                                </TextBox.InputBindings>
+                            </TextBox>
+                        </DockPanel>
+                        <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                            <Button Content="+ picked item" Command="{Binding AddPickedToContainerCommand}" ToolTip="Add the item in the Items box"/>
+                            <Button Content="Paste command" Command="{Binding PasteContainerCommand}" ToolTip="Load a copied #SpawnInventoryFullOf line into the builder"/>
+                            <Button Content="Clear" Command="{Binding ClearContainerCommand}"/>
+                        </WrapPanel>
+                        <!-- Bottom-docked parts, in order from the bottom: saved containers, then preview and buttons. -->
+                        <ListBox DockPanel.Dock="Bottom" Height="140" ItemsSource="{Binding ContainerPresets}" SelectedItem="{Binding SelectedContainerPreset}"
+                                 MouseDoubleClick="ContainerPresets_DoubleClick" ToolTip="Click to load into the builder, double-click to spawn">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Content="✕" MinWidth="0" Padding="4,0" Margin="8,0,0,0"
+                                                Command="{Binding DataContext.RemoveContainerPresetCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                        <TextBlock Text="{Binding Summary}" FontFamily="Cascadia Mono, Consolas" TextTrimming="CharacterEllipsis"/>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Muted}" Margin="0,8,0,4"
+                                   Text="Saved containers: click to load, double-click to spawn."/>
+                        <WrapPanel DockPanel.Dock="Bottom">
+                            <Button Style="{StaticResource PrimaryButton}" Command="{Binding SpawnContainerCommand}" Content="Spawn"/>
+                            <Button Command="{Binding SaveContainerCommand}" Content="☆ Save"/>
+                            <TextBlock Text="Number" VerticalAlignment="Center" Margin="10,0,6,0"/>
+                            <TextBox Width="40" Text="{Binding ContainerOption, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="The number after the container in #SpawnInventoryFullOf. What it does isn't known yet; 0 works."/>
+                        </WrapPanel>
+                        <TextBox DockPanel.Dock="Bottom" Text="{Binding ContainerPreview, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
+                                 FontFamily="Cascadia Mono, Consolas" Margin="0,6,0,6" ToolTip="The line Spawn sends"/>
+                        <ListBox ItemsSource="{Binding ContainerItems}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Content="✕" MinWidth="0" Padding="4,0" Margin="8,0,0,0"
+                                                Command="{Binding DataContext.RemoveContainerItemCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                        <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource CodeWithIcon}"/>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
                     </DockPanel>
                 </Grid>
             </TabItem>
