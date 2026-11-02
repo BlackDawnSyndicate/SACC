@@ -322,7 +322,7 @@ public sealed partial class MainViewModel
     public bool GmFindGround { get => Settings.GmFindGround; set { Settings.GmFindGround = value; Raise(); Save(); } }
 
     /// <summary>
-    /// Ground-checked spawns (NPC squads) climb to the surface: send the spawn from below the height
+    /// Ground-checked spawns (NPC squads, zombie groups, beepers) climb to the surface: send the spawn from below the height
     /// guess upwards, step by step. The game refuses every step with no ground near it, which costs
     /// nothing, and the first step it accepts is within one step of the ground, so the squad lands on it
     /// instead of dropping from up to 30 m. See spikes/npc-spawn-ground.
@@ -355,30 +355,45 @@ public sealed partial class MainViewModel
 
         long seen = new FileInfo(log).Length;
         var stoppedAt = -1;
+        // The game refuses once per NPC or zombie, and a group spread around the spot can be partly refused.
+        // Then only the refused ones go on to the next step (when the command has a count to lower).
+        var remaining = count;
+        var partly = new List<string>();
         var ok = await GuardedAsync(async ct =>
         {
             stoppedAt = await _game.SendUntilAsync(Settings, lines, async (i, token) =>
             {
                 // A refusal shows up in the log almost at once; silence for the whole wait means it spawned.
+                var refusals = 0;
                 for (var waited = 0; waited < Settings.GmClimbWaitMs; waited += 150)
                 {
                     var length = new FileInfo(log).Length;
                     if (length < seen) seen = 0; // the game restarted with a new log
                     if (length > seen)
                     {
-                        var refusals = GmSpawn.CountRefusals(await ReadSharedAsync(log, seen));
+                        refusals += GmSpawn.CountRefusals(await ReadSharedAsync(log, seen));
                         seen = length;
-                        if (refusals > 0) { Record(lines[i], "refused (no ground near)"); return false; }
+                        if (refusals >= remaining) break;
                     }
                     await Task.Delay(150, token);
                 }
-                Record(lines[i], "sent");
-                return true;
+                if (refusals == 0) { Record(lines[i], "sent"); return true; }
+                if (refusals >= remaining || a.Action.CountParam == null) { Record(lines[i], "refused (no ground near)"); return false; }
+
+                Record(lines[i], $"{remaining - refusals} of {remaining} spawned, {refusals} refused");
+                partly.Add(FormattableString.Invariant($"{remaining - refusals} at Z {heights[i]:0}"));
+                remaining = refusals;
+                for (var j = i + 1; j < lines.Count; j++)
+                    lines[j] = GmSpawn.Render(def, a.Action, a.Type, remaining, at with { Z = heights[j] }).Text;
+                return false;
             }, _ownWindow(), ct);
         });
         if (!ok) return;
+        var earlier = partly.Count > 0 ? $" ({string.Join(", ", partly)} before that)" : "";
         Status = stoppedAt >= 0
-            ? FormattableString.Invariant($"{a.Label} spawned at Z {heights[stoppedAt]:0} after {stoppedAt} refused step(s): the ground is within about 3 m below that.")
-            : $"{a.Label}: the game refused every step ({plan}). The ground is further from the height guess ({GmHeightText}); widen the climb range or set a height.";
+            ? FormattableString.Invariant($"{a.Label}: {remaining} spawned at Z {heights[stoppedAt]:0} after {stoppedAt} refused step(s){earlier}: the ground is within about 3 m below that.")
+            : partly.Count > 0
+                ? $"{a.Label}: {string.Join(", ", partly)}; the game refused the other {remaining} at every step ({plan})."
+                : $"{a.Label}: the game refused every step ({plan}). The ground is further from the height guess ({GmHeightText}); widen the climb range or set a height.";
     }
 }

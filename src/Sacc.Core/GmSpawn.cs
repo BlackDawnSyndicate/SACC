@@ -18,14 +18,15 @@ public static partial class GmSpawn
     public sealed record Action(string Key, string Label, string CatalogId, string? TypeParam, string? CountParam, string? FixedType = null,
                                 bool GroundChecked = false);
 
-    // Ground-checked was measured in game (spikes/npc-spawn-ground): #SpawnArmedNPC refuses a spot 10 m underground;
-    // #SpawnZombie, #SpawnAnimal and #SpawnRazor accept it.
+    // Ground-checked (spikes/npc-spawn-ground): #SpawnArmedNPC refuses a spot 10 m underground. #SpawnZombie is
+    // refused too, once per zombie (seen in SCUM's log 2026-11-01), though its window may differ: the spike's one
+    // zombie 10 m underground was accepted. #SpawnAnimal and #SpawnRazor were accepted there and are untested further.
     public static readonly IReadOnlyList<Action> Actions = new[]
     {
         new Action("animals", "Animals", "spawn-animal", "animal", "amount"),
         new Action("npcs", "NPC squad", "spawn-armed-npc", "npc", "amount", GroundChecked: true),
-        new Action("zombies", "Zombie group", "spawn-zombie", "zombie", "amount"),
-        new Action("beepers", "Beepers", "spawn-zombie", "zombie", "amount", FixedType: "BP_Zombie_SuicideVest"),
+        new Action("zombies", "Zombie group", "spawn-zombie", "zombie", "amount", GroundChecked: true),
+        new Action("beepers", "Beepers", "spawn-zombie", "zombie", "amount", FixedType: "BP_Zombie_SuicideVest", GroundChecked: true),
         new Action("razors", "Razors", "spawn-razor", null, null),
         new Action("cargo", "Cargo drop", "schedule-world-event", null, null),
         new Action("vehicle", "Vehicle", "spawn-vehicle", "vehicle", null),
@@ -78,7 +79,7 @@ public static partial class GmSpawn
         return new TemplateRenderer.Result(string.Join("\n", Enumerable.Repeat(r.Text, repeat)), r.Errors);
     }
 
-    /// <summary>What the game says, once per NPC, when there's no ground near the requested Z. A successful spawn says nothing.</summary>
+    /// <summary>What the game says, once per NPC or zombie, when there's no ground near the requested Z. A successful spawn says nothing.</summary>
     public const string RefusalText = "Cannot spawn at the specified location.";
 
     public static int CountRefusals(string? logText)

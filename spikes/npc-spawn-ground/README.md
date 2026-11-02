@@ -75,3 +75,5 @@ The Drifters are hostile. For a harmless control run (do animals follow the same
 `-Template '#SpawnAnimal BP_Chicken 1 Location "{xyz}"'`
 
 Narrow it down afterwards with your own steps, e.g. `-Heights 300,350,400,450,500 -SkipDistance`.
+
+**Zombies are refused too (SCUM's log, 2026-11-01 22:04–22:08 UTC).** `#SpawnZombie` groups of 10 drew bursts of 10 `Cannot spawn at the specified location.`, once per zombie, so the "accepted 10 m underground" row above was not the whole story. Their window may differ from NPCs'. SACC 0.4.8 climbs zombie groups and beepers the same way. If only part of a group is refused, only that part moves to the next step. *Still to observe in game:* do climbed zombies land on the ground, or under it?

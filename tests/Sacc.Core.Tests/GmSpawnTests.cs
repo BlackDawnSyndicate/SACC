@@ -120,7 +120,9 @@ public class GmSpawnTests
         Assert.Equal(2, GmSpawn.CountRefusals(log));
         Assert.Equal(0, GmSpawn.CountRefusals(""));
         Assert.True(GmSpawn.Actions.Single(a => a.Key == "npcs").GroundChecked);
-        Assert.False(GmSpawn.Actions.Single(a => a.Key == "zombies").GroundChecked);
+        Assert.True(GmSpawn.Actions.Single(a => a.Key == "zombies").GroundChecked);
+        Assert.True(GmSpawn.Actions.Single(a => a.Key == "beepers").GroundChecked);
+        Assert.False(GmSpawn.Actions.Single(a => a.Key == "animals").GroundChecked);
     }
 
     [Theory]
