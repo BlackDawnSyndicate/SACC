@@ -197,6 +197,21 @@
                     <Border DockPanel.Dock="Right" Width="260" Margin="10,0,0,0" Padding="10" Background="White" BorderBrush="#DADFE2" BorderThickness="1">
                         <StackPanel>
                             <TextBlock Text="{Binding SelectedPlayer.Display, FallbackValue='Select a player'}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                            <TextBlock Text="Tracking" Style="{StaticResource SectionLabel}"/>
+                            <DockPanel Margin="0,0,0,2">
+                                <CheckBox DockPanel.Dock="Left" Content="Track every" IsChecked="{Binding Tracking}" VerticalAlignment="Center"
+                                          ToolTip="Reads #ListPlayers on a timer and records where everyone is. Each read types into the game, so this starts off whenever SACC opens."/>
+                                <TextBlock DockPanel.Dock="Right" Text="s" VerticalAlignment="Center" Margin="3,0,0,0"/>
+                                <TextBox Text="{Binding TrackInterval, UpdateSourceTrigger=LostFocus}" Margin="6,0,0,0" AutomationProperties.Name="Track interval seconds"
+                                         ToolTip="Seconds between reads, 10 or more"/>
+                            </DockPanel>
+                            <TextBlock Text="{Binding TrackingLabel}" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,2"/>
+                            <WrapPanel>
+                                <Button Command="{Binding ShowTrackCommand}" Content="Show on map" ToolTip="Draw the selected player's track on the Map tab"/>
+                                <Button Command="{Binding ExportTrackCommand}" Content="Export…" ToolTip="Save the selected player's track as CSV: time, SteamID, name, X, Y, Z"/>
+                                <Button Command="{Binding ExportAllTracksCommand}" Content="Export all…" ToolTip="Save everyone's tracks as one CSV"/>
+                                <Button Command="{Binding ClearTracksCommand}" Content="Clear" ToolTip="Delete every tracked point (tracks.csv)"/>
+                            </WrapPanel>
                             <TextBlock Text="Teleport" Style="{StaticResource SectionLabel}"/>
                             <WrapPanel>
                                 <Button Command="{Binding PlayerActionCommand}" CommandParameter="teleport-to-player" Content="Go to"/>
@@ -607,6 +622,14 @@
                                 <TextBlock Text="Car ID" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                 <TextBox Text="{Binding MapVehicleIdFilter, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Car ID"
                                          ToolTip="Type a car's ID (e.g. 36293735): the map keeps only vehicles whose ID starts with it, labelled with their ID, and centres on the car once one is left. Empty = all vehicles."/>
+                            </DockPanel>
+                            <CheckBox Content="{Binding MapTracksLabel}" IsChecked="{Binding MapShowTracks}" Margin="0,0,0,2"
+                                      ToolTip="Where tracked players went (Players tab → Tracking): a ring and time where a run starts, a dot and time where it ends. No line joins separate sessions."/>
+                            <DockPanel Margin="18,0,0,4">
+                                <TextBlock DockPanel.Dock="Right" Text="h" VerticalAlignment="Center" Margin="3,0,0,0"/>
+                                <TextBox DockPanel.Dock="Right" Width="36" Text="{Binding MapTrackHours, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Track hours"
+                                         ToolTip="How many hours back to draw; 0 or empty = everything" Margin="4,0,0,0"/>
+                                <ComboBox ItemsSource="{Binding TrackChoices}" SelectedItem="{Binding MapTrackChoice}" DisplayMemberPath="Label" AutomationProperties.Name="Track player"/>
                             </DockPanel>
                             <CheckBox Content="Show saved locations" IsChecked="{Binding MapShowBookmarks}" Margin="0,0,0,8"/>
                             <TextBlock Text="Teleport target" Style="{StaticResource SectionLabel}" Margin="0,0,0,4"/>

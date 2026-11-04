@@ -14,6 +14,8 @@ public static class AppPaths
     public static string Log => Path.Combine(Root, "sacc.log");
     /// <summary>Ground heights learned from GM spawn climbs; kept apart from the profile so it can be shared.</summary>
     public static string Ground => Path.Combine(Root, "ground.json");
+    /// <summary>Tracked player positions, appended to while tracking is on.</summary>
+    public static string Tracks => Path.Combine(Root, "tracks.csv");
 
     /// <summary>The user's editable catalog, created on demand from the bundled one.</summary>
     public static string UserCatalog => Path.Combine(Root, "commands.json");

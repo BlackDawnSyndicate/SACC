@@ -26,6 +26,8 @@ public sealed class Settings
     public int ClipboardCaptureTimeoutMs { get; set; } = 2500;
     public bool RestoreClipboard { get; set; } = true;
     public bool ReturnFocusToSacc { get; set; }
+    /// <summary>Seconds between #ListPlayers reads while player tracking is on.</summary>
+    public int TrackIntervalSeconds { get; set; } = 60;
     public bool DryRun { get; set; } = true;
     public bool ConfirmDangerous { get; set; } = true;
     public bool AlwaysOnTop { get; set; }

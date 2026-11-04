@@ -42,6 +42,7 @@ public sealed partial class MainViewModel : ObservableObject
         History = new(_profile.History);
         InitKits();
         InitContainers();
+        InitTracking();
         RebuildItemCatalog();
 
         CommandsView = new ListCollectionView(new List<CommandDef>());
@@ -459,6 +460,7 @@ public sealed partial class MainViewModel : ObservableObject
         var parsed = Parsing.ParsePlayerList(text);
         if (parsed.Count == 0) { Status = "No SteamID64s found in that text."; return; }
         SahImport.MergePlayers(Players, parsed);
+        RecordTracks(parsed);
         // #ListPlayers lists who is online, so this batch is the new "online now" set.
         _profile.PlayersListedAt = parsed.Max(p => p.LastSeen);
         RefreshPlayersView();

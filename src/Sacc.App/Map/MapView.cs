@@ -70,6 +70,11 @@ public sealed class MapView : FrameworkElement
     public bool LabelVehicleIds { get => _labelVehicleIds; set { _labelVehicleIds = value; InvalidateVisual(); } }
     private bool _labelVehicleIds;
     private bool _showVehicles;
+    /// <summary>Player tracks, one list per unbroken run of positions.</summary>
+    public IReadOnlyList<IReadOnlyList<TrackPoint>> Tracks { get => _tracks; set { _tracks = value ?? Array.Empty<IReadOnlyList<TrackPoint>>(); InvalidateVisual(); } }
+    private IReadOnlyList<IReadOnlyList<TrackPoint>> _tracks = Array.Empty<IReadOnlyList<TrackPoint>>();
+    public bool ShowTracks { get => _showTracks; set { _showTracks = value; InvalidateVisual(); } }
+    private bool _showTracks;
     public bool ShowBookmarks { get => _showBookmarks; set { _showBookmarks = value; InvalidateVisual(); } }
     private bool _showBookmarks = true;
 
@@ -236,6 +241,8 @@ public sealed class MapView : FrameworkElement
                 else if (_zoom >= 3) Label(dc, name, p, 6);
             }
 
+        if (_showTracks) DrawTracks(dc);
+
         if ((_showPlayers || _showOnline) && _players != null)
             foreach (var pl in _players)
             {
@@ -248,6 +255,51 @@ public sealed class MapView : FrameworkElement
                 Label(dc, string.IsNullOrWhiteSpace(pl.Nickname) ? pl.SteamId : pl.Nickname, p, 6);
             }
     }
+
+    // Saturated enough to read on the map's greens and greys; a player keeps their colour.
+    private static readonly Pen[] TrackPens = new[] { "#FF4D4D", "#FFB300", "#00E5FF", "#FF40FF", "#7CFF4D", "#FFFFFF", "#4D7CFF", "#FF8A65" }
+        .Select(c => { var pen = new Pen(new SolidColorBrush((Color)ColorConverter.ConvertFromString(c)), 2.5) { LineJoin = PenLineJoin.Round }; pen.Freeze(); return pen; }).ToArray();
+
+    /// <summary>A line for each run: hollow ring and time where it starts, solid dot and time where it ends.</summary>
+    private void DrawTracks(DrawingContext dc)
+    {
+        if (_projection == null) return;
+        foreach (var run in _tracks)
+        {
+            var hash = 0;
+            foreach (var c in run[0].SteamId) hash = unchecked(hash * 31 + c);
+            var pen = TrackPens[(hash & int.MaxValue) % TrackPens.Length];
+
+            var points = new List<Point>(run.Count);
+            foreach (var t in run)
+            {
+                var (mx, my) = _projection.ToMap(t.Location.X, t.Location.Y);
+                var p = ToScreen(mx, my);
+                // Points closer than a couple of pixels add nothing but work.
+                if (points.Count == 0 || (p - points[^1]).LengthSquared >= 4) points.Add(p);
+            }
+            if (points.Count > 1)
+            {
+                var g = new StreamGeometry();
+                using (var ctx = g.Open())
+                {
+                    ctx.BeginFigure(points[0], false, false);
+                    ctx.PolyLineTo(points.Skip(1).ToList(), true, true);
+                }
+                g.Freeze();
+                dc.DrawGeometry(null, pen, g);
+            }
+            dc.DrawEllipse(Brushes.Black, pen, points[0], 4, 4);
+            dc.DrawEllipse(pen.Brush, MarkerOutline, points[^1], 4, 4);
+            if (_zoom < 3) continue;
+            var who = string.IsNullOrWhiteSpace(run[0].Name) ? run[0].SteamId : run[0].Name;
+            Label(dc, $"{who} {TrackTime(run[0].At)}", points[0], 5);
+            if (run.Count > 1) Label(dc, TrackTime(run[^1].At), points[^1], 5);
+        }
+    }
+
+    private static string TrackTime(DateTimeOffset at) =>
+        at.LocalDateTime.ToString(at.LocalDateTime.Date == DateTime.Today ? "HH:mm" : "MMM d HH:mm", CultureInfo.CurrentCulture);
 
     /// <summary>Base-game sector grid, optional keypad sub-grid, and labels in each cell's top-left corner.</summary>
     private void DrawGrid(DrawingContext dc)

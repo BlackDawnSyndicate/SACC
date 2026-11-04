@@ -55,6 +55,8 @@ public partial class MainWindow : Window
         MapCanvas.Vehicles = _vm.MapVehicles;
         MapCanvas.ShowVehicles = _vm.MapShowVehicles;
         MapCanvas.LabelVehicleIds = _vm.MapVehicleIdFilter.Length > 0;
+        MapCanvas.Tracks = _vm.MapTracks;
+        MapCanvas.ShowTracks = _vm.MapShowTracks;
         MapCanvas.ShowBookmarks = _vm.MapShowBookmarks;
         MapCanvas.GridStyle = _vm.MapGrid;
         if (Sacc.App.Map.MapDataService.WebpUnsupported) _vm.NoteWebpMissing();

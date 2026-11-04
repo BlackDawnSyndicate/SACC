@@ -86,7 +86,8 @@ public sealed class GameLink
     }
 
     /// <summary>Send one line and wait for the game to place its output on the clipboard.</summary>
-    public async Task<string?> SendAndCaptureAsync(Settings settings, string line, IntPtr returnTo, CancellationToken ct)
+    /// <param name="alwaysReturn">Go back to <paramref name="returnTo"/> even when the Return focus setting is off (unattended reads).</param>
+    public async Task<string?> SendAndCaptureAsync(Settings settings, string line, IntPtr returnTo, CancellationToken ct, bool alwaysReturn = false)
     {
         await _gate.WaitAsync(ct);
         string? saved = settings.RestoreClipboard ? TryGetClipboardText() : null;
@@ -112,9 +113,12 @@ public sealed class GameLink
         {
             if (saved != null) SetClipboardText(saved);
             _gate.Release();
-            if (settings.ReturnFocusToSacc && returnTo != IntPtr.Zero) SetForegroundWindow(returnTo);
+            if (alwaysReturn && returnTo != IntPtr.Zero) RequestForeground(returnTo);
+            else if (settings.ReturnFocusToSacc && returnTo != IntPtr.Zero) SetForegroundWindow(returnTo);
         }
     }
+
+    public static IntPtr ForegroundWindow => GetForegroundWindow();
 
     private GameStatus RequireGame(Settings settings)
     {
