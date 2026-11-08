@@ -35,11 +35,21 @@ public partial class MainWindow : Window
         _vm.MapChanged += SyncMap;
         _vm.MapGoRequested += (world, zoom) => MapCanvas.CenterOn(world.X, world.Y, zoom);
 
+        MissionCanvas.Data = _vm.MapDataService;
+        MissionCanvas.Players = _vm.Players;
+        MissionCanvas.Clicked += (world, _) => _vm.MissionMapClicked(world, MissionCanvas.PixelDistance);
+        _vm.MissionGoRequested += (world, radius) => MissionCanvas.Frame(world.X, world.Y, radius);
+
         var tabs = (TabControl)MapTab.Parent;
         tabs.SelectionChanged += async (_, e) =>
         {
             // SelectionChanged bubbles up from lists inside tabs too; only react to the tab strip itself.
-            if (e.OriginalSource == tabs && tabs.SelectedItem == MapTab) await _vm.EnsureMapLoadedAsync();
+            if (e.OriginalSource == tabs && (tabs.SelectedItem == MapTab || tabs.SelectedItem == MissionTab))
+            {
+                await _vm.EnsureMapLoadedAsync();
+                // After layout: framing needs the map's size.
+                if (tabs.SelectedItem == MissionTab) _ = Dispatcher.BeginInvoke(_vm.FrameSelectedPhase, System.Windows.Threading.DispatcherPriority.Background);
+            }
         };
     }
 
@@ -59,6 +69,13 @@ public partial class MainWindow : Window
         MapCanvas.ShowTracks = _vm.MapShowTracks;
         MapCanvas.ShowBookmarks = _vm.MapShowBookmarks;
         MapCanvas.GridStyle = _vm.MapGrid;
+        if (_vm.MapTemplate is { } mt && _vm.ActiveTileTemplate is { } mtiles) MissionCanvas.SetMap(mt, mtiles);
+        MissionCanvas.Categories = _vm.MapCategoryLookup;
+        MissionCanvas.PlayersListedAt = _vm.PlayersListedAt;
+        MissionCanvas.ShowOnline = _vm.MapShowOnline;
+        MissionCanvas.Mission = _vm.SelectedMission;
+        MissionCanvas.SelectedPhase = _vm.SelectedPhase;
+        MissionCanvas.SelectedSpawn = _vm.SelectedSpawn;
         if (Sacc.App.Map.MapDataService.WebpUnsupported) _vm.NoteWebpMissing();
     }
 
@@ -74,6 +91,11 @@ public partial class MainWindow : Window
     {
         _vm.Save();
         base.OnClosing(e);
+    }
+
+    private void MissionTab_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape) _vm.ToolSelect = true;
     }
 
     private void FreeformBox_PreviewKeyDown(object sender, KeyEventArgs e)

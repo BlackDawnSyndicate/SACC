@@ -28,6 +28,10 @@ public sealed class Settings
     public bool ReturnFocusToSacc { get; set; }
     /// <summary>Seconds between #ListPlayers reads while player tracking is on.</summary>
     public int TrackIntervalSeconds { get; set; } = 60;
+    /// <summary>Seconds between #ListPlayers reads while a mission phase has spawns waiting on player positions.</summary>
+    public int MissionPollSeconds { get; set; } = 15;
+    /// <summary>Your own character (Settings → your SteamID64) doesn't set off or hold mission spawns.</summary>
+    public bool MissionIgnoreMe { get; set; } = true;
     public bool DryRun { get; set; } = true;
     public bool ConfirmDangerous { get; set; } = true;
     public bool AlwaysOnTop { get; set; }
@@ -273,6 +277,8 @@ public sealed class Profile
     public DateTime? PlayersListedAt { get; set; }
     /// <summary>The last #ListFlags result; each read replaces the whole list.</summary>
     public List<FlagRecord> Flags { get; set; } = new();
+    public System.Collections.ObjectModel.ObservableCollection<Mission> Missions { get; set; } = new();
+    public System.Collections.ObjectModel.ObservableCollection<MissionPrefab> Prefabs { get; set; } = new();
     public DateTime? FlagsListedAt { get; set; }
     /// <summary>The last #ListSpawnedVehicles result; used for GM spawn heights.</summary>
     public List<VehicleRecord> Vehicles { get; set; } = new();

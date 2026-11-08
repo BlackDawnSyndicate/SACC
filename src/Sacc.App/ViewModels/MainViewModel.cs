@@ -43,6 +43,7 @@ public sealed partial class MainViewModel : ObservableObject
         InitKits();
         InitContainers();
         InitTracking();
+        InitMissions();
         RebuildItemCatalog();
 
         CommandsView = new ListCollectionView(new List<CommandDef>());

@@ -369,7 +369,7 @@ public sealed partial class MainViewModel
             if (a.HasType && string.IsNullOrWhiteSpace(a.Type)) { Status = $"Pick a type for {a.Label} in the GM panel first."; return; }
             var def = _catalog.Find(a.Action.CatalogId);
             if (def == null) { Status = $"The command catalog has no '{a.Action.CatalogId}' entry."; return; }
-            if (a.Action.GroundChecked && Settings.GmFindGround) { await GmClimbAsync(a, def, count, at); return; }
+            if (a.Action.GroundChecked && Settings.GmFindGround) { await GmClimbAsync(a.Action, a.Type, a.Label, def, count, at, _gmGuessLearned); return; }
             var r = GmSpawn.Render(def, a.Action, a.Type, count, at);
             if (!r.Ok) { Status = $"{a.Label}: {string.Join("  ", r.Errors)}"; return; }
             lines = r.Text.Split('\n').ToList();
@@ -388,17 +388,18 @@ public sealed partial class MainViewModel
     /// nothing, and the first step it accepts is within one step of the ground, so the squad lands on it
     /// instead of dropping from up to 30 m. See spikes/npc-spawn-ground.
     /// </summary>
-    private async Task GmClimbAsync(GmActionViewModel a, CommandDef def, int count, Vec3 at)
+    /// <returns>How many the game accepted; -1 if the send failed or was stopped.</returns>
+    private async Task<int> GmClimbAsync(GmSpawn.Action action, string type, string label, CommandDef def, int count, Vec3 at, bool learnedGuess)
     {
         // The guess without the height offset: the climb finds the surface itself.
         var guess = at.Z - Settings.GmHeightOffset;
         // A guess from measured ground is usually right to a step: try just around it before the full climb.
-        var heights = GmSpawn.ClimbPlan(guess, Settings.GmClimbRange, Settings.GmClimbStep, _gmGuessLearned ? LearnedQuickSteps : 0);
+        var heights = GmSpawn.ClimbPlan(guess, Settings.GmClimbRange, Settings.GmClimbStep, learnedGuess ? LearnedQuickSteps : 0);
         var lines = new List<string>();
         foreach (var z in heights)
         {
-            var r = GmSpawn.Render(def, a.Action, a.Type, count, at with { Z = z });
-            if (!r.Ok) { Status = $"{a.Label}: {string.Join("  ", r.Errors)}"; return; }
+            var r = GmSpawn.Render(def, action, type, count, at with { Z = z });
+            if (!r.Ok) { Status = $"{label}: {string.Join("  ", r.Errors)}"; return -1; }
             lines.Add(r.Text);
         }
         var range = Settings.GmClimbRange;
@@ -408,12 +409,12 @@ public sealed partial class MainViewModel
         if (Settings.DryRun)
         {
             foreach (var l in lines) Record(l, "dry run (climb)");
-            Status = $"Dry run: {a.Label} would climb up to {lines.Count} steps ({plan}), stopping at the first one the game accepts. Guess: {GmHeightText}. Nothing sent.";
-            return;
+            Status = $"Dry run: {label} would climb up to {lines.Count} steps ({plan}), stopping at the first one the game accepts. Guess: {GmHeightText}. Nothing sent.";
+            return 0;
         }
 
         var log = AppPaths.ScumClientLog;
-        if (!File.Exists(log)) { Status = $"Can't find the ground without SCUM's log ({log}). Turn off Find ground, or start SCUM once."; return; }
+        if (!File.Exists(log)) { Status = $"Can't find the ground without SCUM's log ({log}). Turn off Find ground, or start SCUM once."; return -1; }
 
         long seen = new FileInfo(log).Length;
         var stoppedAt = -1;
@@ -442,22 +443,22 @@ public sealed partial class MainViewModel
                 }
                 if (refusals < remaining && firstAccepted < 0) firstAccepted = i;
                 if (refusals == 0) { Record(lines[i], "sent"); return true; }
-                if (refusals >= remaining || a.Action.CountParam == null) { Record(lines[i], "refused (no ground near)"); return false; }
+                if (refusals >= remaining || action.CountParam == null) { Record(lines[i], "refused (no ground near)"); return false; }
 
                 Record(lines[i], $"{remaining - refusals} of {remaining} spawned, {refusals} refused");
                 partly.Add(FormattableString.Invariant($"{remaining - refusals} at Z {heights[i]:0}"));
                 remaining = refusals;
                 for (var j = i + 1; j < lines.Count; j++)
-                    lines[j] = GmSpawn.Render(def, a.Action, a.Type, remaining, at with { Z = heights[j] }).Text;
+                    lines[j] = GmSpawn.Render(def, action, type, remaining, at with { Z = heights[j] }).Text;
                 return false;
             }, _ownWindow(), ct);
         });
-        if (!ok) return;
+        if (!ok) return -1;
 
         // The first step anything spawned at, right after a refused step below it, pins the ground to one step.
         var learned = "";
         if (firstAccepted > 0 && GroundMap.FromClimb(at.X, at.Y, heights[firstAccepted - 1], heights[firstAccepted],
-                Math.Max(50, Math.Abs(Settings.GmClimbStep)), a.Action.Key, DateTime.Now) is { } sample)
+                Math.Max(50, Math.Abs(Settings.GmClimbStep)), action.Key, DateTime.Now) is { } sample)
         {
             var s = Ground.Add(sample);
             SaveGround();
@@ -467,10 +468,11 @@ public sealed partial class MainViewModel
 
         var earlier = partly.Count > 0 ? $" ({string.Join(", ", partly)} before that)" : "";
         Status = stoppedAt >= 0
-            ? FormattableString.Invariant($"{a.Label}: {remaining} spawned at Z {heights[stoppedAt]:0} after {stoppedAt} refused step(s){earlier}: the ground is within about 3 m below that.")
+            ? FormattableString.Invariant($"{label}: {remaining} spawned at Z {heights[stoppedAt]:0} after {stoppedAt} refused step(s){earlier}: the ground is within about 3 m below that.")
             : partly.Count > 0
-                ? $"{a.Label}: {string.Join(", ", partly)}; the game refused the other {remaining} at every step ({plan})."
-                : $"{a.Label}: the game refused every step ({plan}). The ground is further from the height guess ({GmHeightText}); widen the climb range or set a height.";
+                ? $"{label}: {string.Join(", ", partly)}; the game refused the other {remaining} at every step ({plan})."
+                : $"{label}: the game refused every step ({plan}). The ground is further from the height guess ({GmHeightText}); widen the climb range or set a height.";
         Status += learned;
+        return stoppedAt >= 0 ? count : count - remaining;
     }
 }

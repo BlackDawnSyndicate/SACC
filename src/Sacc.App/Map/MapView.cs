@@ -123,6 +123,18 @@ public sealed class MapView : FrameworkElement
         InvalidateVisual();
     }
 
+    /// <summary>Centre on a world position, zoomed so this many world units around it fit the view.</summary>
+    public void Frame(double worldX, double worldY, double worldRadius)
+    {
+        if (_projection == null) return;
+        (_cx, _cy) = _projection.ToMap(worldX, worldY);
+        var (edge, _) = _projection.ToMap(worldX + Math.Max(worldRadius, 1000), worldY);
+        var units = Math.Abs(edge - _cx);
+        var pixels = Math.Min(ActualWidth, ActualHeight) * 0.42;
+        if (units > 0 && pixels > 0) _zoom = Math.Clamp(Math.Log2(pixels / units), 0, 8);
+        InvalidateVisual();
+    }
+
     private void Rebind<T>(ref IEnumerable<T>? field, IEnumerable<T>? value)
     {
         if (field is INotifyCollectionChanged oldC) oldC.CollectionChanged -= OnOverlayChanged;
@@ -242,6 +254,7 @@ public sealed class MapView : FrameworkElement
             }
 
         if (_showTracks) DrawTracks(dc);
+        DrawMission(dc);
 
         if ((_showPlayers || _showOnline) && _players != null)
             foreach (var pl in _players)
@@ -300,6 +313,104 @@ public sealed class MapView : FrameworkElement
 
     private static string TrackTime(DateTimeOffset at) =>
         at.LocalDateTime.ToString(at.LocalDateTime.Date == DateTime.Today ? "HH:mm" : "MMM d HH:mm", CultureInfo.CurrentCulture);
+
+    // ---------------------------------------------------------------- the mission overlay
+
+    /// <summary>The mission tab's plan, drawn over the map.</summary>
+    public Mission? Mission { get => _mission; set { _mission = value; InvalidateVisual(); } }
+    private Mission? _mission;
+    public MissionPhase? SelectedPhase { get => _selPhase; set { _selPhase = value; InvalidateVisual(); } }
+    private MissionPhase? _selPhase;
+    public MissionSpawn? SelectedSpawn { get => _selSpawn; set { _selSpawn = value; InvalidateVisual(); } }
+    private MissionSpawn? _selSpawn;
+
+    private static readonly Pen RoutePen = Frozen(new Pen(new SolidColorBrush(Color.FromArgb(0xD0, 0xFF, 0xFF, 0xFF)), 2) { DashStyle = DashStyles.Dash });
+    private static readonly Pen PhaseRing = Frozen(new Pen(new SolidColorBrush(Color.FromRgb(0xFF, 0x8A, 0x1E)), 2));
+    private static readonly Brush PhaseArea = Frozen(new SolidColorBrush(Color.FromArgb(0x24, 0xFF, 0x8A, 0x1E)));
+    private static readonly Brush PhaseBadge = Frozen(new SolidColorBrush(Color.FromRgb(0xFF, 0x8A, 0x1E)));
+    private static readonly Brush PhaseBadgeDim = Frozen(new SolidColorBrush(Color.FromRgb(0x5A, 0x64, 0x6A)));
+    private static readonly Pen TriggerRing = Frozen(new Pen(new SolidColorBrush(Color.FromRgb(0xFF, 0xD5, 0x4D)), 1.5) { DashStyle = DashStyles.Dash });
+    private static readonly Pen HoldRing = Frozen(new Pen(new SolidColorBrush(Color.FromRgb(0xFF, 0x4D, 0x4D)), 1.5) { DashStyle = DashStyles.Dot });
+    private static readonly Pen SelectedPin = Frozen(new Pen(Brushes.White, 2.5));
+    private static readonly Brush PinPending = Frozen(new SolidColorBrush(Color.FromRgb(0xE8, 0xEC, 0xEE)));
+    private static readonly Brush PinSpawned = Frozen(new SolidColorBrush(Color.FromRgb(0x4C, 0xD9, 0x64)));
+    private static readonly Brush PinPartial = Frozen(new SolidColorBrush(Color.FromRgb(0xFF, 0xB3, 0x00)));
+    private static readonly Brush PinRefused = Frozen(new SolidColorBrush(Color.FromRgb(0xE5, 0x39, 0x35)));
+    private static readonly Brush PinSent = Frozen(new SolidColorBrush(Color.FromRgb(0x4D, 0xA6, 0xFF)));
+
+    private double WorldToPixels(Vec3 at, double worldUnits)
+    {
+        var (x0, _) = _projection!.ToMap(at.X, at.Y);
+        var (x1, _) = _projection.ToMap(at.X + worldUnits, at.Y);
+        return Math.Abs(x1 - x0) * Scale;
+    }
+
+    private Point WorldToScreen(Vec3 at)
+    {
+        var (mx, my) = _projection!.ToMap(at.X, at.Y);
+        return ToScreen(mx, my);
+    }
+
+    /// <summary>On-screen distance between two world spots, for clicking pins at any zoom.</summary>
+    public double PixelDistance(Vec3 a, Vec3 b) => _projection == null ? double.MaxValue : (WorldToScreen(a) - WorldToScreen(b)).Length;
+
+    private void DrawMission(DrawingContext dc)
+    {
+        if (_mission == null || _projection == null) return;
+
+        // The route first, so everything else sits on it.
+        var centres = _mission.Phases.Where(p => p.Center != null).Select(p => WorldToScreen(p.Center!.Value)).ToList();
+        for (var i = 1; i < centres.Count; i++) dc.DrawLine(RoutePen, centres[i - 1], centres[i]);
+
+        if (_selPhase?.Center is { } sc)
+        {
+            var r = WorldToPixels(sc, _selPhase.RadiusM * 100);
+            dc.DrawEllipse(PhaseArea, PhaseRing, WorldToScreen(sc), r, r);
+        }
+
+        if (_selPhase != null)
+            foreach (var s in _selPhase.Spawns)
+            {
+                var p = WorldToScreen(s.At);
+                if (s.TriggerRadiusM > 0) { var r = WorldToPixels(s.At, s.TriggerRadiusM * 100); dc.DrawEllipse(null, TriggerRing, p, r, r); }
+                if (s.HoldRadiusM > 0) { var r = WorldToPixels(s.At, s.HoldRadiusM * 100); dc.DrawEllipse(null, HoldRing, p, r, r); }
+            }
+
+        for (var i = 0; i < _mission.Phases.Count; i++)
+        {
+            var phase = _mission.Phases[i];
+            if (phase.Center is not { } c) continue;
+            var selected = phase == _selPhase;
+            var p = WorldToScreen(c);
+            var size = selected ? 12 : 9;
+            dc.DrawEllipse(selected ? PhaseBadge : PhaseBadgeDim, SelectedPin, p, size, size);
+            var number = new FormattedText((i + 1).ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                GridFace, selected ? 14 : 11, Brushes.White, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+            dc.DrawText(number, new Point(p.X - number.Width / 2, p.Y - number.Height / 2));
+            if (selected || _zoom >= 3) Label(dc, phase.Name, p, size);
+        }
+
+        if (_selPhase != null)
+            foreach (var s in _selPhase.Spawns)
+            {
+                var p = WorldToScreen(s.At);
+                var fill = s.State switch
+                {
+                    MissionSpawnState.Spawned => PinSpawned,
+                    MissionSpawnState.Partial => PinPartial,
+                    MissionSpawnState.Refused => PinRefused,
+                    MissionSpawnState.Sent => PinSent,
+                    _ => PinPending,
+                };
+                // Shape says what it is (vehicle, item or kit, creature), colour says what happened to it.
+                var selected = s == _selSpawn;
+                var pen = selected ? SelectedPin : MarkerOutline;
+                if (s.Kind == "vehicle") dc.DrawRoundedRectangle(fill, pen, new Rect(p.X - 8, p.Y - 5, 16, 10), 2, 2);
+                else if (s.Kind is "item" or "kit") dc.DrawRectangle(fill, pen, new Rect(p.X - 5, p.Y - 5, 10, 10));
+                else dc.DrawEllipse(fill, pen, p, selected ? 7 : 5, selected ? 7 : 5);
+                if (selected || _zoom >= 5) Label(dc, s.Summary, p, 8);
+            }
+    }
 
     /// <summary>Base-game sector grid, optional keypad sub-grid, and labels in each cell's top-left corner.</summary>
     private void DrawGrid(DrawingContext dc)

@@ -819,6 +819,229 @@
                 </Grid>
             </TabItem>
 
+            <!-- ============================================================ Missions -->
+            <TabItem Header="Missions" x:Name="MissionTab">
+                <Grid PreviewKeyDown="MissionTab_PreviewKeyDown">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="190" MinWidth="150"/>
+                        <ColumnDefinition Width="6"/>
+                        <ColumnDefinition Width="*" MinWidth="240"/>
+                        <ColumnDefinition Width="6"/>
+                        <ColumnDefinition Width="320" MinWidth="260"/>
+                    </Grid.ColumnDefinitions>
+                    <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" Background="Transparent" ToolTip="Drag to resize"/>
+                    <GridSplitter Grid.Column="3" Width="6" HorizontalAlignment="Stretch" Background="Transparent" ToolTip="Drag to resize"/>
+
+                    <!-- Left: which mission, and its phases in order -->
+                    <DockPanel Grid.Column="0">
+                        <StackPanel DockPanel.Dock="Top">
+                            <TextBlock Text="Mission" Style="{StaticResource SectionLabel}" Margin="0,0,0,2"/>
+                            <ComboBox ItemsSource="{Binding Missions}" SelectedItem="{Binding SelectedMission}" DisplayMemberPath="Name" AutomationProperties.Name="Mission"/>
+                            <DockPanel Margin="0,4,0,0">
+                                <Button DockPanel.Dock="Right" Style="{StaticResource DangerButton}" Command="{Binding DeleteMissionCommand}" Content="Delete"/>
+                                <Button Style="{StaticResource PrimaryButton}" Command="{Binding NewMissionCommand}" Content="New" HorizontalAlignment="Left"/>
+                            </DockPanel>
+                            <TextBox Text="{Binding SelectedMission.Name, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding HasMission}" Margin="0,4,0,0"
+                                     AutomationProperties.Name="Mission name" ToolTip="The mission's name"/>
+                            <TextBlock Text="Phases" Style="{StaticResource SectionLabel}" Margin="0,8,0,2"/>
+                        </StackPanel>
+                        <StackPanel DockPanel.Dock="Bottom">
+                            <WrapPanel Margin="0,4,0,0">
+                                <Button Command="{Binding AddPhaseCommand}" Content="Add"/>
+                                <Button Command="{Binding PhaseUpCommand}" Content="▲" MinWidth="0" AutomationProperties.Name="Move phase up"/>
+                                <Button Command="{Binding PhaseDownCommand}" Content="▼" MinWidth="0" AutomationProperties.Name="Move phase down"/>
+                                <Button Style="{StaticResource DangerButton}" Command="{Binding RemovePhaseCommand}" Content="Remove"/>
+                            </WrapPanel>
+                            <TextBlock Text="WhalleyBot script" Style="{StaticResource SectionLabel}" Margin="0,8,0,2"/>
+                            <WrapPanel>
+                                <Button Command="{Binding CopyMissionScriptCommand}" Content="Copy" ToolTip="Copies one task block per phase. Radius rules become comments, because a task sends every line when it starts."/>
+                                <Button Command="{Binding SaveMissionScriptCommand}" Content="Save…" ToolTip="Saves the same text to a file"/>
+                            </WrapPanel>
+                        </StackPanel>
+                        <ListBox ItemsSource="{Binding SelectedMission.Phases}" SelectedItem="{Binding SelectedPhase}" DisplayMemberPath="Name" AutomationProperties.Name="Phases"/>
+                    </DockPanel>
+
+                    <!-- Middle: the map and its tools -->
+                    <DockPanel Grid.Column="2">
+                        <WrapPanel DockPanel.Dock="Top" IsEnabled="{Binding HasMission}">
+                            <RadioButton GroupName="MissionTool" Style="{StaticResource {x:Type ToggleButton}}" IsChecked="{Binding ToolSelect}" Content="Select" Padding="8,3" Margin="0,0,2,4"/>
+                            <RadioButton GroupName="MissionTool" Style="{StaticResource {x:Type ToggleButton}}" IsChecked="{Binding ToolCentre}" Content="Centre" Padding="8,3" Margin="0,0,2,4"
+                                         ToolTip="Click the map to set this phase's centre"/>
+                            <RadioButton GroupName="MissionTool" Style="{StaticResource {x:Type ToggleButton}}" IsChecked="{Binding ToolSpawn}" Content="Spawn" Padding="8,3" Margin="0,0,2,4"
+                                         ToolTip="Click the map to place spawns"/>
+                            <RadioButton GroupName="MissionTool" Style="{StaticResource {x:Type ToggleButton}}" IsChecked="{Binding ToolPrefab}" Content="Prefab" Padding="8,3" Margin="0,0,2,4"
+                                         ToolTip="Click the map to place the selected prefab scene"/>
+                            <RadioButton GroupName="MissionTool" Style="{StaticResource {x:Type ToggleButton}}" IsChecked="{Binding ToolMove}" Content="Move" Padding="8,3" Margin="0,0,12,4"
+                                         ToolTip="Click the map to move the selected spawn"/>
+                            <Button Command="{Binding PrevPhaseCommand}" Content="◀" MinWidth="0" Margin="0,0,2,4" AutomationProperties.Name="Previous phase" ToolTip="Previous phase"/>
+                            <Button Command="{Binding NextPhaseCommand}" Content="▶" MinWidth="0" Margin="0,0,6,4" AutomationProperties.Name="Next phase" ToolTip="Next phase"/>
+                            <TextBlock Text="{Binding PhasePosition}" VerticalAlignment="Center" Margin="0,0,0,4" Style="{StaticResource Muted}"/>
+                        </WrapPanel>
+                        <TextBlock DockPanel.Dock="Top" Text="{Binding MissionHint}" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                        <Border DockPanel.Dock="Bottom" Padding="0,4,0,0">
+                            <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap"
+                                       Text="Pins: ● creature  ▬ vehicle  ■ item or kit. Grey = not spawned, green = spawned, amber = some refused, red = refused, blue = sent, not confirmed. Yellow dashes = trigger radius, red dots = hold radius."/>
+                        </Border>
+                        <Border BorderBrush="#DADFE2" BorderThickness="1">
+                            <map:MapView x:Name="MissionCanvas"/>
+                        </Border>
+                    </DockPanel>
+
+                    <!-- Right: plan or run the selected phase -->
+                    <TabControl Grid.Column="4" IsEnabled="{Binding HasMission}">
+                        <TabItem Header="Plan">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel Margin="0,6,4,0">
+                                    <StackPanel IsEnabled="{Binding HasPhase}">
+                                        <TextBlock Text="Phase" Style="{StaticResource SectionLabel}" Margin="0,0,0,2"/>
+                                        <TextBox Text="{Binding SelectedPhase.Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Phase name" ToolTip="The phase's name"/>
+                                        <TextBlock Text="{Binding SelectedPhase.CenterText}" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,3,0,3"/>
+                                        <DockPanel Margin="0,0,0,3">
+                                            <TextBlock Text="Radius (m)" VerticalAlignment="Center" Width="80"/>
+                                            <TextBox Text="{Binding SelectedPhase.RadiusM, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Phase radius in metres"
+                                                     ToolTip="The phase's area, and how far its cleanup reaches"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,0,0,3">
+                                            <TextBlock Text="Announce" VerticalAlignment="Center" Width="80"/>
+                                            <TextBox Text="{Binding SelectedPhase.Announce, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Phase announcement"
+                                                     ToolTip="Sent as #Announce when the phase starts. Empty = nothing."/>
+                                        </DockPanel>
+
+                                        <TextBlock Text="Spawns in this phase" Style="{StaticResource SectionLabel}" Margin="0,8,0,2"/>
+                                        <ListBox ItemsSource="{Binding SelectedPhase.Spawns}" SelectedItem="{Binding SelectedSpawn}" MaxHeight="130" MinHeight="48"
+                                                 AutomationProperties.Name="Spawns in this phase" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Summary}" TextTrimming="CharacterEllipsis" ToolTip="{Binding RuleText}"/>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+                                    </StackPanel>
+
+                                    <DockPanel Margin="0,8,0,2">
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource DangerButton}" Command="{Binding RemoveSpawnCommand}" Content="Remove" Margin="0"/>
+                                        <TextBlock Text="{Binding EditSpawnHeading}" Style="{StaticResource SectionLabel}" VerticalAlignment="Center" Margin="0"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,0,0,3">
+                                        <TextBlock Text="Kind" VerticalAlignment="Center" Width="80"/>
+                                        <ComboBox ItemsSource="{Binding MissionKinds}" DisplayMemberPath="Label" SelectedValuePath="Key" SelectedValue="{Binding EditSpawn.Kind}" AutomationProperties.Name="Spawn kind"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,0,0,3">
+                                        <TextBlock Text="Type" VerticalAlignment="Center" Width="80"/>
+                                        <ComboBox IsEditable="True" ItemsSource="{Binding EditSpawnTypes}" Text="{Binding EditSpawn.Type, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Spawn type"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,0,0,3">
+                                        <TextBlock Text="How many" VerticalAlignment="Center" Width="80"/>
+                                        <TextBox Text="{Binding EditSpawn.Count, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Spawn count"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,0,0,3">
+                                        <TextBlock Text="Trigger (m)" VerticalAlignment="Center" Width="80"/>
+                                        <TextBox Text="{Binding EditSpawn.TriggerRadiusM, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Trigger radius in metres"
+                                                 ToolTip="Wait until a player comes this close. 0 = spawn as soon as the phase starts."/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,0,0,3">
+                                        <TextBlock Text="Hold (m)" VerticalAlignment="Center" Width="80"/>
+                                        <TextBox Text="{Binding EditSpawn.HoldRadiusM, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Hold radius in metres"
+                                                 ToolTip="Don't spawn while a player is this close, so nothing appears on top of them. 0 = no check."/>
+                                    </DockPanel>
+                                    <TextBlock Text="{Binding EditSpawn.RuleText}" Style="{StaticResource Muted}" TextWrapping="Wrap"/>
+
+                                    <TextBlock Text="Prefab scenes" Style="{StaticResource SectionLabel}" Margin="0,10,0,2"/>
+                                    <ComboBox ItemsSource="{Binding MissionPrefabs}" SelectedItem="{Binding SelectedPrefab}" DisplayMemberPath="Name" AutomationProperties.Name="Prefab"/>
+                                    <WrapPanel Margin="0,4,0,0">
+                                        <Button Command="{Binding NewPrefabCommand}" Content="New"/>
+                                        <Button Style="{StaticResource DangerButton}" Command="{Binding DeletePrefabCommand}" Content="Delete"/>
+                                        <Button Command="{Binding AddPrefabMemberCommand}" Content="Add member"/>
+                                    </WrapPanel>
+                                    <TextBox Text="{Binding SelectedPrefab.Name, UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,4" AutomationProperties.Name="Prefab name" ToolTip="The prefab's name"/>
+                                    <ItemsControl ItemsSource="{Binding SelectedPrefab.Members}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border BorderBrush="#DADFE2" BorderThickness="1" Padding="4" Margin="0,0,0,4">
+                                                    <StackPanel>
+                                                        <DockPanel Margin="0,0,0,3">
+                                                            <Button DockPanel.Dock="Right" Content="✕" MinWidth="0" Margin="4,0,0,0" AutomationProperties.Name="Remove member" ToolTip="Remove this member"
+                                                                    Command="{Binding DataContext.RemovePrefabMemberCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
+                                                            <ComboBox ItemsSource="{Binding DataContext.MissionKinds, RelativeSource={RelativeSource AncestorType=ItemsControl}}" DisplayMemberPath="Label" SelectedValuePath="Key" SelectedValue="{Binding Kind}" AutomationProperties.Name="Member kind"/>
+                                                        </DockPanel>
+                                                        <TextBox Text="{Binding Type, UpdateSourceTrigger=LostFocus}" Margin="0,0,0,3" AutomationProperties.Name="Member type" ToolTip="Spawn code, e.g. BPC_Rager or BP_Drifter_Lvl_5"/>
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Grid.Column="0" Text="Each" VerticalAlignment="Center" Margin="0,0,3,0"/>
+                                                            <TextBox Grid.Column="1" Text="{Binding Count, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Member count per pin" ToolTip="How many each pin spawns"/>
+                                                            <TextBlock Grid.Column="2" Text="Pins" VerticalAlignment="Center" Margin="6,0,3,0"/>
+                                                            <TextBox Grid.Column="3" Text="{Binding Copies, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Member pins" ToolTip="How many pins, spaced evenly in a ring"/>
+                                                            <TextBlock Grid.Column="4" Text="Ring m" VerticalAlignment="Center" Margin="6,0,3,0"/>
+                                                            <TextBox Grid.Column="5" Text="{Binding OffsetM, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Member ring radius in metres" ToolTip="The ring's radius; 0 = on the spot you click"/>
+                                                        </Grid>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap" Text="Placed pins take the Trigger and Hold set under Next spawn."/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabItem>
+                        <TabItem Header="Run">
+                            <DockPanel Margin="0,6,4,0" IsEnabled="{Binding HasPhase}">
+                                <StackPanel DockPanel.Dock="Top">
+                                    <WrapPanel>
+                                        <Button Style="{StaticResource PrimaryButton}" Command="{Binding RunPhaseCommand}" Content="▶ Run this phase" IsEnabled="{Binding MissionNotRunning}"/>
+                                        <Button Command="{Binding StopRunCommand}" Content="■ Stop"/>
+                                    </WrapPanel>
+                                    <TextBlock Text="{Binding RunStatus}" TextWrapping="Wrap" Margin="0,4,0,4"/>
+                                    <DockPanel Margin="0,0,0,3">
+                                        <TextBlock Text="Read players every (s)" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBox Text="{Binding MissionPoll, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Player read interval in seconds"
+                                                 ToolTip="5 or more. Only used while spawns are waiting on player positions, and each read types into the game."/>
+                                    </DockPanel>
+                                    <CheckBox Content="Ignore me (my SteamID64 in Settings)" IsChecked="{Binding MissionIgnoreMe}" Margin="0,0,0,6"
+                                              ToolTip="Your own character doesn't set off or hold spawns"/>
+                                    <TextBlock Text="Spawns in this phase" Style="{StaticResource SectionLabel}" Margin="0,0,0,2"/>
+                                    <ListBox ItemsSource="{Binding SelectedPhase.Spawns}" SelectedItem="{Binding SelectedSpawn}" MaxHeight="150" MinHeight="48"
+                                             AutomationProperties.Name="Spawn results" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Summary}" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding StateText}" Style="{StaticResource Muted}" TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                    <TextBlock Text="Spawned so far, this mission" Style="{StaticResource SectionLabel}" Margin="0,8,0,2"/>
+                                </StackPanel>
+                                <StackPanel DockPanel.Dock="Bottom">
+                                    <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,4,0,0"
+                                               Text="These count what the game accepted, not what's still alive: the game doesn't report kills. Unsure = sent, and the game said nothing either way."/>
+                                    <TextBlock Text="When the phase is over" Style="{StaticResource SectionLabel}" Margin="0,8,0,2"/>
+                                    <TextBox Text="{Binding SelectedPhase.ExtraCleanup, UpdateSourceTrigger=LostFocus}" AcceptsReturn="True" MinHeight="44" MaxHeight="80" VerticalScrollBarVisibility="Auto"
+                                             AutomationProperties.Name="Extra cleanup commands" ToolTip="Your own # commands to add to this phase's cleanup, one per line"/>
+                                    <WrapPanel Margin="0,4,0,0">
+                                        <Button Style="{StaticResource DangerButton}" Command="{Binding CleanupPhaseCommand}" Content="Clean up…"
+                                                ToolTip="Teleports you to the phase centre and destroys the item types this phase spawned. It shows the commands first."/>
+                                        <Button Command="{Binding ResetRunCommand}" Content="Reset phase…" ToolTip="Forget what this phase spawned, so it can run again"/>
+                                    </WrapPanel>
+                                </StackPanel>
+                                <DataGrid ItemsSource="{Binding MissionTally}" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column" AutomationProperties.Name="Spawn tally by type" MinHeight="60">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="*" MinWidth="90"/>
+                                        <DataGridTextColumn Header="Asked" Binding="{Binding Asked}" Width="Auto"/>
+                                        <DataGridTextColumn Header="Spawned" Binding="{Binding Spawned}" Width="Auto"/>
+                                        <DataGridTextColumn Header="Refused" Binding="{Binding Refused}" Width="Auto"/>
+                                        <DataGridTextColumn Header="Unsure" Binding="{Binding Unconfirmed}" Width="Auto"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </DockPanel>
+                        </TabItem>
+                    </TabControl>
+                </Grid>
+            </TabItem>
             <!-- ============================================================ Locations -->
             <TabItem Header="Locations">
                 <DockPanel>

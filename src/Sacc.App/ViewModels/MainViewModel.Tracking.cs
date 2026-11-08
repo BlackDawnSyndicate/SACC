@@ -106,30 +106,44 @@ public sealed partial class MainViewModel
         if (!_tracking || IsBusy) return;
         if (Settings.DryRun) { Status = "Tracking is on, but Dry run is too: nothing is sent, and only lists you paste are recorded."; return; }
         if (!GameOk) { Status = $"Tracking: waiting for the game ({GameStatusText})."; return; }
-        var def = _catalog.Find("list-players-copy");
-        if (def == null) { StopTracking("Tracking stopped: the command catalog has no 'list-players-copy' entry."); return; }
 
         _trackTimer?.Stop();
         try
         {
-            // Back to whichever window you were in, and not one History row per read.
-            var returnTo = GameLink.ForegroundWindow;
-            string? output = null;
-            var ok = await GuardedAsync(async ct => output = await _game.SendAndCaptureAsync(Settings, def.Template, returnTo, ct, alwaysReturn: true));
-            if (!ok) { StopTracking($"{Status} Tracking stopped."); return; }
-            if (output == null)
+            switch (await ReadPlayersQuietlyAsync())
             {
-                if (++_trackMisses >= MaxTrackMisses) StopTracking($"Tracking stopped: the game didn't answer {MaxTrackMisses} reads in a row.");
-                else Status = "Tracking: the game didn't answer this read.";
-                return;
+                case PlayerRead.Failed:
+                    StopTracking($"{Status} Tracking stopped.");
+                    return;
+                case PlayerRead.NoAnswer:
+                    if (++_trackMisses >= MaxTrackMisses) StopTracking($"Tracking stopped: the game didn't answer {MaxTrackMisses} reads in a row.");
+                    else Status = "Tracking: the game didn't answer this read.";
+                    return;
+                default:
+                    _trackMisses = 0;
+                    return;
             }
-            _trackMisses = 0;
-            MergePlayers(output);
         }
         finally
         {
             if (_tracking) _trackTimer?.Start();
         }
+    }
+
+    private enum PlayerRead { Answered, NoAnswer, Failed }
+
+    /// <summary>An unattended #ListPlayers: back to whichever window you were in afterwards, and no History row.</summary>
+    private async Task<PlayerRead> ReadPlayersQuietlyAsync()
+    {
+        var def = _catalog.Find("list-players-copy");
+        if (def == null) { Status = "The command catalog has no 'list-players-copy' entry."; return PlayerRead.Failed; }
+        var returnTo = GameLink.ForegroundWindow;
+        string? output = null;
+        var ok = await GuardedAsync(async ct => output = await _game.SendAndCaptureAsync(Settings, def.Template, returnTo, ct, alwaysReturn: true));
+        if (!ok) return PlayerRead.Failed;
+        if (output == null) return PlayerRead.NoAnswer;
+        MergePlayers(output);
+        return PlayerRead.Answered;
     }
 
     /// <summary>Called with every player list read while tracking is on, automatic or by hand.</summary>
