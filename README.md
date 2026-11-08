@@ -106,6 +106,12 @@ Profile, log and your catalog copy live in `%LOCALAPPDATA%\SACC\`. Set `SACC_DAT
 
 Requires the .NET 8 SDK. The framework-dependent build needs the .NET 8 Desktop Runtime on the target machine.
 
+## License
+
+SACC's code is licensed under the GNU General Public License v3.0; see [LICENSE](LICENSE).
+
+The license covers SACC's own work only. The item icons in `data/icons/` are SCUM's in-game art, which belongs to the game's owners; it isn't covered by the GPL and is included only so admins can tell items apart (see CLEANROOM.md). The map and its markers come live from scum-map.com, with their permission, and aren't part of this repository.
+
 ## Credits
 
 Lurid Phoenix and Maddog Murphy. SCUM is a trademark of its respective owners; SACC is an unofficial fan tool.
