@@ -232,6 +232,7 @@ public sealed partial class MainViewModel
     private (double Z, string Source, bool Learned) GroundGuess(Vec3 p)
     {
         if (Settings.GmUseSetHeight) return (Settings.GmSetHeight, "set height", false);
+        if (TerrainGround(p) is { } tg) return (tg.Z, tg.Source, true);
         if (LearnedGround(p, LearnedWinsWithin) is { } lg) return (lg.Z, lg.Source, true);
         if (NearbyGround(p) is { } g) return (g.Z, g.Source, false);
         if (EstimatedGround(p) is { } e) return (e.Z, e.Source, false);
@@ -505,9 +506,22 @@ public sealed partial class MainViewModel
         var guess = GroundGuess(s.At);
         s.At = s.At with { Z = guess.Z };
         var at = s.At with { Z = guess.Z + Settings.GmHeightOffset };
+        var spotNote = "";
+        var spotter = new List<string>();
+        if (action.Key is "item" or "kit")
+        {
+            // Gear goes where a spotter rock first spawns, climbing up from below the ground.
+            if (await SpotGroundAsync(at, guess.Learned) is not { } spot) return false;
+            at = at with { Z = spot.Z };
+            if (spot.Found) s.At = s.At with { Z = spot.Z };
+            if (spot.RockSpawned) spotter.Add(Settings.GmSpotterItem.Trim());
+            spotNote = spot.Note;
+        }
         var lines = MissionLines(s, action, at);
         if (lines == null) { s.Refused = s.Count; s.State = MissionSpawnState.Refused; Finish(s); return true; }
         var items = MissionEngine.ItemCodes(lines).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        // The spotter rock is left lying there; cleanup takes it too.
+        var withSpotter = items.Concat(spotter).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
         if (Settings.DryRun)
         {
@@ -531,8 +545,9 @@ public sealed partial class MainViewModel
             await Task.Delay(1500);
             var replies = seen < 0 ? default : MissionEngine.ReadReplies(await ReadSharedAsync(log, Math.Min(seen, new FileInfo(log).Length)));
             MissionEngine.RecordSend(s, lines.Count, replies);
-            if (s.State != MissionSpawnState.Refused) s.ItemCodes = items;
+            s.ItemCodes = s.State != MissionSpawnState.Refused ? withSpotter : spotter;
         }
+        if (spotNote.Length > 0) Status = $"{s.Summary}:{spotNote}";
         Finish(s);
         return true;
     }

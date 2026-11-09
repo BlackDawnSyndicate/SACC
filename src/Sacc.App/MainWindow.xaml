@@ -632,6 +632,11 @@
                                 <ComboBox ItemsSource="{Binding TrackChoices}" SelectedItem="{Binding MapTrackChoice}" DisplayMemberPath="Label" AutomationProperties.Name="Track player"/>
                             </DockPanel>
                             <CheckBox Content="Show saved locations" IsChecked="{Binding MapShowBookmarks}" Margin="0,0,0,8"/>
+                            <TextBlock Text="Island overlays" Style="{StaticResource SectionLabel}" Margin="0,0,0,4"/>
+                            <CheckBox Content="{Binding MapThreatZonesLabel}" IsChecked="{Binding MapShowThreatZones}" Margin="0,0,0,2"
+                                      ToolTip="The island's threat zones, where zombie/NPC hordes spawn: red = high threat (HTZ), amber = medium (MTZ). From the data bundled with SACC."/>
+                            <CheckBox Content="{Binding MapHuntingAreasLabel}" IsChecked="{Binding MapShowHuntingAreas}" Margin="0,0,0,8"
+                                      ToolTip="The island's hunting areas, where animals live (brown); purple = a mutant den. From the data bundled with SACC."/>
                             <TextBlock Text="Teleport target" Style="{StaticResource SectionLabel}" Margin="0,0,0,4"/>
                             <ComboBox IsEditable="True" TextSearch.TextPath="SteamId" ItemsSource="{Binding Players}"
                                       Text="{Binding MapTarget, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8"
@@ -692,6 +697,16 @@
                                            Text="Right-click a spot on the map → GM spawn here, or click a spot and press ▶."/>
                                 <TextBlock Text="Ground height from (closest within 300 m)" Style="{StaticResource SectionLabel}" Margin="0,0,0,2"/>
                                 <DockPanel Margin="0,0,0,2">
+                                    <Button DockPanel.Dock="Right" Content="Forget" Command="{Binding ForgetTerrainCommand}" Padding="6,0"
+                                            ToolTip="Delete the loaded terrain grid (terrain.scgh)"/>
+                                    <Button DockPanel.Dock="Right" Content="Load…" Command="{Binding LoadTerrainCommand}" Padding="6,0" Margin="0,0,4,0"
+                                            ToolTip="Load a .scgh height grid made by SCUM Modding Studio's 'asset heights' command"/>
+                                    <CheckBox IsChecked="{Binding GmHeightFromTerrain}" VerticalAlignment="Center"
+                                              ToolTip="The game's own landscape heights, decoded by SCUM Modding Studio into a .scgh grid. When loaded this is the most accurate source and wins over everything but a Set height; the climb starts just below it.">
+                                        <TextBlock Text="{Binding GmTerrainLabel}" TextWrapping="Wrap"/>
+                                    </CheckBox>
+                                </DockPanel>
+                                <DockPanel Margin="0,0,0,2">
                                     <Button DockPanel.Dock="Right" Content="Forget" Command="{Binding ForgetGroundCommand}" Padding="6,0"
                                             ToolTip="Delete every learned ground height (ground.json)"/>
                                     <CheckBox IsChecked="{Binding GmHeightFromLearned}" VerticalAlignment="Center"
@@ -727,6 +742,15 @@
                                           ToolTip="The game refuses an NPC or zombie spawn with no ground near its Z (once per NPC or zombie), and spawns it in mid-air when Z is high. With this on, NPC squads, zombie groups and beepers are sent from 30 m below the height guess upwards in 3 m steps; refused steps cost nothing, and the first accepted one is on the ground. If only some of a group are refused, just those go on to the next step. Needs SCUM's log (%LOCALAPPDATA%\SCUM\Saved\Logs). Animals and razors use the height as-is.">
                                     <TextBlock Text="Find the ground for NPCs and zombies (climb until the game accepts)" TextWrapping="Wrap"/>
                                 </CheckBox>
+                                <DockPanel Margin="0,0,0,6">
+                                    <TextBox DockPanel.Dock="Right" Width="110" Text="{Binding GmSpotterItem, UpdateSourceTrigger=LostFocus}"
+                                             IsEnabled="{Binding GmSpotItems}" AutomationProperties.Name="Spotter item"
+                                             ToolTip="Item id of the spotter; something cheap and harmless"/>
+                                    <CheckBox IsChecked="{Binding GmSpotItems}" VerticalAlignment="Center"
+                                              ToolTip="Kits here, and item and kit pins on the Missions tab, climb a spotter first: the spotter item is sent from below the height guess upwards like an NPC climb, and the gear goes where the game first answers 'Spawned' right after a refused step. If nothing is refused below it, that didn't show where the ground is, and the gear goes at the height guess. The spotter stays in the world; mission cleanup removes it. Needs SCUM's log.">
+                                        <TextBlock Text="Place gear with a spotter" TextWrapping="Wrap"/>
+                                    </CheckBox>
+                                </DockPanel>
                                 <ItemsControl ItemsSource="{Binding GmActions}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>

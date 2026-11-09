@@ -1,0 +1,19 @@
+Terrain height grid (SACC)
+==========================
+
+A terrain grid (terrain.scgh) placed in this folder is a downsampled set of
+ground heights derived from SCUM's own landscape. It is the game's data and
+belongs to the game's owners (Gamepires); it is NOT covered by SACC's
+GPL-3.0 license, and it is bundled only so server admins can place spawns on
+the real ground without each of them having to extract it themselves -- on
+the same footing as the item icons in data/icons/. See CLEANROOM.md and the
+README's License section.
+
+The grid holds only a coarse height-per-cell value (default 4 m cells). It
+contains no art, geometry, textures or other game assets, and no decryption
+key. It is generated with SCUM Modding Studio
+(https://github.com/ALLAWI32/SCUM-Modding-Studio, MIT) via its `asset heights`
+command (source kept in tools/scumstudio-heights/ in this repo).
+
+Your own grid, loaded in-app with GM spawn -> Load..., is stored in the SACC
+data folder and takes precedence over any grid bundled here.

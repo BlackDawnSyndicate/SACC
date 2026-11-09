@@ -121,6 +121,11 @@ public sealed partial class MainViewModel
         double z;
         _gmGuessLearned = false;
         if (Settings.GmUseSetHeight) { z = Settings.GmSetHeight; source = "set height"; }
+        else if (TerrainGround(p) is { } tg)
+        {
+            z = tg.Z; source = tg.Source;
+            _gmGuessLearned = true;
+        }
         else if (LearnedGround(p, LearnedWinsWithin) is { } lg)
         {
             z = lg.Z; source = lg.Source;
@@ -153,6 +158,94 @@ public sealed partial class MainViewModel
     public bool GmHeightFromPlayers { get => Settings.GmHeightFromPlayers; set { Settings.GmHeightFromPlayers = value; Raise(); UpdateGmSpot(); } }
     public bool GmHeightFromVehicles { get => Settings.GmHeightFromVehicles; set { Settings.GmHeightFromVehicles = value; Raise(); UpdateGmSpot(); } }
     public bool GmHeightFromLearned { get => Settings.GmHeightFromLearned; set { Settings.GmHeightFromLearned = value; Raise(); UpdateGmSpot(); } }
+    public bool GmHeightFromTerrain { get => Settings.GmHeightFromTerrain; set { Settings.GmHeightFromTerrain = value; Raise(); UpdateGmSpot(); } }
+
+    // ---- terrain grid (terrain.scgh): the game's own landscape heights, produced by SCUM Modding Studio's `asset heights`
+
+    private GroundGrid? _terrain;
+    private bool _terrainTried;
+    private bool _terrainIsBundled;
+    private ICommand? _loadTerrain, _forgetTerrain;
+
+    private GroundGrid? Terrain
+    {
+        get
+        {
+            if (_terrainTried) return _terrain;
+            _terrainTried = true;
+            try
+            {
+                var path = AppPaths.ActiveTerrain;
+                if (File.Exists(path))
+                {
+                    _terrain = GroundGrid.Load(path);
+                    _terrainIsBundled = !File.Exists(AppPaths.UserTerrain);
+                }
+            }
+            catch (Exception ex) when (ex is IOException or InvalidDataException)
+            {
+                FileLog.Write("WARN", $"Terrain grid unreadable: {ex.Message}");
+            }
+            return _terrain;
+        }
+    }
+
+    public string GmTerrainLabel => Terrain is { } t
+        ? FormattableString.Invariant($"Terrain grid: {t.Width}×{t.Height}, {t.CellSizeCm / 100:0.#} m cells{(_terrainIsBundled ? " (bundled)" : "")}")
+        : "Terrain grid: none loaded";
+
+    /// <summary>The landscape grid's exact ground height, when a grid is loaded; the top source under a set height.</summary>
+    private (double Z, string Source)? TerrainGround(Vec3 p)
+    {
+        if (!Settings.GmHeightFromTerrain || Terrain is not { } t || t.At(p.X, p.Y) is not { } z) return null;
+        return (z, "from the terrain grid");
+    }
+
+    public ICommand LoadTerrainCommand => _loadTerrain ??= new RelayCommand(() =>
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Load a terrain height grid (.scgh)",
+            Filter = "SCUM height grid (*.scgh)|*.scgh|All files (*.*)|*.*",
+        };
+        if (dialog.ShowDialog() != true) return;
+        try
+        {
+            var grid = GroundGrid.Load(dialog.FileName); // read it first, so a bad file never replaces a good one
+            Directory.CreateDirectory(AppPaths.Root);
+            if (!string.Equals(Path.GetFullPath(dialog.FileName), Path.GetFullPath(AppPaths.UserTerrain), StringComparison.OrdinalIgnoreCase))
+                File.Copy(dialog.FileName, AppPaths.UserTerrain, overwrite: true);
+            _terrain = grid;
+            _terrainTried = true;
+            _terrainIsBundled = false;
+            Raise(nameof(GmTerrainLabel));
+            UpdateGmSpot();
+            Status = $"Loaded terrain grid: {grid.Width}×{grid.Height}, {grid.FilledCells:N0} cells with ground.";
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            Status = $"Couldn't load that grid: {ex.Message}";
+        }
+    });
+
+    public ICommand ForgetTerrainCommand => _forgetTerrain ??= new RelayCommand(() =>
+    {
+        if (Terrain == null) { Status = "No terrain grid is loaded."; return; }
+        if (!File.Exists(AppPaths.UserTerrain))
+        {
+            Status = "This is the terrain grid bundled with SACC. Untick \"Ground height from terrain grid\" to stop using it.";
+            return;
+        }
+        var hasBundled = File.Exists(AppPaths.BundledTerrain);
+        if (!_confirm("Forget your loaded terrain grid? The copy in the data folder is deleted" +
+                      (hasBundled ? ", and SACC falls back to the grid bundled with it." : "."))) return;
+        try { File.Delete(AppPaths.UserTerrain); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Status = $"Couldn't delete the grid: {ex.Message}"; return; }
+        _terrain = null;
+        _terrainTried = false; // re-resolve on next use: picks up the bundled grid if there is one
+        Raise(nameof(GmTerrainLabel));
+        UpdateGmSpot();
+    });
 
     // ---- learned ground (ground.json): every climb that pins the ground down is kept, and later guesses use it
 
@@ -359,6 +452,9 @@ public sealed partial class MainViewModel
             if (kit == null) { Status = "Pick a kit in the GM panel first."; return; }
             var kitLines = KitLines(kit, out var skipped);
             if (kitLines == null) return;
+            if (await SpotGroundAsync(at, _gmGuessLearned) is not { } spot) return;
+            at = at with { Z = spot.Z };
+            note += spot.Note;
             var placed = GmSpawn.KitAt(kitLines, at, out var notPlaced);
             lines = Enumerable.Repeat(placed, count).SelectMany(l => l).ToList();
             if (notPlaced > 0) note += $" {notPlaced} kit line(s) that aren't #SpawnItem will happen at you, not the spot.";
@@ -474,5 +570,91 @@ public sealed partial class MainViewModel
                 : $"{label}: the game refused every step ({plan}). The ground is further from the height guess ({GmHeightText}); widen the climb range or set a height.";
         Status += learned;
         return stoppedAt >= 0 ? count : count - remaining;
+    }
+
+    public bool GmSpotItems { get => Settings.GmSpotItems; set { Settings.GmSpotItems = value; Raise(); Save(); } }
+
+    public string GmSpotterItem
+    {
+        get => Settings.GmSpotterItem;
+        set { Settings.GmSpotterItem = (value ?? "").Trim(); Raise(); Save(); }
+    }
+
+    /// <summary>Where the gear goes after the spotter climb. <paramref name="RockSpawned"/>: a spotter is in the world (for cleanup).</summary>
+    private sealed record SpotResult(double Z, bool Found, bool RockSpawned, string Note);
+
+    /// <summary>
+    /// Items have no ground check of their own that SACC can see, so a spotter goes first: a rock climbs from below
+    /// the height guess like an NPC squad, and the first step the game answers "Spawned" (right after a refused one)
+    /// is where the gear goes. If the rock spawns at the very first step, nothing showed where the ground is, so the
+    /// gear keeps the height guess. Null = the send failed or was stopped.
+    /// </summary>
+    private async Task<SpotResult?> SpotGroundAsync(Vec3 at, bool learnedGuess)
+    {
+        var rock = Settings.GmSpotterItem.Trim();
+        if (!Settings.GmSpotItems || rock.Length == 0) return new SpotResult(at.Z, false, false, "");
+        var def = _catalog.Find(ItemAction.CatalogId);
+        if (def == null) { Status = $"The command catalog has no '{ItemAction.CatalogId}' entry."; return null; }
+
+        var guess = at.Z - Settings.GmHeightOffset;
+        var heights = GmSpawn.ClimbPlan(guess, Settings.GmClimbRange, Settings.GmClimbStep, learnedGuess ? LearnedQuickSteps : 0);
+        var lines = new List<string>();
+        foreach (var z in heights)
+        {
+            var r = GmSpawn.Render(def, ItemAction, rock, 1, at with { Z = z });
+            if (!r.Ok) { Status = $"Spotter {rock}: {string.Join("  ", r.Errors)}"; return null; }
+            lines.Add(r.Text);
+        }
+
+        if (Settings.DryRun)
+        {
+            foreach (var l in lines) Record(l, "dry run (spotter climb)");
+            return new SpotResult(at.Z, false, false, $" A {rock} would climb first (up to {lines.Count} steps) and the gear would go where it spawns.");
+        }
+
+        var log = AppPaths.ScumClientLog;
+        if (!File.Exists(log)) return new SpotResult(at.Z, false, false, $" No SCUM log ({log}), so no spotter: the gear went at the height guess.");
+
+        long seen = new FileInfo(log).Length;
+        var stoppedAt = -1;
+        var refused = new bool[lines.Count];
+        var notAllowed = false;
+        var ok = await GuardedAsync(async ct =>
+        {
+            stoppedAt = await _game.SendUntilAsync(Settings, lines, async (i, token) =>
+            {
+                // An item answers either way: "Spawned X." or a refusal. Wait for whichever comes.
+                var replies = default(MissionEngine.Replies);
+                for (var waited = 0; waited < Settings.GmClimbWaitMs; waited += 150)
+                {
+                    var length = new FileInfo(log).Length;
+                    if (length < seen) seen = 0;
+                    if (length > seen)
+                    {
+                        var r = MissionEngine.ReadReplies(await ReadSharedAsync(log, seen));
+                        seen = length;
+                        replies = new MissionEngine.Replies(replies.Spawned + r.Spawned, replies.Refused + r.Refused, replies.NotAllowed + r.NotAllowed);
+                        if (replies.Spawned > 0 || replies.Refused > 0 || replies.NotAllowed > 0) break;
+                    }
+                    await Task.Delay(150, token);
+                }
+                if (replies.Spawned > 0) { Record(lines[i], "spotter spawned"); return true; }
+                // Not allowed would be refused at every height: stop instead of sending the whole climb.
+                if (replies.NotAllowed > 0) { Record(lines[i], "spotter not allowed"); notAllowed = true; return true; }
+                refused[i] = replies.Refused > 0;
+                Record(lines[i], refused[i] ? "spotter refused (no ground near)" : "spotter: no answer");
+                return false;
+            }, _ownWindow(), ct);
+        });
+        if (notAllowed) return new SpotResult(at.Z, false, false, $" The game won't spawn {rock}, so no spotter: the gear went at the height guess. Pick another spotter item.");
+        if (!ok) return null;
+
+        if (stoppedAt < 0)
+            return new SpotResult(at.Z, false, false, $" The spotter {rock} got no \"Spawned\" at any step, so the gear went at the height guess.");
+        if (GmSpawn.SpotterGround(heights, refused, stoppedAt) is not { } ground)
+            return new SpotResult(at.Z, false, true, FormattableString.Invariant(
+                $" The spotter {rock} spawned at Z {heights[stoppedAt]:0} with no refused step just below it, which doesn't show where the ground is, so the gear went at the height guess."));
+        return new SpotResult(ground, true, true, FormattableString.Invariant(
+            $" Spotter {rock} spawned at Z {heights[stoppedAt]:0} after {stoppedAt} refused step(s); the gear went there."));
     }
 }

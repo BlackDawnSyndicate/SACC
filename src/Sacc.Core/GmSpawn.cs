@@ -124,6 +124,16 @@ public static partial class GmSpawn
         return plan;
     }
 
+    /// <summary>
+    /// After a spotter climb stopped at <paramref name="spawnedAt"/>: the height the gear goes, or null when the
+    /// climb didn't show the ground. It does only when the step right before was refused and lower, since the
+    /// climb plan jumps between stretches.
+    /// </summary>
+    public static double? SpotterGround(IReadOnlyList<double> heights, IReadOnlyList<bool> refused, int spawnedAt) =>
+        spawnedAt > 0 && spawnedAt < heights.Count && refused[spawnedAt - 1] && heights[spawnedAt - 1] < heights[spawnedAt]
+            ? heights[spawnedAt]
+            : null;
+
     [GeneratedRegex(@"^#SpawnItem\s", RegexOptions.IgnoreCase)]
     private static partial Regex SpawnItem();
 

@@ -243,4 +243,18 @@ public class ContainerInKitTests
         var lines = SahImport.KitLines(kit, (c, n, s) => $"#SpawnItem {c} {n}", 10, 200, out _);
         Assert.Equal(new[] { "#SpawnItem Soap 1", line, line, line }, lines);
     }
+
+    [Fact]
+    public void SpotterGroundNeedsARefusedStepJustBelow()
+    {
+        var heights = new[] { 100.0, 400, 700, -2000, -1700 };
+        Assert.Equal(700, GmSpawn.SpotterGround(heights, new[] { true, true, false, false, false }, 2));
+        // Spawned at the very first step: nothing below it was refused.
+        Assert.Null(GmSpawn.SpotterGround(heights, new[] { false, false, false, false, false }, 0));
+        // The step before only got no answer.
+        Assert.Null(GmSpawn.SpotterGround(heights, new[] { true, false, false, false, false }, 2));
+        // The step before is a higher stretch of the plan, not below it.
+        Assert.Null(GmSpawn.SpotterGround(heights, new[] { true, true, true, false, false }, 3));
+        Assert.Null(GmSpawn.SpotterGround(heights, new[] { true, true, true, true, false }, -1));
+    }
 }

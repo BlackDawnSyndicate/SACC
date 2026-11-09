@@ -1,0 +1,20 @@
+Map overlays (SACC)
+===================
+
+map-features.json in this folder lists the island's threat zones and hunting
+areas (centre, size and the game's settings/biome names) read from SCUM's own
+static level data. It is the game's data and belongs to the game's owners
+(Gamepires); it is NOT covered by SACC's GPL-3.0 license, and it is bundled
+only so server admins can see the zones on the map without each of them having
+to extract them -- on the same footing as the item icons in data/icons/ and
+the terrain grid in data/terrain/. See CLEANROOM.md and the README's License
+section.
+
+It holds only coordinates, radii and asset names -- no art, geometry or other
+game assets, and no decryption key. It is generated with SCUM Modding Studio
+(https://github.com/ALLAWI32/SCUM-Modding-Studio, MIT) via its `asset
+map-features` command (source kept in tools/scumstudio-mapfeatures/ in this
+repo).
+
+Your own file, loaded into the SACC data folder as map-features.json, takes
+precedence over the one bundled here.

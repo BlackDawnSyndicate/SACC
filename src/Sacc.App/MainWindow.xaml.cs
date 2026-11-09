@@ -68,6 +68,9 @@ public partial class MainWindow : Window
         MapCanvas.Tracks = _vm.MapTracks;
         MapCanvas.ShowTracks = _vm.MapShowTracks;
         MapCanvas.ShowBookmarks = _vm.MapShowBookmarks;
+        MapCanvas.Features = _vm.MapFeatures;
+        MapCanvas.ShowThreatZones = _vm.MapShowThreatZones;
+        MapCanvas.ShowHuntingAreas = _vm.MapShowHuntingAreas;
         MapCanvas.GridStyle = _vm.MapGrid;
         if (_vm.MapTemplate is { } mt && _vm.ActiveTileTemplate is { } mtiles) MissionCanvas.SetMap(mt, mtiles);
         MissionCanvas.Categories = _vm.MapCategoryLookup;

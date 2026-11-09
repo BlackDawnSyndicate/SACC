@@ -58,6 +58,8 @@ public sealed class Settings
     public bool GmHeightFromVehicles { get; set; } = true;
     /// <summary>Ground measured by earlier climbs (ground.json); within 30 m it beats every other source.</summary>
     public bool GmHeightFromLearned { get; set; } = true;
+    /// <summary>The landscape height grid (terrain.scgh), the game's own ground; when loaded it is the top source, under a set height.</summary>
+    public bool GmHeightFromTerrain { get; set; } = true;
     /// <summary>
     /// Ground-checked GM spawns (NPC squads, zombies) climb to the surface: from the height guess minus
     /// <see cref="GmClimbRange"/> up to plus it, in <see cref="GmClimbStep"/> steps, stopping at the first
@@ -67,6 +69,13 @@ public sealed class Settings
     public double GmClimbRange { get; set; } = 3000;
     public double GmClimbStep { get; set; } = 300;
     public int GmClimbWaitMs { get; set; } = 2000;
+    /// <summary>
+    /// Kits and mission items climb a spotter first: <see cref="GmSpotterItem"/> is sent from below the height
+    /// guess upwards, the same way as an NPC climb, and the rest of the gear goes where the game first answers
+    /// "Spawned". Needs SCUM's log; off, or without the log, the gear goes at the height guess.
+    /// </summary>
+    public bool GmSpotItems { get; set; } = true;
+    public string GmSpotterItem { get; set; } = "Stone_Small";
     public bool GmHeightFromLocations { get; set; } = true;
     /// <summary>When on, GM spawns use <see cref="GmSetHeight"/> and ignore every other source.</summary>
     public bool GmUseSetHeight { get; set; }
@@ -75,6 +84,10 @@ public sealed class Settings
     public double GmHeightOffset { get; set; }    /// <summary>Z used when teleporting to a clicked map spot that has no known height (scum-map.com uses 0).</summary>
     public double MapTeleportZ { get; set; }
     public GridStyle MapGrid { get; set; } = GridStyle.Sectors;
+    /// <summary>Map tab: draw the island's threat zones (from the bundled map-features), off by default.</summary>
+    public bool MapShowThreatZones { get; set; }
+    /// <summary>Map tab: draw the island's hunting areas (from the bundled map-features), off by default.</summary>
+    public bool MapShowHuntingAreas { get; set; }
 }
 
 public sealed class PlayerRecord

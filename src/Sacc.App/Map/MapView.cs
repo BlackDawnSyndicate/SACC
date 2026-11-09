@@ -78,6 +78,14 @@ public sealed class MapView : FrameworkElement
     public bool ShowBookmarks { get => _showBookmarks; set { _showBookmarks = value; InvalidateVisual(); } }
     private bool _showBookmarks = true;
 
+    /// <summary>The island's map overlays (threat zones, hunting areas); null when none are loaded.</summary>
+    public MapFeatures? Features { get => _features; set { _features = value; InvalidateVisual(); } }
+    private MapFeatures? _features;
+    public bool ShowThreatZones { get => _showThreat; set { _showThreat = value; InvalidateVisual(); } }
+    private bool _showThreat;
+    public bool ShowHuntingAreas { get => _showHunting; set { _showHunting = value; InvalidateVisual(); } }
+    private bool _showHunting;
+
     public GridStyle GridStyle { get => _gridStyle; set { _gridStyle = value; InvalidateVisual(); } }
     private GridStyle _gridStyle = GridStyle.Sectors;
     private SectorGrid? _grid;
@@ -87,6 +95,22 @@ public sealed class MapView : FrameworkElement
     private static readonly Brush GridText = Frozen(new SolidColorBrush(Color.FromArgb(0xF0, 0xFF, 0xFF, 0xFF)));
     private static readonly Brush GridHalo = Frozen(new SolidColorBrush(Color.FromArgb(0xC0, 0, 0, 0)));
     private static readonly Typeface GridFace = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal);
+
+    // Map-features overlays (threat zones, hunting areas): a translucent fill under a solid outline, coloured by tier/biome.
+    private static readonly (Pen Pen, Brush Fill) ThreatHigh = AreaStyle("#E53935");
+    private static readonly (Pen Pen, Brush Fill) ThreatMedium = AreaStyle("#FFB300");
+    private static readonly (Pen Pen, Brush Fill) ThreatLow = AreaStyle("#7CB342");
+    private static readonly (Pen Pen, Brush Fill) ThreatNone = AreaStyle("#9E9E9E");
+    private static readonly (Pen Pen, Brush Fill) HuntingGame = AreaStyle("#8D6E4A");
+    private static readonly (Pen Pen, Brush Fill) HuntingDen = AreaStyle("#8E44AD");
+
+    private static (Pen, Brush) AreaStyle(string hex)
+    {
+        var c = (Color)ColorConverter.ConvertFromString(hex);
+        var pen = Frozen(new Pen(new SolidColorBrush(c), 1.6));
+        var fill = Frozen(new SolidColorBrush(Color.FromArgb(0x22, c.R, c.G, c.B)));
+        return (pen, fill);
+    }
 
     /// <summary>World point and nearest marker under the mouse; raised on move, click and right-click.</summary>
     public event Action<Vec3?, MapMarker?>? Hover;
@@ -190,6 +214,7 @@ public sealed class MapView : FrameworkElement
         }
 
         DrawGrid(dc);
+        DrawFeatures(dc);
 
         // Markers: small enough not to bury the map when zoomed out.
         var r = Math.Clamp(2 + _zoom * 1.2, 3, 9);
@@ -410,6 +435,63 @@ public sealed class MapView : FrameworkElement
                 else dc.DrawEllipse(fill, pen, p, selected ? 7 : 5, selected ? 7 : 5);
                 if (selected || _zoom >= 5) Label(dc, s.Summary, p, 8);
             }
+    }
+
+    // ---------------------------------------------------------------- map-features overlays
+
+    /// <summary>The island's threat zones (ellipses) and hunting areas (circles), drawn under the markers.</summary>
+    private void DrawFeatures(DrawingContext dc)
+    {
+        if (_projection == null || _features == null) return;
+        var labels = _zoom >= 4.5;
+
+        if (_showThreat)
+            foreach (var z in _features.ThreatZones)
+            {
+                var at = new Vec3(z.X, z.Y, 0);
+                var p = WorldToScreen(at);
+                double rx = WorldToPixels(at, z.Rx), ry = WorldToPixels(at, z.Ry);
+                if (Offscreen(p, Math.Max(rx, ry))) continue;
+                var (pen, fill) = z.Tier switch
+                {
+                    ThreatTier.High => ThreatHigh,
+                    ThreatTier.Medium => ThreatMedium,
+                    ThreatTier.Low => ThreatLow,
+                    _ => ThreatNone,
+                };
+                if (Math.Abs(z.Yaw) > 0.5 && Math.Abs(rx - ry) > 1)
+                {
+                    dc.PushTransform(new RotateTransform(-z.Yaw, p.X, p.Y));
+                    dc.DrawEllipse(fill, pen, p, rx, ry);
+                    dc.Pop();
+                }
+                else dc.DrawEllipse(fill, pen, p, rx, ry);
+                if (labels) Label(dc, Pretty(z.Settings), p, 4);
+            }
+
+        if (_showHunting)
+            foreach (var h in _features.HuntingAreas)
+            {
+                var at = new Vec3(h.X, h.Y, 0);
+                var p = WorldToScreen(at);
+                var r = WorldToPixels(at, h.R);
+                if (Offscreen(p, r)) continue;
+                var (pen, fill) = h.IsMutantDen ? HuntingDen : HuntingGame;
+                dc.DrawEllipse(fill, pen, p, r, r);
+                if (labels) Label(dc, Pretty(h.Biome), p, 4);
+            }
+    }
+
+    private bool Offscreen(Point p, double r) =>
+        p.X + r < 0 || p.X - r > ActualWidth || p.Y + r < 0 || p.Y - r > ActualHeight;
+
+    /// <summary>A readable label from a settings/biome asset name: drop the HTZ_/MTZ_/LTZ_/BD_ prefix, underscores to spaces.</summary>
+    private static string Pretty(string name)
+    {
+        foreach (var prefix in new[] { "HTZ_", "MTZ_", "LTZ_", "BD_" })
+            if (name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                return name[prefix.Length..].Replace('_', ' ');
+        return name.Replace('_', ' ');
     }
 
     /// <summary>Base-game sector grid, optional keypad sub-grid, and labels in each cell's top-left corner.</summary>

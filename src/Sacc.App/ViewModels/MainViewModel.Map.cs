@@ -248,6 +248,41 @@ public sealed partial class MainViewModel
     private bool _mapShowBookmarks = true;
     public bool MapShowBookmarks { get => _mapShowBookmarks; set { if (Set(ref _mapShowBookmarks, value)) MapChanged?.Invoke(); } }
 
+    // ---- map-features overlays (threat zones, hunting areas): the island data bundled with SACC
+
+    private Sacc.Core.MapFeatures? _mapFeatures;
+    private bool _mapFeaturesTried;
+    /// <summary>The bundled (or user-loaded) island overlays, read once; null when none are present or readable.</summary>
+    public Sacc.Core.MapFeatures? MapFeatures
+    {
+        get
+        {
+            if (_mapFeaturesTried) return _mapFeatures;
+            _mapFeaturesTried = true;
+            try { if (System.IO.File.Exists(AppPaths.ActiveMapFeatures)) _mapFeatures = Sacc.Core.MapFeatures.Load(AppPaths.ActiveMapFeatures); }
+            catch (Exception ex) when (ex is System.IO.IOException or System.IO.InvalidDataException)
+            {
+                FileLog.Write("WARN", $"Map features unreadable: {ex.Message}");
+            }
+            return _mapFeatures;
+        }
+    }
+
+    public string MapThreatZonesLabel => MapFeatures is { } f ? $"Threat zones ({f.ThreatZones.Count})" : "Threat zones";
+    public string MapHuntingAreasLabel => MapFeatures is { } f ? $"Hunting areas ({f.HuntingAreas.Count})" : "Hunting areas";
+
+    public bool MapShowThreatZones
+    {
+        get => Settings.MapShowThreatZones;
+        set { if (value == Settings.MapShowThreatZones) return; Settings.MapShowThreatZones = value; Raise(); Save(); MapChanged?.Invoke(); }
+    }
+
+    public bool MapShowHuntingAreas
+    {
+        get => Settings.MapShowHuntingAreas;
+        set { if (value == Settings.MapShowHuntingAreas) return; Settings.MapShowHuntingAreas = value; Raise(); Save(); MapChanged?.Invoke(); }
+    }
+
     /// <summary>The spot the last right-click (or click) was on, and the marker there if any.</summary>
     public Vec3? MapPoint { get; private set; }
     public MapMarker? MapPointMarker { get; private set; }
