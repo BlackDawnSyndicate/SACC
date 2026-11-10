@@ -256,15 +256,20 @@
 
             <!-- ============================================================ Spawner -->
             <TabItem Header="Spawner">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="16"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="16"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <DockPanel>
+                <TabControl>
+                    <TabItem Header="Items">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="190"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <DockPanel Grid.Column="0" Margin="0,0,12,0">
+                                <TextBlock DockPanel.Dock="Top" Text="Categories" Style="{StaticResource SectionLabel}" Margin="0,0,0,4"/>
+                                <ListBox ItemsSource="{Binding ItemCategoryOptions}" SelectedItem="{Binding SelectedItemCategory}"
+                                         DisplayMemberPath="Display" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         ToolTip="Filter the list by category. Categories are guessed from the code name, so a few codes may sit in the wrong one."/>
+                            </DockPanel>
+                    <DockPanel Grid.Column="1">
                         <DockPanel DockPanel.Dock="Top">
                             <TextBlock DockPanel.Dock="Right" Text="{Binding ItemMatchSummary}" Style="{StaticResource Muted}" VerticalAlignment="Bottom"/>
                             <TextBlock Text="Items" FontSize="16" FontWeight="SemiBold"/>
@@ -309,7 +314,21 @@
                                  KeyDown="ItemMatches_KeyDown" VirtualizingPanel.IsVirtualizing="True"
                                  ToolTip="Click to pick, double-click to spawn, Enter to pick"/>
                     </DockPanel>
-                    <DockPanel Grid.Column="2">
+                        </Grid>
+                    </TabItem>
+                    <TabItem Header="Vehicles">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="190"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <DockPanel Grid.Column="0" Margin="0,0,12,0">
+                                <TextBlock DockPanel.Dock="Top" Text="Categories" Style="{StaticResource SectionLabel}" Margin="0,0,0,4"/>
+                                <ListBox ItemsSource="{Binding VehicleCategoryOptions}" SelectedItem="{Binding SelectedVehicleCategory}"
+                                         DisplayMemberPath="Display" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         ToolTip="Filter the list by category. Categories are guessed from the code name, so a few codes may sit in the wrong one."/>
+                            </DockPanel>
+                    <DockPanel Grid.Column="1">
                         <DockPanel DockPanel.Dock="Top">
                             <TextBlock DockPanel.Dock="Right" Text="{Binding VehicleMatchSummary}" Style="{StaticResource Muted}" VerticalAlignment="Bottom"/>
                             <TextBlock Text="Vehicles" FontSize="16" FontWeight="SemiBold"/>
@@ -338,7 +357,10 @@
                                  KeyDown="VehicleMatches_KeyDown"
                                  ToolTip="Click to pick, double-click to spawn, Enter to pick"/>
                     </DockPanel>
-                    <DockPanel Grid.Column="4">
+                        </Grid>
+                    </TabItem>
+                    <TabItem Header="Containers">
+                    <DockPanel>
                         <TextBlock DockPanel.Dock="Top" Text="Container" FontSize="16" FontWeight="SemiBold"/>
                         <DockPanel DockPanel.Dock="Top" Margin="0,6,0,6">
                             <Button DockPanel.Dock="Right" Content="← picked item" Margin="6,0,0,0" Command="{Binding ContainerFromPickedCommand}"
@@ -400,7 +422,8 @@
                             </ListBox.ItemTemplate>
                         </ListBox>
                     </DockPanel>
-                </Grid>
+                    </TabItem>
+                </TabControl>
             </TabItem>
 
             <!-- ============================================================ Kits -->

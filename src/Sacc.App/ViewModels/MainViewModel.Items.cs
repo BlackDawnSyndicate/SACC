@@ -43,6 +43,38 @@ public sealed partial class MainViewModel
     private string _vehicleMatchSummary = "";
     public string VehicleMatchSummary { get => _vehicleMatchSummary; private set => Set(ref _vehicleMatchSummary, value); }
 
+    // ---- category filter (keyword-derived; see Core ItemCategory). "All" plus the categories that have codes.
+
+    private IReadOnlyList<CategoryOption> _itemCategoryOptions = new[] { new CategoryOption(ItemCategory.All, 0) };
+    public IReadOnlyList<CategoryOption> ItemCategoryOptions { get => _itemCategoryOptions; private set => Set(ref _itemCategoryOptions, value); }
+
+    private CategoryOption? _selectedItemCategory;
+    public CategoryOption? SelectedItemCategory
+    {
+        get => _selectedItemCategory;
+        set { if (Set(ref _selectedItemCategory, value)) RefreshItemMatches(); }
+    }
+
+    private IReadOnlyList<CategoryOption> _vehicleCategoryOptions = new[] { new CategoryOption(ItemCategory.All, 0) };
+    public IReadOnlyList<CategoryOption> VehicleCategoryOptions { get => _vehicleCategoryOptions; private set => Set(ref _vehicleCategoryOptions, value); }
+
+    private CategoryOption? _selectedVehicleCategory;
+    public CategoryOption? SelectedVehicleCategory
+    {
+        get => _selectedVehicleCategory;
+        set { if (Set(ref _selectedVehicleCategory, value)) RefreshVehicleMatches(); }
+    }
+
+    // Rebuilds the "All (n)" + per-category options, keeping the current selection by name when it still exists.
+    private static IReadOnlyList<CategoryOption> BuildCategoryOptions(IReadOnlyList<string> codes, bool vehicles, ref CategoryOption? selected)
+    {
+        var options = new List<CategoryOption> { new(ItemCategory.All, codes.Count) };
+        options.AddRange(ItemCategory.Counts(codes, vehicles).Select(c => new CategoryOption(c.Name, c.Count)));
+        var keepName = selected?.Name ?? ItemCategory.All;
+        selected = options.FirstOrDefault(o => o.Name == keepName) ?? options[0];
+        return options;
+    }
+
     /// <summary>Rebuild the known-code list from the item table plus codes already in kits and favorites.</summary>
     private void RebuildItemCatalog()
     {
@@ -55,14 +87,19 @@ public sealed partial class MainViewModel
         var catalog = _itemCatalog;
         UnlistedCodeVisibilityConverter.IsUnlisted = catalog.IsUnlisted;
         Raise(nameof(GameItemsTip));
+        ItemCategoryOptions = BuildCategoryOptions(_itemCatalog.Items, vehicles: false, ref _selectedItemCategory);
+        Raise(nameof(SelectedItemCategory));
+        VehicleCategoryOptions = BuildCategoryOptions(_itemCatalog.Vehicles, vehicles: true, ref _selectedVehicleCategory);
+        Raise(nameof(SelectedVehicleCategory));
         RefreshItemMatches();
         RefreshVehicleMatches();
     }
 
     private void RefreshItemMatches()
     {
-        ItemMatches = ItemCatalog.Filter(_itemCatalog.Items, ItemCode, MaxShownMatches, _itemCatalog.Unlisted);
-        ItemMatchSummary = MatchSummary(ItemCatalog.Count(_itemCatalog.Items, ItemCode), _itemCatalog.Items.Count);
+        var pool = ItemCategory.InCategory(_itemCatalog.Items, _selectedItemCategory?.Name);
+        ItemMatches = ItemCatalog.Filter(pool, ItemCode, MaxShownMatches, _itemCatalog.Unlisted);
+        ItemMatchSummary = MatchSummary(ItemCatalog.Count(pool, ItemCode), pool.Count);
     }
 
     // ---- the game's own item list (#ListItems, read from SCUM's client log)
@@ -126,8 +163,9 @@ public sealed partial class MainViewModel
 
     private void RefreshVehicleMatches()
     {
-        VehicleMatches = ItemCatalog.Filter(_itemCatalog.Vehicles, VehicleCode, MaxShownMatches);
-        VehicleMatchSummary = MatchSummary(ItemCatalog.Count(_itemCatalog.Vehicles, VehicleCode), _itemCatalog.Vehicles.Count);
+        var pool = ItemCategory.InCategory(_itemCatalog.Vehicles, _selectedVehicleCategory?.Name, vehicles: true);
+        VehicleMatches = ItemCatalog.Filter(pool, VehicleCode, MaxShownMatches);
+        VehicleMatchSummary = MatchSummary(ItemCatalog.Count(pool, VehicleCode), pool.Count);
     }
 
     private static string MatchSummary(int matched, int total) =>

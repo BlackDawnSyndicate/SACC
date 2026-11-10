@@ -3,6 +3,12 @@ using Sacc.Core.Model;
 
 namespace Sacc.App.ViewModels;
 
+/// <summary>One row in the Spawner's category filter: a category name and how many codes fall in it.</summary>
+public sealed record CategoryOption(string Name, int Count)
+{
+    public string Display => $"{Name}  ({Count})";
+}
+
 public sealed class ParamFieldViewModel : ObservableObject
 {
     private readonly Action _changed;
