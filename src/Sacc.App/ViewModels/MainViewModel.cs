@@ -178,6 +178,12 @@ public sealed partial class MainViewModel : ObservableObject
         set { Settings.MinimapFadeSeconds = Math.Max(1, value); Raise(); Save(); }
     }
 
+    public bool MinimapRotate
+    {
+        get => Settings.MinimapRotate;
+        set { Settings.MinimapRotate = value; Raise(); Save(); MinimapChanged?.Invoke(); }
+    }
+
     private string _search = "";
     public string SearchText
     {

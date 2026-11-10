@@ -22,7 +22,27 @@
                 <Hyperlink NavigateUri="https://scum-map.com" RequestNavigate="Link_RequestNavigate"
                            Foreground="{DynamicResource MutedBrush}">Map © scum-map.com</Hyperlink>
             </TextBlock>
-            <map:MapView x:Name="MiniMap"/>
+            <!-- The map is scaled up a little so that, when rotated to the heading, its corners still cover the view. -->
+            <Grid ClipToBounds="True">
+                <map:MapView x:Name="MiniMap" RenderTransformOrigin="0.5,0.5">
+                    <map:MapView.RenderTransform>
+                        <TransformGroup>
+                            <ScaleTransform ScaleX="1.45" ScaleY="1.45"/>
+                            <RotateTransform x:Name="MapRotate" Angle="0"/>
+                        </TransformGroup>
+                    </map:MapView.RenderTransform>
+                </map:MapView>
+                <!-- compass: fixed disc, needle + N rotate to point at true north -->
+                <Grid Width="36" Height="36" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="6">
+                    <Ellipse Fill="#B0000000" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1"/>
+                    <Canvas Width="36" Height="36" RenderTransformOrigin="0.5,0.5">
+                        <Canvas.RenderTransform><RotateTransform x:Name="NeedleRotate" Angle="0"/></Canvas.RenderTransform>
+                        <Polygon Points="18,4 22,20 18,16 14,20" Fill="#E53935" Stroke="White" StrokeThickness="0.5"/>
+                        <TextBlock Canvas.Left="14" Canvas.Top="-3" Width="8" TextAlignment="Center" Text="N"
+                                   FontSize="9" FontWeight="Bold" Foreground="White"/>
+                    </Canvas>
+                </Grid>
+            </Grid>
         </DockPanel>
     </Border>
 </Window>

@@ -1243,7 +1243,9 @@
                             <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="155" Text="Minimap zoom"/><TextBox Text="{Binding MinimapZoom}" AutomationProperties.Name="Minimap zoom"/></DockPanel>
                             <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,9" Text="0 (whole island) to 8 (closest in)"/>
                             <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="155" Text="Fade after (s)"/><TextBox Text="{Binding MinimapFadeSeconds}" AutomationProperties.Name="Minimap fade seconds"/></DockPanel>
-                            <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,0" Text="OnCopy mode: how long it stays before fading"/>
+                            <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,9" Text="OnCopy mode: how long it stays before fading"/>
+                            <CheckBox IsChecked="{Binding MinimapRotate}" Content="Rotate to direction of travel (North arrow)"/>
+                            <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,0" Text="off = north up; on = your heading points up (from successive Ctrl+C while moving)"/>
                         </StackPanel>
 
                         <!-- Full-width: actions and notes -->

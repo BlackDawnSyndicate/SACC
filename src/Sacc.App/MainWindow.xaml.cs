@@ -31,6 +31,7 @@ public partial class MainWindow : Window
 
     private ClipboardMonitor? _clipboard;
     private MinimapWindow? _minimap;
+    private Vec3? _lastPos;
 
     private void WireMinimap()
     {
@@ -55,7 +56,9 @@ public partial class MainWindow : Window
         EnsureMinimap();
         await EnsureMinimapMapAsync();
         if (!_minimap!.HasMap) return;                            // map couldn't load (offline, first run)
-        _minimap.MoveTo(loc, _vm.MinimapZoom);
+        ApplyMapLayers(_minimap.Map);                             // mirror the main map's layers before showing
+        _lastPos = loc;
+        _minimap.MoveTo(loc, _vm.MinimapZoom, _vm.MinimapRotate);
         if (_vm.MinimapMode == MinimapMode.Always) _minimap.ShowSteady();
         else _minimap.Pulse(_vm.MinimapFadeSeconds);
     }
@@ -65,8 +68,13 @@ public partial class MainWindow : Window
         if (!_vm.MinimapEnabled) { _minimap?.HideNow(); return; }
         EnsureMinimap();
         await EnsureMinimapMapAsync();
-        if (_vm.MinimapMode == MinimapMode.Always) _minimap!.ShowSteady();
-        else _minimap!.HideNow();                                 // On-copy: stay hidden until a Ctrl+C arrives
+        if (_minimap!.HasMap)
+        {
+            ApplyMapLayers(_minimap.Map);
+            if (_lastPos is { } p) _minimap.MoveTo(p, _vm.MinimapZoom, _vm.MinimapRotate);  // re-apply zoom/rotate on setting change
+        }
+        if (_vm.MinimapMode == MinimapMode.Always) _minimap.ShowSteady();
+        else _minimap.HideNow();                                  // On-copy: stay hidden until a Ctrl+C arrives
     }
 
     private async System.Threading.Tasks.Task EnsureMinimapMapAsync()
@@ -91,6 +99,10 @@ public partial class MainWindow : Window
             _minimap.Top = wa.Top + 16;
         }
         _minimap.OnHidden += () => _vm.MinimapEnabled = false;    // the ✕ turns the feature off
+        // Same live data the main map binds once; layer toggles/markers refresh via ApplyMapLayers.
+        _minimap.Map.Players = _vm.Players;
+        _minimap.Map.Bookmarks = _vm.Bookmarks;
+        _minimap.Map.Flags = _vm.Flags;
     }
 
     // ---- Map tab: the MapView is a plain control fed from the view model.
@@ -125,29 +137,36 @@ public partial class MainWindow : Window
         };
     }
 
+    /// <summary>Push the main map's layer state (same toggles, markers and data as the Map tab) onto a map view.</summary>
+    private void ApplyMapLayers(Map.MapView v)
+    {
+        v.Categories = _vm.MapCategoryLookup;
+        v.Markers = _vm.VisibleMapMarkers;
+        v.PlayersListedAt = _vm.PlayersListedAt;
+        v.ShowOnline = _vm.MapShowOnline;
+        v.ShowPlayers = _vm.MapShowPlayers;
+        v.ShowFlags = _vm.MapShowFlags;
+        v.Vehicles = _vm.MapVehicles;
+        v.ShowVehicles = _vm.MapShowVehicles;
+        v.LabelVehicleIds = _vm.MapVehicleIdFilter.Length > 0;
+        v.Tracks = _vm.MapTracks;
+        v.ShowTracks = _vm.MapShowTracks;
+        v.ShowBookmarks = _vm.MapShowBookmarks;
+        v.Features = _vm.MapFeatures;
+        v.ShowThreatZones = _vm.MapShowThreatZones;
+        v.ShowHuntingAreas = _vm.MapShowHuntingAreas;
+        v.ShowPatrolPaths = _vm.MapShowPatrolPaths;
+        v.ShowLocations = _vm.MapShowLocations;
+        v.Terrain = _vm.MapTerrainGrid;
+        v.ShowTemperature = _vm.MapShowTemperature;
+        v.GridStyle = _vm.MapGrid;
+    }
+
     private void SyncMap()
     {
         if (_vm.MapTemplate is { } t && _vm.ActiveTileTemplate is { } tiles) MapCanvas.SetMap(t, tiles);
-        MapCanvas.Categories = _vm.MapCategoryLookup;
-        MapCanvas.Markers = _vm.VisibleMapMarkers;
-        MapCanvas.PlayersListedAt = _vm.PlayersListedAt;
-        MapCanvas.ShowOnline = _vm.MapShowOnline;
-        MapCanvas.ShowPlayers = _vm.MapShowPlayers;
-        MapCanvas.ShowFlags = _vm.MapShowFlags;
-        MapCanvas.Vehicles = _vm.MapVehicles;
-        MapCanvas.ShowVehicles = _vm.MapShowVehicles;
-        MapCanvas.LabelVehicleIds = _vm.MapVehicleIdFilter.Length > 0;
-        MapCanvas.Tracks = _vm.MapTracks;
-        MapCanvas.ShowTracks = _vm.MapShowTracks;
-        MapCanvas.ShowBookmarks = _vm.MapShowBookmarks;
-        MapCanvas.Features = _vm.MapFeatures;
-        MapCanvas.ShowThreatZones = _vm.MapShowThreatZones;
-        MapCanvas.ShowHuntingAreas = _vm.MapShowHuntingAreas;
-        MapCanvas.ShowPatrolPaths = _vm.MapShowPatrolPaths;
-        MapCanvas.ShowLocations = _vm.MapShowLocations;
-        MapCanvas.Terrain = _vm.MapTerrainGrid;
-        MapCanvas.ShowTemperature = _vm.MapShowTemperature;
-        MapCanvas.GridStyle = _vm.MapGrid;
+        ApplyMapLayers(MapCanvas);
+        if (_minimap is { HasMap: true }) ApplyMapLayers(_minimap.Map);  // the minimap mirrors the main map's layers
         if (_vm.MapTemplate is { } mt && _vm.ActiveTileTemplate is { } mtiles) MissionCanvas.SetMap(mt, mtiles);
         MissionCanvas.Categories = _vm.MapCategoryLookup;
         MissionCanvas.PlayersListedAt = _vm.PlayersListedAt;

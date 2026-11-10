@@ -45,6 +45,12 @@ public partial class MinimapWindow : Window
 
     public bool HasMap { get; private set; }
 
+    /// <summary>The overlay's map view, so the owner can mirror the main map's layers onto it.</summary>
+    public MapView Map => MiniMap;
+
+    private Vec3? _prev;
+    private double _heading; // degrees clockwise from north; kept across stationary samples
+
     /// <summary>Point the minimap at the loaded map tiles (call once the map is ready).</summary>
     public void SetMap(MapTemplate template, string tileTemplate, MapDataService data)
     {
@@ -53,11 +59,21 @@ public partial class MinimapWindow : Window
         HasMap = true;
     }
 
-    /// <summary>Move the marker to a world position and recentre on it.</summary>
-    public void MoveTo(Vec3 world, double zoom)
+    /// <summary>Move the marker to a world position, recentre on it, and (optionally) rotate to the direction of travel.</summary>
+    public void MoveTo(Vec3 world, double zoom, bool rotate)
     {
         MiniMap.SelfPosition = world;
         MiniMap.CenterOn(world.X, world.Y, zoom);
+        if (rotate && _prev is { } p)
+        {
+            var b = MiniMap.MapBearing(p, world);
+            if (!double.IsNaN(b)) _heading = b;
+        }
+        _prev = world;
+        // Rotate the map so travel points up; the compass needle rotates with it so N still points north.
+        var angle = rotate ? -_heading : 0;
+        MapRotate.Angle = angle;
+        NeedleRotate.Angle = angle;
     }
 
     /// <summary>Always-on mode: show and stay (no fade).</summary>

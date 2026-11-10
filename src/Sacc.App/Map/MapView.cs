@@ -111,6 +111,21 @@ public sealed class MapView : FrameworkElement
     private Vec3? _self;
     /// <summary>"You are here" marker (the last Ctrl+C position), drawn on top of everything; null hides it. Used by the minimap.</summary>
     public Vec3? SelfPosition { get => _self; set { _self = value; InvalidateVisual(); } }
+
+    /// <summary>
+    /// Clockwise-from-up bearing (degrees) of the on-screen direction from <paramref name="a"/> to <paramref name="b"/>:
+    /// 0 points up (north), 90 right (east). NaN when there is no projection or the two points coincide.
+    /// Used by the minimap to rotate toward the direction of travel.
+    /// </summary>
+    public double MapBearing(Vec3 a, Vec3 b)
+    {
+        if (_projection == null) return double.NaN;
+        var (ax, ay) = _projection.ToMap(a.X, a.Y);
+        var (bx, by) = _projection.ToMap(b.X, b.Y);
+        double dx = bx - ax, dy = by - ay;
+        if (dx * dx + dy * dy < 1e-6) return double.NaN;
+        return Math.Atan2(dx, -dy) * 180.0 / Math.PI;
+    }
     private GridStyle _gridStyle = GridStyle.Sectors;
     private SectorGrid? _grid;
 

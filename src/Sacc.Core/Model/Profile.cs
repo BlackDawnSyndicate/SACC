@@ -115,6 +115,8 @@ public sealed class Settings
     public double MinimapZoom { get; set; } = 5;
     /// <summary>OnCopy mode: seconds the minimap stays before fading out; each new Ctrl+C resets the timer.</summary>
     public double MinimapFadeSeconds { get; set; } = 6;
+    /// <summary>Rotate the minimap so the player's direction of travel points up (a North arrow shows where north is). Off = north up.</summary>
+    public bool MinimapRotate { get; set; } = true;
     /// <summary>Minimap overlay window position and size (screen pixels); left/top of -1 means the default top-right corner.</summary>
     public double MinimapLeft { get; set; } = -1;
     public double MinimapTop { get; set; } = -1;
