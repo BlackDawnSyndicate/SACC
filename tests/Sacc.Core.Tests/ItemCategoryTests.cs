@@ -13,6 +13,8 @@ public class ItemCategoryTests
     [InlineData("Hiking_Backpack_01", "Backpacks")]
     [InlineData("Cotton_Shirt", "Clothing")]
     [InlineData("Canned_Beans", "Food")]
+    [InlineData("ColorCan_DarkGrey", "Resources")]   // paint cans must not land in Food via "can"
+    [InlineData("ColorCan_FireEngineRed", "Resources")]
     [InlineData("Bottle_Of_Water", "Drinks")]
     [InlineData("Bandage", "Medical")]
     [InlineData("Car_Battery", "Electronics")]

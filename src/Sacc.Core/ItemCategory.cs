@@ -43,7 +43,7 @@ public static class ItemCategory
                                 "_cap", "glove", "_mask", "balaclava", "bandana", "_sock", "underwear", "_skirt",
                                 "_dress", "_belt", "necklace", "_ring", "glasses", "goggles", "hoodie", "sweater",
                                 "beanie", "scarf", "_vest", "jeans", "shorts", "uniform", "suit", "poncho" }),
-        ("Food",        new[] { "_food", "can_", "_meat", "_fish", "fruit", "vegetable", "bread", "_rice", "beans",
+        ("Food",        new[] { "_food", "canned", "_meat", "_fish", "fruit", "vegetable", "bread", "_rice", "beans",
                                 "_mre", "ration", "_egg", "cheese", "apple", "banana", "_corn", "potato", "snack",
                                 "chocolate", "cereal", "_candy", "cracker", "sausage", "steak", "_jerky", "mushroom",
                                 "pumpkin", "cabbage", "tomato", "carrot", "pickle", "honey", "sugar", "flour" }),
@@ -56,7 +56,8 @@ public static class ItemCategory
         ("Resources",   new[] { "_wood", "plank", "_log", "_metal", "scrap", "_nail", "_screw", "_rag", "_cloth",
                                 "_rope", "_wire", "plastic", "rubber", "_stone", "_rock", "charcoal", "gunpowder",
                                 "_fuel", "gasoline", "_oil", "fertilizer", "_seed", "_plant", "_ore", "ingot",
-                                "_tape", "glue", "resin", "fiber", "leather", "_bark", "_coal" }),
+                                "_tape", "glue", "resin", "fiber", "leather", "_bark", "_coal",
+                                "colorcan", "color_can", "paint", "_dye" }),
         ("Containers",  new[] { "_crate", "_box", "chest", "locker", "barrel", "_container", "_safe", "cabinet",
                                 "fridge", "cooler", "_case", "jerrycan", "_jar", "_tin" }),
     };

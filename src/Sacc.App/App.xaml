@@ -164,6 +164,11 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- Checkboxes keep their own Foreground (so content text inside list rows follows the theme rather than
+             falling back to the system's near-black). Rows that need a different colour set it inline. -->
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+        </Style>
         <Style x:Key="SectionLabel" TargetType="TextBlock">
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Margin" Value="0,8,0,4"/>
