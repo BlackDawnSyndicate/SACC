@@ -9,6 +9,18 @@ public sealed record CategoryOption(string Name, int Count)
     public string Display => $"{Name}  ({Count})";
 }
 
+/// <summary>
+/// One queued item in the Spawner's "To spawn" basket: a code plus the amount and resolved stack captured
+/// from the Spawner's settings when it was added, so later setting changes don't alter an already-queued line.
+/// </summary>
+public sealed class SpawnQueueItem
+{
+    public string Code { get; init; } = "";
+    public string Amount { get; init; } = "1";
+    public string Stack { get; init; } = "";
+    public string Summary => Stack.Length > 0 ? $"{Amount}×  {Code}   (stack {Stack})" : $"{Amount}×  {Code}";
+}
+
 public sealed class ParamFieldViewModel : ObservableObject
 {
     private readonly Action _changed;

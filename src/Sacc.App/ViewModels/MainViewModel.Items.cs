@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows.Input;
@@ -8,6 +9,48 @@ namespace Sacc.App.ViewModels;
 
 public sealed partial class MainViewModel
 {
+    // ---- the Spawner's "To spawn" basket: double-clicking an item adds it here with the current settings,
+    // then "Spawn all" sends every queued line in one batch (ExecuteAsync splits oversized counts).
+
+    public ObservableCollection<SpawnQueueItem> SpawnQueue { get; } = new();
+
+    private ICommand? _addToSpawnQueue, _removeSpawnQueueItem, _clearSpawnQueue, _spawnQueue;
+
+    public ICommand AddToSpawnQueueCommand => _addToSpawnQueue ??= new RelayCommand(o =>
+    {
+        var code = (o as string)?.Trim();
+        if (string.IsNullOrEmpty(code)) return;
+        SpawnQueue.Add(new SpawnQueueItem { Code = code, Amount = ItemAmount, Stack = SpawnerStack(code) });
+        CommandManager.InvalidateRequerySuggested();
+        Status = $"Added {code} to the spawn list ({SpawnQueue.Count}).";
+    });
+
+    public ICommand RemoveSpawnQueueItemCommand => _removeSpawnQueueItem ??= new RelayCommand(o =>
+    {
+        if (o is SpawnQueueItem it) { SpawnQueue.Remove(it); CommandManager.InvalidateRequerySuggested(); }
+    });
+
+    public ICommand ClearSpawnQueueCommand => _clearSpawnQueue ??= new RelayCommand(
+        () => { SpawnQueue.Clear(); CommandManager.InvalidateRequerySuggested(); },
+        () => SpawnQueue.Count > 0);
+
+    public ICommand SpawnQueueCommand => _spawnQueue ??= new AsyncCommand(SpawnQueueAsync, () => SpawnQueue.Count > 0);
+
+    private async Task SpawnQueueAsync()
+    {
+        var def = _catalog.Find("spawn-item");
+        if (def == null) { Status = "The command catalog has no 'spawn-item' entry."; return; }
+        var lines = new List<string>();
+        foreach (var e in SpawnQueue)
+        {
+            var r = TemplateRenderer.Render(def, new Dictionary<string, string?> { ["item"] = e.Code, ["amount"] = e.Amount, ["stack"] = e.Stack });
+            if (r.Ok) lines.Add(r.Text);
+            else { Status = $"{e.Code}: {string.Join("  ", r.Errors)}"; return; }
+        }
+        if (lines.Count == 0) { Status = "The spawn list is empty."; return; }
+        await ExecuteAsync(lines);
+    }
+
     private ICommand? _openIconsFolder, _reloadIcons;
 
     public ICommand OpenIconsFolderCommand => _openIconsFolder ??= new RelayCommand(() =>

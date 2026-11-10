@@ -152,12 +152,14 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ItemMatches_Click(object sender, MouseButtonEventArgs e) => PickFrom(ItemMatchesList, c => _vm.ItemCode = c, ItemCodeBox, focus: false);
+    // Items list: a single click only selects the row (it no longer fills the code box, which would filter the
+    // list down to that one code); double-click or Enter adds the item to the "To spawn" basket with the current
+    // amount and stack settings. Vehicles keep the pick-into-box behaviour.
     private void VehicleMatches_Click(object sender, MouseButtonEventArgs e) => PickFrom(VehicleMatchesList, c => _vm.VehicleCode = c, VehicleCodeBox, focus: false);
 
     private void ItemMatches_DoubleClick(object sender, MouseButtonEventArgs e)
     {
-        if (ItemMatchesList.SelectedItem is string code) _vm.SpawnItemCommand.Execute(code);
+        if (ItemMatchesList.SelectedItem is string code) _vm.AddToSpawnQueueCommand.Execute(code);
     }
 
     private void VehicleMatches_DoubleClick(object sender, MouseButtonEventArgs e)
@@ -167,7 +169,7 @@ public partial class MainWindow : Window
 
     private void ItemMatches_KeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Enter) { PickFrom(ItemMatchesList, c => _vm.ItemCode = c, ItemCodeBox, focus: true); e.Handled = true; }
+        if (e.Key == Key.Enter && ItemMatchesList.SelectedItem is string code) { _vm.AddToSpawnQueueCommand.Execute(code); e.Handled = true; }
     }
 
     private void VehicleMatches_KeyDown(object sender, KeyEventArgs e)

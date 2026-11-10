@@ -309,10 +309,30 @@
                         </ListBox>
                         <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Muted}" Margin="0,8,0,4"
                                    Text="Favorites: double-click to spawn with the settings above."/>
+                        <DockPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+                                <Button DockPanel.Dock="Right" Command="{Binding ClearSpawnQueueCommand}" Content="Clear" MinWidth="0" Margin="6,0,0,0"/>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Command="{Binding SpawnQueueCommand}" Content="Spawn all"/>
+                                <TextBlock Text="To spawn" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </DockPanel>
+                            <ListBox Height="130" ItemsSource="{Binding SpawnQueue}"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     ToolTip="Double-click an item above to add it here with the current amount and stack. Spawn all sends them in one batch.">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <DockPanel>
+                                            <Button DockPanel.Dock="Right" Content="✕" MinWidth="0" Padding="4,0" Margin="8,0,0,0" AutomationProperties.Name="Remove"
+                                                    Command="{Binding DataContext.RemoveSpawnQueueItemCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                            <TextBlock Text="{Binding Summary}" FontFamily="Cascadia Mono, Consolas" TextTrimming="CharacterEllipsis"/>
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </DockPanel>
                         <ListBox x:Name="ItemMatchesList" ItemsSource="{Binding ItemMatches}" ItemTemplate="{StaticResource CodeWithIcon}"
-                                 PreviewMouseLeftButtonUp="ItemMatches_Click" MouseDoubleClick="ItemMatches_DoubleClick"
+                                 MouseDoubleClick="ItemMatches_DoubleClick"
                                  KeyDown="ItemMatches_KeyDown" VirtualizingPanel.IsVirtualizing="True"
-                                 ToolTip="Click to pick, double-click to spawn, Enter to pick"/>
+                                 ToolTip="Click to select; double-click or Enter adds it to the spawn list below with the current settings."/>
                     </DockPanel>
                         </Grid>
                     </TabItem>
