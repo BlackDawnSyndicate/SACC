@@ -65,11 +65,12 @@ public static partial class GmSpawn
     /// get it once (large item spawns split later, like every send); entries without one are
     /// repeated <paramref name="count"/> times.
     /// </summary>
-    public static TemplateRenderer.Result Render(CommandDef def, Action action, string? type, int count, Vec3 at)
+    public static TemplateRenderer.Result Render(CommandDef def, Action action, string? type, int count, Vec3 at, string? despawn = null)
     {
         var values = new Dictionary<string, string?> { ["coords"] = WhalleyBotExport.Coords(at) };
         if (action.TypeParam != null) values[action.TypeParam] = action.FixedType ?? type;
         if (action.CountParam != null) values[action.CountParam] = count.ToString(CultureInfo.InvariantCulture);
+        if (!string.IsNullOrWhiteSpace(despawn)) values["despawn"] = despawn.Trim();
 
         var r = TemplateRenderer.Render(def, values);
         if (!r.Ok) return r;

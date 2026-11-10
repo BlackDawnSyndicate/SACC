@@ -148,6 +148,8 @@ public sealed partial class MainViewModel
     public string GmSetHeight { get => Num(Settings.GmSetHeight); set { if (TryNum(value, out var v)) { Settings.GmSetHeight = v; Raise(); UpdateGmSpot(); } } }
     public string GmHeightOffset { get => Num(Settings.GmHeightOffset); set { if (TryNum(value, out var v)) { Settings.GmHeightOffset = v; Raise(); UpdateGmSpot(); } } }
     public bool GmHeightFromLocations { get => Settings.GmHeightFromLocations; set { Settings.GmHeightFromLocations = value; Raise(); UpdateGmSpot(); } }
+    /// <summary>DespawnLifetime (seconds) appended to GM NPC/zombie/animal/razor spawns; empty = omit it.</summary>
+    public string GmDespawnLifetime { get => Settings.GmDespawnLifetime; set { Settings.GmDespawnLifetime = (value ?? "").Trim(); Raise(); Save(); } }
 
     private static string Num(double v) => v.ToString("0.###", CultureInfo.InvariantCulture);
     private static bool TryNum(string? s, out double v) =>
@@ -466,7 +468,7 @@ public sealed partial class MainViewModel
             var def = _catalog.Find(a.Action.CatalogId);
             if (def == null) { Status = $"The command catalog has no '{a.Action.CatalogId}' entry."; return; }
             if (a.Action.GroundChecked && Settings.GmFindGround) { await GmClimbAsync(a.Action, a.Type, a.Label, def, count, at, _gmGuessLearned); return; }
-            var r = GmSpawn.Render(def, a.Action, a.Type, count, at);
+            var r = GmSpawn.Render(def, a.Action, a.Type, count, at, Settings.GmDespawnLifetime);
             if (!r.Ok) { Status = $"{a.Label}: {string.Join("  ", r.Errors)}"; return; }
             lines = r.Text.Split('\n').ToList();
         }
@@ -494,7 +496,7 @@ public sealed partial class MainViewModel
         var lines = new List<string>();
         foreach (var z in heights)
         {
-            var r = GmSpawn.Render(def, action, type, count, at with { Z = z });
+            var r = GmSpawn.Render(def, action, type, count, at with { Z = z }, Settings.GmDespawnLifetime);
             if (!r.Ok) { Status = $"{label}: {string.Join("  ", r.Errors)}"; return -1; }
             lines.Add(r.Text);
         }

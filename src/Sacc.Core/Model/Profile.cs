@@ -76,6 +76,8 @@ public sealed class Settings
     /// </summary>
     public bool GmSpotItems { get; set; } = true;
     public string GmSpotterItem { get; set; } = "Stone_Small";
+    /// <summary>DespawnLifetime (seconds) appended to GM NPC/zombie/animal/razor spawns; empty = omit it. You set it manually.</summary>
+    public string GmDespawnLifetime { get; set; } = "";
     public bool GmHeightFromLocations { get; set; } = true;
     /// <summary>When on, GM spawns use <see cref="GmSetHeight"/> and ignore every other source.</summary>
     public bool GmUseSetHeight { get; set; }

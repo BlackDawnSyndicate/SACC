@@ -757,6 +757,13 @@
                                         <TextBlock Text="Place gear with a spotter" TextWrapping="Wrap"/>
                                     </CheckBox>
                                 </DockPanel>
+                                <DockPanel Margin="0,0,0,6">
+                                    <TextBox DockPanel.Dock="Right" Width="80" Text="{Binding GmDespawnLifetime, UpdateSourceTrigger=LostFocus}"
+                                             AutomationProperties.Name="Despawn lifetime seconds"
+                                             ToolTip="DespawnLifetime in seconds added to NPC, zombie, animal and razor spawns from here (e.g. 3600 = 1h). Blank = don't add it; nothing is applied by default. Unverified in SCUM, so test in-game."/>
+                                    <TextBlock Text="Despawn lifetime (s)" VerticalAlignment="Center"
+                                               ToolTip="Seconds before the spawned NPCs/zombies/animals/razors despawn (e.g. 3600 = 1h). Blank = omit."/>
+                                </DockPanel>
                                 <ItemsControl ItemsSource="{Binding GmActions}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
