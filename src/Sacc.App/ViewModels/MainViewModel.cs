@@ -78,10 +78,10 @@ public sealed partial class MainViewModel : ObservableObject
         }));
         SpawnVehicleCommand = new AsyncCommand(o => RunCatalogAsync("spawn-vehicle", new() { ["vehicle"] = o as string ?? VehicleCode }));
         ListItemsCommand = new AsyncCommand(() => RunCatalogAsync("list-items", new() { ["filter"] = ItemCode }));
-        AddFavoriteItemCommand = new RelayCommand(() => AddFavorite(FavoriteItems, ItemCode));
-        RemoveFavoriteItemCommand = new RelayCommand(o => { if (o is string s) { FavoriteItems.Remove(s); Save(); } });
-        AddFavoriteVehicleCommand = new RelayCommand(() => AddFavorite(FavoriteVehicles, VehicleCode));
-        RemoveFavoriteVehicleCommand = new RelayCommand(o => { if (o is string s) { FavoriteVehicles.Remove(s); Save(); } });
+        AddFavoriteItemCommand = new RelayCommand(() => { ToggleFavorite(FavoriteItems, SelectedItemMatch ?? ItemCode); Raise(nameof(FavoriteItemLabel)); });
+        RemoveFavoriteItemCommand = new RelayCommand(o => { if (o is string s) { FavoriteItems.Remove(s); RebuildItemCatalog(); Save(); } });
+        AddFavoriteVehicleCommand = new RelayCommand(() => { ToggleFavorite(FavoriteVehicles, VehicleCode); Raise(nameof(FavoriteVehicleLabel)); });
+        RemoveFavoriteVehicleCommand = new RelayCommand(o => { if (o is string s) { FavoriteVehicles.Remove(s); RebuildItemCatalog(); Save(); } });
 
         ResendCommand = new AsyncCommand(o => o is HistoryEntry h ? ExecuteAsync(new[] { h.Text }) : Task.CompletedTask);
         ToFreeformCommand = new RelayCommand(o => { if (o is HistoryEntry h) FreeformText = h.Text; });
@@ -203,7 +203,7 @@ public sealed partial class MainViewModel : ObservableObject
     public string MacroTarget { get => _macroTarget; set => Set(ref _macroTarget, value); }
 
     private string _itemCode = "";
-    public string ItemCode { get => _itemCode; set { if (Set(ref _itemCode, value)) RefreshItemMatches(); } }
+    public string ItemCode { get => _itemCode; set { if (Set(ref _itemCode, value)) { RefreshItemMatches(); Raise(nameof(FavoriteItemLabel)); } } }
 
     private string _itemAmount = "1";
     public string ItemAmount { get => _itemAmount; set => Set(ref _itemAmount, value); }
@@ -224,7 +224,7 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     private string _vehicleCode = "";
-    public string VehicleCode { get => _vehicleCode; set { if (Set(ref _vehicleCode, value)) RefreshVehicleMatches(); } }
+    public string VehicleCode { get => _vehicleCode; set { if (Set(ref _vehicleCode, value)) { RefreshVehicleMatches(); Raise(nameof(FavoriteVehicleLabel)); } } }
 
     private int _historyCursor = -1;
 
@@ -655,6 +655,18 @@ public sealed partial class MainViewModel : ObservableObject
         code = code.Trim();
         if (code.Length == 0 || code.Contains(' ') || list.Contains(code, StringComparer.OrdinalIgnoreCase)) return;
         list.Add(code);
+        RebuildItemCatalog();
+        Save();
+    }
+
+    /// <summary>Adds the code to the favorites list, or removes it if it is already there.</summary>
+    private void ToggleFavorite(ObservableCollection<string> list, string? code)
+    {
+        code = code?.Trim();
+        if (string.IsNullOrEmpty(code) || code.Contains(' ')) return;
+        var existing = list.FirstOrDefault(f => f.Equals(code, StringComparison.OrdinalIgnoreCase));
+        if (existing != null) list.Remove(existing);
+        else list.Add(code);
         RebuildItemCatalog();
         Save();
     }

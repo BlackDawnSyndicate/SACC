@@ -294,21 +294,9 @@
                             <Button Style="{StaticResource PrimaryButton}" Command="{Binding SpawnItemCommand}" Content="Spawn"/>
                             <Button Command="{Binding ListItemsCommand}" Content="Search in game" ToolTip="Sends #ListItems with the text as a filter"/>
                             <Button Command="{Binding RefreshGameItemsCommand}" Content="Refresh list from game" ToolTip="{Binding GameItemsTip}"/>
-                            <Button Command="{Binding AddFavoriteItemCommand}" Content="☆ Favorite"/>
+                            <Button Command="{Binding AddFavoriteItemCommand}" Content="{Binding FavoriteItemLabel}"
+                                    ToolTip="Add or remove the selected item from Favorites — browse them from the Favorites category at the top of the list."/>
                         </WrapPanel>
-                        <ListBox x:Name="ItemFavorites" DockPanel.Dock="Bottom" Height="140" ItemsSource="{Binding FavoriteItems}" MouseDoubleClick="ItemFavorites_DoubleClick">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <DockPanel>
-                                        <Button DockPanel.Dock="Right" Content="✕" MinWidth="0" Padding="4,0" Margin="8,0,0,0" AutomationProperties.Name="Remove"
-                                                Command="{Binding DataContext.RemoveFavoriteItemCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
-                                        <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource CodeWithIcon}"/>
-                                    </DockPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                        <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Muted}" Margin="0,8,0,4"
-                                   Text="Favorites: double-click to spawn with the settings above."/>
                         <DockPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
                             <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
                                 <Button DockPanel.Dock="Right" Command="{Binding ClearSpawnQueueCommand}" Content="Clear" MinWidth="0" Margin="6,0,0,0"/>
@@ -330,6 +318,7 @@
                             </ListBox>
                         </DockPanel>
                         <ListBox x:Name="ItemMatchesList" ItemsSource="{Binding ItemMatches}" ItemTemplate="{StaticResource CodeWithIcon}"
+                                 SelectedItem="{Binding SelectedItemMatch}"
                                  MouseDoubleClick="ItemMatches_DoubleClick"
                                  KeyDown="ItemMatches_KeyDown" VirtualizingPanel.IsVirtualizing="True"
                                  ToolTip="Click to select; double-click or Enter adds it to the spawn list below with the current settings."/>
@@ -358,20 +347,9 @@
                                  ToolTip="Vehicle asset id. Type any part of it; Down picks from the list, Enter spawns."/>
                         <WrapPanel DockPanel.Dock="Top">
                             <Button Style="{StaticResource PrimaryButton}" Command="{Binding SpawnVehicleCommand}" Content="Spawn"/>
-                            <Button Command="{Binding AddFavoriteVehicleCommand}" Content="☆ Favorite"/>
+                            <Button Command="{Binding AddFavoriteVehicleCommand}" Content="{Binding FavoriteVehicleLabel}"
+                                    ToolTip="Add or remove this vehicle from Favorites — browse them from the Favorites category at the top of the list."/>
                         </WrapPanel>
-                        <ListBox x:Name="VehicleFavorites" DockPanel.Dock="Bottom" Height="140" ItemsSource="{Binding FavoriteVehicles}" MouseDoubleClick="VehicleFavorites_DoubleClick">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <DockPanel>
-                                        <Button DockPanel.Dock="Right" Content="✕" MinWidth="0" Padding="4,0" Margin="8,0,0,0" AutomationProperties.Name="Remove"
-                                                Command="{Binding DataContext.RemoveFavoriteVehicleCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
-                                        <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource CodeWithIcon}"/>
-                                    </DockPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                        <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Muted}" Margin="0,8,0,4" Text="Favorites: double-click to spawn."/>
                         <ListBox x:Name="VehicleMatchesList" Margin="0,6,0,0" ItemsSource="{Binding VehicleMatches}" ItemTemplate="{StaticResource CodeWithIcon}"
                                  PreviewMouseLeftButtonUp="VehicleMatches_Click" MouseDoubleClick="VehicleMatches_DoubleClick"
                                  KeyDown="VehicleMatches_KeyDown"

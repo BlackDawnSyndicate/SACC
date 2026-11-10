@@ -245,16 +245,6 @@ public partial class MainWindow : Window
         NewItemBox.CaretIndex = NewItemBox.Text.Length;
     }
 
-    private void ItemFavorites_DoubleClick(object sender, MouseButtonEventArgs e)
-    {
-        if (ItemFavorites.SelectedItem is string code) _vm.SpawnItemCommand.Execute(code);
-    }
-
-    private void VehicleFavorites_DoubleClick(object sender, MouseButtonEventArgs e)
-    {
-        if (VehicleFavorites.SelectedItem is string code) _vm.SpawnVehicleCommand.Execute(code);
-    }
-
     private void ContainerPresets_DoubleClick(object sender, MouseButtonEventArgs e)
     {
         if (sender is ListBox { SelectedItem: Sacc.Core.Model.ContainerPreset p }) _vm.SpawnContainerPresetCommand.Execute(p);

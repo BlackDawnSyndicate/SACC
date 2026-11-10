@@ -108,13 +108,29 @@ public sealed partial class MainViewModel
         set { if (Set(ref _selectedVehicleCategory, value)) RefreshVehicleMatches(); }
     }
 
-    // Rebuilds the "All (n)" + per-category options, keeping the current selection by name when it still exists.
-    private static IReadOnlyList<CategoryOption> BuildCategoryOptions(IReadOnlyList<string> codes, bool vehicles, ref CategoryOption? selected)
+    // The item/vehicle currently highlighted in the match list; the ☆ button and its label act on this.
+    private string? _selectedItemMatch;
+    public string? SelectedItemMatch { get => _selectedItemMatch; set { if (Set(ref _selectedItemMatch, value)) Raise(nameof(FavoriteItemLabel)); } }
+
+    public const string FavoritesCategory = "Favorites";
+
+    public string FavoriteItemLabel => IsFavorite(FavoriteItems, SelectedItemMatch ?? ItemCode) ? "★ Unfavorite" : "☆ Favorite";
+    public string FavoriteVehicleLabel => IsFavorite(FavoriteVehicles, VehicleCode) ? "★ Unfavorite" : "☆ Favorite";
+
+    private static bool IsFavorite(IEnumerable<string> list, string? code) =>
+        !string.IsNullOrWhiteSpace(code) && list.Contains(code.Trim(), StringComparer.OrdinalIgnoreCase);
+
+    // Rebuilds the "Favorites (n)" / "All (n)" / per-category options, keeping the current selection by name.
+    private static IReadOnlyList<CategoryOption> BuildCategoryOptions(IReadOnlyList<string> codes, bool vehicles, int favCount, ref CategoryOption? selected)
     {
-        var options = new List<CategoryOption> { new(ItemCategory.All, codes.Count) };
+        var options = new List<CategoryOption>
+        {
+            new(FavoritesCategory, favCount),
+            new(ItemCategory.All, codes.Count),
+        };
         options.AddRange(ItemCategory.Counts(codes, vehicles).Select(c => new CategoryOption(c.Name, c.Count)));
         var keepName = selected?.Name ?? ItemCategory.All;
-        selected = options.FirstOrDefault(o => o.Name == keepName) ?? options[0];
+        selected = options.FirstOrDefault(o => o.Name == keepName) ?? options.First(o => o.Name == ItemCategory.All);
         return options;
     }
 
@@ -130,17 +146,20 @@ public sealed partial class MainViewModel
         var catalog = _itemCatalog;
         UnlistedCodeVisibilityConverter.IsUnlisted = catalog.IsUnlisted;
         Raise(nameof(GameItemsTip));
-        ItemCategoryOptions = BuildCategoryOptions(_itemCatalog.Items, vehicles: false, ref _selectedItemCategory);
+        ItemCategoryOptions = BuildCategoryOptions(_itemCatalog.Items, vehicles: false, FavoriteItems.Count, ref _selectedItemCategory);
         Raise(nameof(SelectedItemCategory));
-        VehicleCategoryOptions = BuildCategoryOptions(_itemCatalog.Vehicles, vehicles: true, ref _selectedVehicleCategory);
+        VehicleCategoryOptions = BuildCategoryOptions(_itemCatalog.Vehicles, vehicles: true, FavoriteVehicles.Count, ref _selectedVehicleCategory);
         Raise(nameof(SelectedVehicleCategory));
+        Raise(nameof(FavoriteItemLabel));
+        Raise(nameof(FavoriteVehicleLabel));
         RefreshItemMatches();
         RefreshVehicleMatches();
     }
 
     private void RefreshItemMatches()
     {
-        var pool = ItemCategory.InCategory(_itemCatalog.Items, _selectedItemCategory?.Name);
+        var cat = _selectedItemCategory?.Name;
+        IReadOnlyList<string> pool = cat == FavoritesCategory ? FavoriteItems.ToList() : ItemCategory.InCategory(_itemCatalog.Items, cat);
         ItemMatches = ItemCatalog.Filter(pool, ItemCode, MaxShownMatches, _itemCatalog.Unlisted);
         ItemMatchSummary = MatchSummary(ItemCatalog.Count(pool, ItemCode), pool.Count);
     }
@@ -206,7 +225,8 @@ public sealed partial class MainViewModel
 
     private void RefreshVehicleMatches()
     {
-        var pool = ItemCategory.InCategory(_itemCatalog.Vehicles, _selectedVehicleCategory?.Name, vehicles: true);
+        var cat = _selectedVehicleCategory?.Name;
+        IReadOnlyList<string> pool = cat == FavoritesCategory ? FavoriteVehicles.ToList() : ItemCategory.InCategory(_itemCatalog.Vehicles, cat, vehicles: true);
         VehicleMatches = ItemCatalog.Filter(pool, VehicleCode, MaxShownMatches);
         VehicleMatchSummary = MatchSummary(ItemCatalog.Count(pool, VehicleCode), pool.Count);
     }

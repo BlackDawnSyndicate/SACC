@@ -196,6 +196,25 @@
             <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
         </Style>
 
+        <!-- Popups live in their own visual tree and don't inherit the window's themed Foreground, so they'd
+             otherwise render with the system's black-on-white. Theme tooltips and right-click menus explicitly. -->
+        <Style TargetType="ToolTip">
+            <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="Padding" Value="6,3"/>
+        </Style>
+        <Style TargetType="ContextMenu">
+            <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        </Style>
+        <Style TargetType="MenuItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+            <Setter Property="Padding" Value="6,3"/>
+        </Style>
+
         <!-- Themed list: field-coloured surface, accent selection, so lists follow the colour scheme. -->
         <Style TargetType="ListBox">
             <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
