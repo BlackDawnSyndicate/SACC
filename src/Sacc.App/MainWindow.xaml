@@ -1187,6 +1187,7 @@
                             <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
                         <TextBlock Grid.Row="0" Text="Your SteamID64"/>
@@ -1215,9 +1216,9 @@
                         <TextBlock Grid.Row="8" Text="Clipboard reply timeout (ms)"/>
                         <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding Settings.ClipboardCaptureTimeoutMs}"/>
 
-                        <TextBlock Grid.Row="9" Text="Colour scheme"/>
-                        <ComboBox Grid.Row="9" Grid.Column="1" Margin="0,0,0,8" ItemsSource="{Binding ThemeNames}" SelectedItem="{Binding Theme}"/>
-                        <TextBlock Grid.Row="9" Grid.Column="2" Text="  header &amp; accent colours" Foreground="{StaticResource MutedBrush}"/>
+                        <TextBlock Grid.Row="19" Text="Colour scheme"/>
+                        <ComboBox Grid.Row="19" Grid.Column="1" Margin="0,8,0,0" ItemsSource="{Binding ThemeNames}" SelectedItem="{Binding Theme}"/>
+                        <TextBlock Grid.Row="19" Grid.Column="2" Text="  header &amp; accent colours" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
 
                         <TextBlock Grid.Row="14" Text="Max amount per spawn line"/>
                         <TextBox Grid.Row="14" Grid.Column="1" Text="{Binding Settings.MaxSpawnPerCommand}"/>
