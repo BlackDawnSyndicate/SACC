@@ -116,6 +116,11 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+        </Style>
         <Style TargetType="TabItem">
             <Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/>
             <Setter Property="Template">

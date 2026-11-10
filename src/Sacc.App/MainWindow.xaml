@@ -72,8 +72,7 @@
             </DockPanel>
         </Border>
 
-        <TabControl Margin="8" Padding="10" Background="{DynamicResource PanelBrush}"
-                    BorderBrush="{DynamicResource BorderBrush}" Foreground="{DynamicResource TextBrush}">
+        <TabControl Margin="8" Padding="10">
             <!-- ============================================================ Console -->
             <TabItem Header="Console">
                 <Grid>
