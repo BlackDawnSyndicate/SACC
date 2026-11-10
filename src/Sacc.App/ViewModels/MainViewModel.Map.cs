@@ -158,6 +158,12 @@ public sealed partial class MainViewModel
     public string? ActiveTileTemplate =>
         (_map?.Template.Types.FirstOrDefault(t => t.Name == Settings.MapType) ?? _map?.Template.Types.FirstOrDefault())?.TemplateUrl;
 
+    /// <summary>Tile template for the minimap's own map type, falling back to the Map tab's type, then the first type.</summary>
+    public string? MinimapTileTemplate =>
+        (_map?.Template.Types.FirstOrDefault(t => t.Name == Settings.MinimapMapType)
+         ?? _map?.Template.Types.FirstOrDefault(t => t.Name == Settings.MapType)
+         ?? _map?.Template.Types.FirstOrDefault())?.TemplateUrl;
+
     private string _mapStatus = "The map loads when you open this tab.";
     public string MapStatus { get => _mapStatus; private set => Set(ref _mapStatus, value); }
 

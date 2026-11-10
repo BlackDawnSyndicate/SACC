@@ -79,9 +79,10 @@ public partial class MainWindow : Window
 
     private async System.Threading.Tasks.Task EnsureMinimapMapAsync()
     {
-        if (_minimap == null || _minimap.HasMap) return;
-        await _vm.EnsureMapLoadedAsync();
-        if (_vm.MapTemplate is { } t && _vm.ActiveTileTemplate is { } tiles)
+        if (_minimap == null) return;
+        if (_vm.MapTemplate == null) await _vm.EnsureMapLoadedAsync();
+        // (Re)point the minimap at its own map type's tiles — cheap to repeat, and picks up a type change.
+        if (_vm.MapTemplate is { } t && _vm.MinimapTileTemplate is { } tiles)
             _minimap.SetMap(t, tiles, _vm.MapDataService);
     }
 

@@ -184,6 +184,12 @@ public sealed partial class MainViewModel : ObservableObject
         set { Settings.MinimapRotate = value; Raise(); Save(); MinimapChanged?.Invoke(); }
     }
 
+    public string MinimapMapType
+    {
+        get => Settings.MinimapMapType;
+        set { if (value == null || value == Settings.MinimapMapType) return; Settings.MinimapMapType = value; Raise(); Save(); MinimapChanged?.Invoke(); }
+    }
+
     private string _search = "";
     public string SearchText
     {

@@ -1245,7 +1245,9 @@
                             <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="155" Text="Fade after (s)"/><TextBox Text="{Binding MinimapFadeSeconds}" AutomationProperties.Name="Minimap fade seconds"/></DockPanel>
                             <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,9" Text="OnCopy mode: how long it stays before fading"/>
                             <CheckBox IsChecked="{Binding MinimapRotate}" Content="Rotate to direction of travel (North arrow)"/>
-                            <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,0" Text="off = north up; on = your heading points up (from successive Ctrl+C while moving)"/>
+                            <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,9" Text="off = north up; on = your heading points up (from successive Ctrl+C while moving)"/>
+                            <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="155" Text="Minimap map type"/><ComboBox ItemsSource="{Binding MapTypeNames}" SelectedItem="{Binding MinimapMapType}" AutomationProperties.Name="Minimap map type"/></DockPanel>
+                            <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,0" Text="e.g. Tactical; independent of the Map tab (list fills once the map has loaded)"/>
                         </StackPanel>
 
                         <!-- Full-width: actions and notes -->

@@ -117,6 +117,8 @@ public sealed class Settings
     public double MinimapFadeSeconds { get; set; } = 6;
     /// <summary>Rotate the minimap so the player's direction of travel points up (a North arrow shows where north is). Off = north up.</summary>
     public bool MinimapRotate { get; set; } = true;
+    /// <summary>scum-map map type for the minimap (e.g. Tactical), independent of the Map tab's type. Falls back to the Map tab's type if absent.</summary>
+    public string MinimapMapType { get; set; } = "Tactical";
     /// <summary>Minimap overlay window position and size (screen pixels); left/top of -1 means the default top-right corner.</summary>
     public double MinimapLeft { get; set; } = -1;
     public double MinimapTop { get; set; } = -1;
