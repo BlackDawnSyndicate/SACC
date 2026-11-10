@@ -4,31 +4,33 @@ using System.Windows.Media;
 namespace Sacc.App.Infrastructure;
 
 /// <summary>
-/// Colour schemes for SACC. The app keeps its light base (dark text on light panels); each scheme restyles the header
-/// bar, the accent (the "SACC" title, section headings and the primary button) and small supporting tones. The six
-/// brushes live in App.xaml as shared, mutable resources, so changing a brush's <see cref="SolidColorBrush.Color"/>
-/// re-themes every control that uses it live, without a restart.
+/// Colour schemes for SACC. Each scheme sets the header bar, the accent (the "SACC" title, section headings and the
+/// primary button), the body/panel colour, the default text colour, the input (field) colour and the muted-text colour.
+/// Light schemes use dark text on a tinted panel; the dark schemes (Night, Sunset, Raider, Punk) use light text on a dark
+/// panel. The brushes live in App.xaml as shared, mutable resources, so changing a brush's
+/// <see cref="SolidColorBrush.Color"/> re-themes every control that uses it live, without a restart. A few native-control
+/// bits (combo-box drop-downs, button hover) keep the system chrome.
 /// </summary>
 public static class ThemeManager
 {
-    public sealed record Theme(string Name, string Header, string Accent, string Panel, string Muted);
+    public sealed record Theme(string Name, string Header, string Accent, string Panel, string Muted, string Text, string Field);
 
     public const string Default = "Default";
 
-    /// <summary>Header bar, accent, window/panel tint and muted-text colour per scheme (all keep dark text on a light body).</summary>
+    //                       Name        Header     Accent     Panel      Muted      Text       Field
     public static readonly IReadOnlyList<Theme> Themes = new[]
     {
-        new Theme(Default,   "#1F2A30", "#C8641E", "#F4F5F6", "#6B7780"),
-        new Theme("Urban",   "#2B2F33", "#4E7A99", "#F0F1F2", "#66707A"),
-        new Theme("Desert",  "#5E4E33", "#B8860B", "#F6F2E9", "#8A7A5A"),
-        new Theme("Woodland","#2F3A26", "#4F7A2E", "#EEF2E8", "#5E6E4E"),
-        new Theme("Multicam","#45412F", "#7E6E42", "#F3F1E8", "#6E6650"),
-        new Theme("Night",   "#121724", "#4A7DD4", "#ECEEF3", "#5B6472"),
-        new Theme("Arctic",  "#39515F", "#1F93BC", "#EDF4F7", "#5E6E78"),
-        new Theme("Raider",  "#1C1C1C", "#C0392B", "#F3F0F0", "#7A6A6A"),
-        new Theme("Clown",   "#6A2EA0", "#E0219E", "#F6ECF4", "#8A6A9E"),
-        new Theme("Punk",    "#151515", "#E6007E", "#F5ECF1", "#7A5A6E"),
-        new Theme("Sunset",  "#6E342A", "#E8662E", "#FAF1EA", "#9A6E5E"),
+        new Theme(Default,   "#1F2A30", "#C8641E", "#F4F5F6", "#6B7780", "#23292E", "#FFFFFF"),
+        new Theme("Urban",   "#2B2F33", "#6FB0D6", "#5A6670", "#AEB8C0", "#EDF0F2", "#4C5862"),
+        new Theme("Desert",  "#5E4E33", "#9A6E12", "#E8DCC2", "#786A4A", "#3A3020", "#F4ECD6"),
+        new Theme("Woodland","#2F3A26", "#8FC04E", "#4E5E3C", "#AEBC98", "#EEF2E6", "#42502F"),
+        new Theme("Multicam","#4A4A34", "#6E8240", "#DED8BC", "#6E6A4A", "#32301E", "#ECE9D6"),
+        new Theme("Arctic",  "#39515F", "#1683A8", "#D4E6EF", "#556673", "#1E2E38", "#ECF5FA"),
+        new Theme("Clown",   "#6A2EA0", "#D81E8E", "#F0DAEE", "#845A96", "#35153E", "#FBEDF9"),
+        new Theme("Night",   "#0C1018", "#5A90E0", "#141A28", "#8089A0", "#E6EAF2", "#1E2638"),
+        new Theme("Sunset",  "#1E1216", "#F2743B", "#291A1E", "#B5897C", "#F6E6DC", "#37242A"),
+        new Theme("Raider",  "#141010", "#E24B3E", "#1E1414", "#9A7C7C", "#F0E2E2", "#2A1C1C"),
+        new Theme("Punk",    "#0F0A10", "#FF1E90", "#18131A", "#A484A4", "#F2E4EE", "#241D28"),
     };
 
     public static IEnumerable<string> Names => Themes.Select(t => t.Name);
@@ -46,6 +48,8 @@ public static class ThemeManager
         Set(res, "AccentBrush", theme.Accent);
         Set(res, "PanelBrush", theme.Panel);
         Set(res, "MutedBrush", theme.Muted);
+        Set(res, "TextBrush", theme.Text);
+        Set(res, "FieldBrush", theme.Field);
     }
 
     private static void Set(ResourceDictionary res, string key, string hex)
