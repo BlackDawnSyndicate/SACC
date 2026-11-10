@@ -1161,96 +1161,75 @@
             <!-- ============================================================ Settings -->
             <TabItem Header="Settings">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <Grid MaxWidth="760" HorizontalAlignment="Left">
+                    <Grid Margin="0,0,10,0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="230"/>
-                            <ColumnDefinition Width="260"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="32"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Grid.Resources>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="VerticalAlignment" Value="Center"/>
-                                <Setter Property="Margin" Value="0,0,0,8"/>
-                            </Style>
-                            <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
-                                <Setter Property="Margin" Value="0,0,0,8"/>
-                            </Style>
-                            <Style TargetType="CheckBox">
-                                <Setter Property="Margin" Value="0,0,0,8"/>
-                                <Setter Property="VerticalAlignment" Value="Center"/>
-                            </Style>
-                        </Grid.Resources>
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
+                        <Grid.Resources>
+                            <Style TargetType="TextBlock"><Setter Property="VerticalAlignment" Value="Center"/></Style>
+                            <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}"/>
+                            <Style TargetType="CheckBox"><Setter Property="VerticalAlignment" Value="Center"/><Setter Property="Margin" Value="0,0,0,8"/><Setter Property="MaxWidth" Value="420"/><Setter Property="HorizontalAlignment" Value="Left"/></Style>
+                            <Style x:Key="Hint" TargetType="TextBlock" BasedOn="{StaticResource Muted}"><Setter Property="FontSize" Value="11"/><Setter Property="Margin" Value="185,0,0,9"/></Style>
+                            <Style x:Key="Field" TargetType="DockPanel"><Setter Property="Margin" Value="0,0,0,2"/></Style>
+                        </Grid.Resources>
 
-                        <TextBlock Grid.Row="0" Text="Your SteamID64"/>
-                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Settings.MySteamId}"/>
-                        <TextBlock Grid.Row="0" Grid.Column="2" Text="  default target for self-commands" Foreground="{DynamicResource MutedBrush}"/>
+                        <!-- Left column: connection and timing -->
+                        <StackPanel Grid.Row="0" Grid.Column="0">
+                            <TextBlock Text="Connection &amp; timing" Style="{StaticResource SectionLabel}" Margin="0,0,0,6"/>
+                            <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="185" Text="Your SteamID64"/><TextBox Text="{Binding Settings.MySteamId}" AutomationProperties.Name="Your SteamID64"/></DockPanel>
+                            <TextBlock Style="{StaticResource Hint}" Text="default target for self-commands"/>
+                            <DockPanel Style="{StaticResource Field}" Margin="0,0,0,9"><TextBlock DockPanel.Dock="Left" Width="185" Text="Game process name"/><TextBox Text="{Binding Settings.ProcessName}" AutomationProperties.Name="Game process name"/></DockPanel>
+                            <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="185" Text="Open-chat key"/><TextBox Text="{Binding Settings.ChatKey}" AutomationProperties.Name="Open-chat key"/></DockPanel>
+                            <TextBlock Style="{StaticResource Hint}" Text="WPF key name: T, Enter, Oem2…"/>
+                            <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="185" Text="Input mode"/><ComboBox ItemsSource="{Binding InputModes}" SelectedItem="{Binding Settings.InputMode}" AutomationProperties.Name="Input mode"/></DockPanel>
+                            <TextBlock Style="{StaticResource Hint}" Text="Paste is fastest; Type if paste fails"/>
+                            <DockPanel Style="{StaticResource Field}" Margin="0,0,0,9"><TextBlock DockPanel.Dock="Left" Width="185" Text="Delay after focusing game (ms)"/><TextBox Text="{Binding Settings.FocusDelayMs}" AutomationProperties.Name="Delay after focusing game"/></DockPanel>
+                            <DockPanel Style="{StaticResource Field}" Margin="0,0,0,9"><TextBlock DockPanel.Dock="Left" Width="185" Text="Delay after opening chat (ms)"/><TextBox Text="{Binding Settings.ChatOpenDelayMs}" AutomationProperties.Name="Delay after opening chat"/></DockPanel>
+                            <DockPanel Style="{StaticResource Field}" Margin="0,0,0,9"><TextBlock DockPanel.Dock="Left" Width="185" Text="Delay before Enter (ms)"/><TextBox Text="{Binding Settings.BeforeEnterDelayMs}" AutomationProperties.Name="Delay before Enter"/></DockPanel>
+                            <DockPanel Style="{StaticResource Field}" Margin="0,0,0,9"><TextBlock DockPanel.Dock="Left" Width="185" Text="Delay between commands (ms)"/><TextBox Text="{Binding Settings.AfterSendDelayMs}" AutomationProperties.Name="Delay between commands"/></DockPanel>
+                            <DockPanel Style="{StaticResource Field}" Margin="0,0,0,9"><TextBlock DockPanel.Dock="Left" Width="185" Text="Delay after closing chat (ms)"/><TextBox Text="{Binding Settings.CloseDelayMs}" AutomationProperties.Name="Delay after closing chat"/></DockPanel>
+                            <DockPanel Style="{StaticResource Field}" Margin="0,0,0,9"><TextBlock DockPanel.Dock="Left" Width="185" Text="Clipboard reply timeout (ms)"/><TextBox Text="{Binding Settings.ClipboardCaptureTimeoutMs}" AutomationProperties.Name="Clipboard reply timeout"/></DockPanel>
+                        </StackPanel>
 
-                        <TextBlock Grid.Row="1" Text="Game process name"/>
-                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Settings.ProcessName}"/>
+                        <!-- Right column: behaviour, spawning and appearance -->
+                        <StackPanel Grid.Row="0" Grid.Column="2">
+                            <TextBlock Text="Behaviour &amp; appearance" Style="{StaticResource SectionLabel}" Margin="0,0,0,6"/>
+                            <CheckBox IsChecked="{Binding Settings.RestoreClipboard}" Content="Restore my clipboard text after sending"/>
+                            <CheckBox IsChecked="{Binding Settings.ReturnFocusToSacc}" Content="Switch back to SACC after sending"/>
+                            <CheckBox IsChecked="{Binding Settings.ConfirmDangerous}" Content="Confirm kick / ban / destroy-all commands"/>
+                            <CheckBox IsChecked="{Binding Settings.ChatStaysOpenAfterSend}" Content="Game chat stays open after Enter (SCUM does): open chat once per batch, press Escape at the end"/>
+                            <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,4,0,12"/>
+                            <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="155" Text="Max amount per spawn line"/><TextBox Text="{Binding Settings.MaxSpawnPerCommand}" AutomationProperties.Name="Max amount per spawn line"/></DockPanel>
+                            <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,9" Text="kits split bigger counts (10 matches SAH)"/>
+                            <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="155" Text="&quot;Full&quot; StackCount"/><TextBox Text="{Binding Settings.FullStackCount}" AutomationProperties.Name="Full StackCount"/></DockPanel>
+                            <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,9" Text="sent when Full is ticked; the game caps overflow"/>
+                            <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="155" Text="Magazine pattern (regex)"/><TextBox Text="{Binding Settings.MagazinePattern}" FontFamily="Cascadia Mono, Consolas" AutomationProperties.Name="Magazine pattern"/></DockPanel>
+                            <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,9" Text="which codes a kit's 'Fill magazines' fills"/>
+                            <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="155" Text="Colour scheme"/><ComboBox ItemsSource="{Binding ThemeNames}" SelectedItem="{Binding Theme}" AutomationProperties.Name="Colour scheme"/></DockPanel>
+                            <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,0" Text="header &amp; accent colours"/>
+                        </StackPanel>
 
-                        <TextBlock Grid.Row="2" Text="Open-chat key"/>
-                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Settings.ChatKey}"/>
-                        <TextBlock Grid.Row="2" Grid.Column="2" Text="  WPF key name: T, Enter, Oem2…" Foreground="{DynamicResource MutedBrush}"/>
-
-                        <TextBlock Grid.Row="3" Text="Input mode"/>
-                        <ComboBox Grid.Row="3" Grid.Column="1" Margin="0,0,0,8" ItemsSource="{Binding InputModes}" SelectedItem="{Binding Settings.InputMode}"/>
-                        <TextBlock Grid.Row="3" Grid.Column="2" Text="  Paste is fastest; Type if paste fails" Foreground="{DynamicResource MutedBrush}"/>
-
-                        <TextBlock Grid.Row="4" Text="Delay after focusing game (ms)"/>
-                        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Settings.FocusDelayMs}"/>
-                        <TextBlock Grid.Row="5" Text="Delay after opening chat (ms)"/>
-                        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding Settings.ChatOpenDelayMs}"/>
-                        <TextBlock Grid.Row="6" Text="Delay before Enter (ms)"/>
-                        <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding Settings.BeforeEnterDelayMs}"/>
-                        <TextBlock Grid.Row="7" Text="Delay between commands (ms)"/>
-                        <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding Settings.AfterSendDelayMs}"/>
-                        <TextBlock Grid.Row="8" Text="Clipboard reply timeout (ms)"/>
-                        <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding Settings.ClipboardCaptureTimeoutMs}"/>
-
-                        <TextBlock Grid.Row="19" Text="Colour scheme"/>
-                        <ComboBox Grid.Row="19" Grid.Column="1" Margin="0,8,0,0" ItemsSource="{Binding ThemeNames}" SelectedItem="{Binding Theme}"/>
-                        <TextBlock Grid.Row="19" Grid.Column="2" Text="  header &amp; accent colours" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
-
-                        <TextBlock Grid.Row="14" Text="Max amount per spawn line"/>
-                        <TextBox Grid.Row="14" Grid.Column="1" Text="{Binding Settings.MaxSpawnPerCommand}"/>
-                        <TextBlock Grid.Row="14" Grid.Column="2" Text="  kits split bigger counts (10 matches SAH)" Foreground="{DynamicResource MutedBrush}"/>
-
-                        <CheckBox Grid.Row="15" Grid.ColumnSpan="3" IsChecked="{Binding Settings.ChatStaysOpenAfterSend}"
-                                  Content="Game chat stays open after Enter (SCUM does): open chat once per batch, press Escape at the end"/>
-                        <TextBlock Grid.Row="16" Text="Delay after closing chat (ms)"/>
-                        <TextBox Grid.Row="16" Grid.Column="1" Text="{Binding Settings.CloseDelayMs}"/>
-                        <TextBlock Grid.Row="17" Text="&quot;Full&quot; StackCount"/>
-                        <TextBox Grid.Row="17" Grid.Column="1" Text="{Binding Settings.FullStackCount}"/>
-                        <TextBlock Grid.Row="17" Grid.Column="2" Text="  sent when Full is ticked; the game caps overflow" Foreground="{DynamicResource MutedBrush}"/>
-                        <TextBlock Grid.Row="18" Text="Magazine pattern (regex)"/>
-                        <TextBox Grid.Row="18" Grid.Column="1" Text="{Binding Settings.MagazinePattern}" FontFamily="Cascadia Mono, Consolas"/>
-                        <TextBlock Grid.Row="18" Grid.Column="2" Text="  which codes a kit's 'Fill magazines' fills" Foreground="{DynamicResource MutedBrush}"/>
-
-                        <CheckBox Grid.Row="9" Grid.ColumnSpan="3" IsChecked="{Binding Settings.RestoreClipboard}" Content="Restore my clipboard text after sending"/>
-                        <CheckBox Grid.Row="10" Grid.ColumnSpan="3" IsChecked="{Binding Settings.ReturnFocusToSacc}" Content="Switch back to SACC after sending"/>
-                        <CheckBox Grid.Row="11" Grid.ColumnSpan="3" IsChecked="{Binding Settings.ConfirmDangerous}" Content="Confirm kick / ban / destroy-all commands"/>
-
-                        <WrapPanel Grid.Row="12" Grid.ColumnSpan="3" Margin="0,8,0,0">
-                            <Button Style="{StaticResource PrimaryButton}" Command="{Binding SaveSettingsCommand}" Content="Save settings"/>
-                            <Button Command="{Binding EditCatalogCommand}" Content="Edit command catalog"/>
-                            <Button Command="{Binding ReloadCatalogCommand}" Content="Reload catalog"/>
-                            <Button Command="{Binding OpenDataFolderCommand}" Content="Open data folder"/>
-                            <Button Command="{Binding OpenIconsFolderCommand}" Content="Open icons folder"
-                                    ToolTip="Put your own &lt;SpawnCode&gt;.png screenshots here; they override the bundled icons"/>
-                            <Button Command="{Binding ReloadIconsCommand}" Content="Reload icons"/>
-                            <Button Command="{Binding RelaunchAsAdminCommand}" Content="Restart as administrator"/>
-                        </WrapPanel>
-                        <TextBlock Grid.Row="13" Grid.ColumnSpan="3" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,0"
-                                   Text="SACC sends commands by focusing the SCUM window, opening chat, and pasting or typing the line. If SCUM runs as administrator, SACC must too, or Windows will block the keystrokes. Commands marked Conflicting or Unverified in the catalog may need their template adjusted for the current game version."/>
+                        <!-- Full-width: actions and notes -->
+                        <StackPanel Grid.Row="1" Grid.ColumnSpan="3" Margin="0,18,0,0">
+                            <WrapPanel>
+                                <Button Style="{StaticResource PrimaryButton}" Command="{Binding SaveSettingsCommand}" Content="Save settings"/>
+                                <Button Command="{Binding EditCatalogCommand}" Content="Edit command catalog"/>
+                                <Button Command="{Binding ReloadCatalogCommand}" Content="Reload catalog"/>
+                                <Button Command="{Binding OpenDataFolderCommand}" Content="Open data folder"/>
+                                <Button Command="{Binding OpenIconsFolderCommand}" Content="Open icons folder"
+                                        ToolTip="Put your own &lt;SpawnCode&gt;.png screenshots here; they override the bundled icons"/>
+                                <Button Command="{Binding ReloadIconsCommand}" Content="Reload icons"/>
+                                <Button Command="{Binding RelaunchAsAdminCommand}" Content="Restart as administrator"/>
+                            </WrapPanel>
+                            <TextBlock Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,0" MaxWidth="900" HorizontalAlignment="Left"
+                                       Text="SACC sends commands by focusing the SCUM window, opening chat, and pasting or typing the line. If SCUM runs as administrator, SACC must too, or Windows will block the keystrokes. Commands marked Conflicting or Unverified in the catalog may need their template adjusted for the current game version."/>
+                        </StackPanel>
                     </Grid>
                 </ScrollViewer>
             </TabItem>

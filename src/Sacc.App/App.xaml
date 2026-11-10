@@ -168,5 +168,46 @@
         <Style TargetType="DataGridCell">
             <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
         </Style>
+
+        <!-- Themed scrollbar: a slim thumb in the muted colour over a panel-coloured track, no arrow buttons. -->
+        <Style x:Key="ScrollThumb" TargetType="Thumb">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border Background="{DynamicResource MutedBrush}" CornerRadius="3" Margin="2"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="ScrollBar">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Width" Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid Background="{TemplateBinding Background}">
+                            <Track Name="PART_Track" IsDirectionReversed="True">
+                                <Track.Thumb>
+                                    <Thumb Style="{StaticResource ScrollThumb}"/>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageDownCommand" Background="Transparent" BorderThickness="0" Focusable="False" Opacity="0"/>
+                                </Track.IncreaseRepeatButton>
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageUpCommand" Background="Transparent" BorderThickness="0" Focusable="False" Opacity="0"/>
+                                </Track.DecreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Orientation" Value="Horizontal">
+                                <Setter Property="Width" Value="Auto"/>
+                                <Setter Property="Height" Value="12"/>
+                                <Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="False"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Application.Resources>
 </Application>
