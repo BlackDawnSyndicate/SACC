@@ -3,8 +3,11 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using Sacc.App.Game;
 using Sacc.App.Infrastructure;
 using Sacc.App.ViewModels;
+using Sacc.Core;
+using Sacc.Core.Model;
 
 namespace Sacc.App;
 
@@ -21,6 +24,73 @@ public partial class MainWindow : Window
         DataContext = _vm;
         ThemeManager.Apply(_vm.Theme);
         WireMap();
+        WireMinimap();
+    }
+
+    // ---- position minimap: watch the clipboard for SCUM's Ctrl+C coordinates and show them on an overlay map.
+
+    private ClipboardMonitor? _clipboard;
+    private MinimapWindow? _minimap;
+
+    private void WireMinimap()
+    {
+        _clipboard = new ClipboardMonitor();
+        _clipboard.Changed += OnClipboardChanged;
+        _vm.MinimapChanged += ApplyMinimapSetting;
+        ApplyMinimapSetting();
+    }
+
+    private void OnClipboardChanged()
+    {
+        if (!_vm.MinimapEnabled) return;
+        if (GameLink.ClipboardBusy) return;                       // SACC is mid send/capture — not a player Ctrl+C
+        var text = GameLink.TryGetClipboardText();
+        if (text == null || text == GameLink.LastSelfWrite) return;
+        if (!Parsing.TryParseLabeledLocation(text, out var loc)) return;
+        _ = ShowPositionAsync(loc);
+    }
+
+    private async System.Threading.Tasks.Task ShowPositionAsync(Vec3 loc)
+    {
+        EnsureMinimap();
+        await EnsureMinimapMapAsync();
+        if (!_minimap!.HasMap) return;                            // map couldn't load (offline, first run)
+        _minimap.MoveTo(loc, _vm.MinimapZoom);
+        if (_vm.MinimapMode == MinimapMode.Always) _minimap.ShowSteady();
+        else _minimap.Pulse(_vm.MinimapFadeSeconds);
+    }
+
+    private async void ApplyMinimapSetting()
+    {
+        if (!_vm.MinimapEnabled) { _minimap?.HideNow(); return; }
+        EnsureMinimap();
+        await EnsureMinimapMapAsync();
+        if (_vm.MinimapMode == MinimapMode.Always) _minimap!.ShowSteady();
+        else _minimap!.HideNow();                                 // On-copy: stay hidden until a Ctrl+C arrives
+    }
+
+    private async System.Threading.Tasks.Task EnsureMinimapMapAsync()
+    {
+        if (_minimap == null || _minimap.HasMap) return;
+        await _vm.EnsureMapLoadedAsync();
+        if (_vm.MapTemplate is { } t && _vm.ActiveTileTemplate is { } tiles)
+            _minimap.SetMap(t, tiles, _vm.MapDataService);
+    }
+
+    private void EnsureMinimap()
+    {
+        if (_minimap != null) return;
+        _minimap = new MinimapWindow();
+        var s = _vm.Settings;
+        if (s.MinimapSize > 50) { _minimap.Width = s.MinimapSize; _minimap.Height = s.MinimapSize; }
+        if (s.MinimapLeft >= 0 && s.MinimapTop >= 0) { _minimap.Left = s.MinimapLeft; _minimap.Top = s.MinimapTop; }
+        else
+        {
+            var wa = SystemParameters.WorkArea;
+            _minimap.Left = wa.Right - _minimap.Width - 16;
+            _minimap.Top = wa.Top + 16;
+        }
+        _minimap.OnHidden += () => _vm.MinimapEnabled = false;    // the ✕ turns the feature off
     }
 
     // ---- Map tab: the MapView is a plain control fed from the view model.
@@ -98,7 +168,15 @@ public partial class MainWindow : Window
 
     protected override void OnClosing(CancelEventArgs e)
     {
+        if (_minimap != null)
+        {
+            _vm.Settings.MinimapLeft = _minimap.Left;
+            _vm.Settings.MinimapTop = _minimap.Top;
+            _vm.Settings.MinimapSize = _minimap.Width;
+        }
         _vm.Save();
+        _clipboard?.Dispose();
+        _minimap?.Close();
         base.OnClosing(e);
     }
 

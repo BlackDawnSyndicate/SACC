@@ -36,6 +36,9 @@ public sealed class MapView : FrameworkElement
     private static readonly Brush VehicleFill = Frozen(new SolidColorBrush(Color.FromRgb(0x2E, 0xA8, 0xE0)));
     private static readonly Brush BookmarkFill = Frozen(new SolidColorBrush(Color.FromRgb(0xFF, 0xA0, 0x2E)));
     private static readonly Brush LabelBack = Frozen(new SolidColorBrush(Color.FromArgb(0xB0, 0, 0, 0)));
+    private static readonly Pen SelfOutline = Frozen(new Pen(Brushes.White, 2));
+    private static readonly Brush SelfFill = Frozen(new SolidColorBrush(Color.FromRgb(0xFF, 0x30, 0x30)));
+    private static readonly Pen SelfCross = Frozen(new Pen(new SolidColorBrush(Color.FromArgb(0xF0, 0xFF, 0x30, 0x30)), 1.5));
     private static readonly Typeface LabelFace = new("Segoe UI");
     private readonly Dictionary<string, Brush> _brushes = new();
 
@@ -104,6 +107,10 @@ public sealed class MapView : FrameworkElement
     private double _tempMinC, _tempMaxC, _tempFarX, _tempFarY;
 
     public GridStyle GridStyle { get => _gridStyle; set { _gridStyle = value; InvalidateVisual(); } }
+
+    private Vec3? _self;
+    /// <summary>"You are here" marker (the last Ctrl+C position), drawn on top of everything; null hides it. Used by the minimap.</summary>
+    public Vec3? SelfPosition { get => _self; set { _self = value; InvalidateVisual(); } }
     private GridStyle _gridStyle = GridStyle.Sectors;
     private SectorGrid? _grid;
 
@@ -315,6 +322,17 @@ public sealed class MapView : FrameworkElement
             }
 
         if (_showTemp && _terrain != null) DrawTemperatureLegend(dc);
+        DrawSelf(dc);
+    }
+
+    /// <summary>The "you are here" crosshair + dot, on top of everything.</summary>
+    private void DrawSelf(DrawingContext dc)
+    {
+        if (_projection == null || _self is not { } loc) return;
+        var p = WorldToScreen(loc);
+        dc.DrawLine(SelfCross, new Point(p.X - 10, p.Y), new Point(p.X + 10, p.Y));
+        dc.DrawLine(SelfCross, new Point(p.X, p.Y - 10), new Point(p.X, p.Y + 10));
+        dc.DrawEllipse(SelfFill, SelfOutline, p, 5, 5);
     }
 
     // Saturated enough to read on the map's greens and greys; a player keeps their colour.

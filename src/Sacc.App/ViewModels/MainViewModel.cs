@@ -147,6 +147,37 @@ public sealed partial class MainViewModel : ObservableObject
         set { Settings.AlwaysOnTop = value; Raise(); Save(); }
     }
 
+    // ---- position minimap (driven by SCUM's Ctrl+C coordinate copies; the main window owns the overlay)
+
+    /// <summary>Raised when a minimap setting changes, so the window owner can show/hide/reconfigure the overlay.</summary>
+    public event Action? MinimapChanged;
+
+    public IEnumerable<MinimapMode> MinimapModes => Enum.GetValues<MinimapMode>();
+
+    public bool MinimapEnabled
+    {
+        get => Settings.MinimapEnabled;
+        set { Settings.MinimapEnabled = value; Raise(); Save(); MinimapChanged?.Invoke(); }
+    }
+
+    public MinimapMode MinimapMode
+    {
+        get => Settings.MinimapMode;
+        set { Settings.MinimapMode = value; Raise(); Save(); MinimapChanged?.Invoke(); }
+    }
+
+    public double MinimapZoom
+    {
+        get => Settings.MinimapZoom;
+        set { Settings.MinimapZoom = Math.Clamp(value, 0, 8); Raise(); Save(); }
+    }
+
+    public double MinimapFadeSeconds
+    {
+        get => Settings.MinimapFadeSeconds;
+        set { Settings.MinimapFadeSeconds = Math.Max(1, value); Raise(); Save(); }
+    }
+
     private string _search = "";
     public string SearchText
     {

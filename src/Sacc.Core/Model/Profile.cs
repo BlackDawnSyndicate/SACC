@@ -11,6 +11,15 @@ public enum InputMode
     Type,
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum MinimapMode
+{
+    /// <summary>Show the minimap only when coordinates are copied (Ctrl+C in game), then fade it out.</summary>
+    OnCopy,
+    /// <summary>Keep the minimap on screen the whole time; the marker moves as new coordinates come in.</summary>
+    Always,
+}
+
 public sealed class Settings
 {
     public string ProcessName { get; set; } = "SCUM";
@@ -98,6 +107,18 @@ public sealed class Settings
     public bool MapShowTemperature { get; set; }
     /// <summary>The app's colour scheme (see ThemeManager): changes the header and accent colours. "Default" keeps the original look.</summary>
     public string Theme { get; set; } = "Default";
+
+    /// <summary>Show a position minimap overlay driven by the coordinates SCUM copies to the clipboard on Ctrl+C.</summary>
+    public bool MinimapEnabled { get; set; }
+    public MinimapMode MinimapMode { get; set; } = MinimapMode.OnCopy;
+    /// <summary>Minimap zoom (scum-map native zoom level); higher is closer in.</summary>
+    public double MinimapZoom { get; set; } = 5;
+    /// <summary>OnCopy mode: seconds the minimap stays before fading out; each new Ctrl+C resets the timer.</summary>
+    public double MinimapFadeSeconds { get; set; } = 6;
+    /// <summary>Minimap overlay window position and size (screen pixels); left/top of -1 means the default top-right corner.</summary>
+    public double MinimapLeft { get; set; } = -1;
+    public double MinimapTop { get; set; } = -1;
+    public double MinimapSize { get; set; } = 280;
 }
 
 public sealed class PlayerRecord

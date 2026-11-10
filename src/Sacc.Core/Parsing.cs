@@ -58,6 +58,20 @@ public static partial class Parsing
         return true;
     }
 
+    /// <summary>
+    /// Strict version for the Ctrl+C position watcher: only matches the labelled "X=… Y=… Z=…" form SCUM copies,
+    /// never a bare number triple, so ordinary clipboard text with three numbers doesn't look like a position.
+    /// </summary>
+    public static bool TryParseLabeledLocation(string? text, out Vec3 location)
+    {
+        location = default;
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        var m = Xyz().Match(text);
+        if (!m.Success) return false;
+        location = new Vec3(Num(m.Groups[1].Value), Num(m.Groups[2].Value), Num(m.Groups[3].Value));
+        return true;
+    }
+
     public static bool TryParseLocation(string? text, out Vec3 location)
     {
         location = default;

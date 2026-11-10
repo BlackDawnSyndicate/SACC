@@ -147,6 +147,20 @@ public class ParsingTests
     public void LocationRejectsJunk() => Assert.False(Parsing.TryParseLocation("no coordinates here", out _));
 
     [Fact]
+    public void LabeledLocationTakesTheLabeledForm()
+    {
+        Assert.True(Parsing.TryParseLabeledLocation("X=-525564.188 Y=-275570.000 Z=13831.640", out var v));
+        Assert.Equal(new Vec3(-525564.188, -275570.000, 13831.640), v);
+    }
+
+    [Theory]
+    [InlineData("100 200 300")]     // a bare triple is NOT a Ctrl+C position (would false-trigger the minimap)
+    [InlineData("-1.5|20|3")]
+    [InlineData("just some text")]
+    public void LabeledLocationRejectsUnlabeledTriples(string text) =>
+        Assert.False(Parsing.TryParseLabeledLocation(text, out _));
+
+    [Fact]
     public void PlayerList_MultiLineBlocks()
     {
         const string text = """

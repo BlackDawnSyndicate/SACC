@@ -49,6 +49,7 @@ public sealed class GameLink
     public async Task SendAsync(Settings settings, IReadOnlyList<string> lines, IntPtr returnTo, CancellationToken ct)
     {
         await _gate.WaitAsync(ct);
+        EnterClipboard();
         string? saved = settings.RestoreClipboard && settings.InputMode == InputMode.Paste ? TryGetClipboardText() : null;
         try
         {
@@ -59,6 +60,7 @@ public sealed class GameLink
         {
             if (saved != null) SetClipboardText(saved);
             _gate.Release();
+            LeaveClipboard();
             if (settings.ReturnFocusToSacc && returnTo != IntPtr.Zero) SetForegroundWindow(returnTo);
         }
     }
@@ -71,6 +73,7 @@ public sealed class GameLink
                                           IntPtr returnTo, CancellationToken ct)
     {
         await _gate.WaitAsync(ct);
+        EnterClipboard();
         string? saved = settings.RestoreClipboard && settings.InputMode == InputMode.Paste ? TryGetClipboardText() : null;
         try
         {
@@ -81,6 +84,7 @@ public sealed class GameLink
         {
             if (saved != null) SetClipboardText(saved);
             _gate.Release();
+            LeaveClipboard();
             if (settings.ReturnFocusToSacc && returnTo != IntPtr.Zero) SetForegroundWindow(returnTo);
         }
     }
@@ -90,6 +94,7 @@ public sealed class GameLink
     public async Task<string?> SendAndCaptureAsync(Settings settings, string line, IntPtr returnTo, CancellationToken ct, bool alwaysReturn = false)
     {
         await _gate.WaitAsync(ct);
+        EnterClipboard();
         string? saved = settings.RestoreClipboard ? TryGetClipboardText() : null;
         try
         {
@@ -113,6 +118,7 @@ public sealed class GameLink
         {
             if (saved != null) SetClipboardText(saved);
             _gate.Release();
+            LeaveClipboard();
             if (alwaysReturn && returnTo != IntPtr.Zero) RequestForeground(returnTo);
             else if (settings.ReturnFocusToSacc && returnTo != IntPtr.Zero) SetForegroundWindow(returnTo);
         }
@@ -321,8 +327,18 @@ public sealed class GameLink
         return null;
     }
 
+    /// <summary>The last text SACC itself put on the clipboard, so the position watcher can ignore its own writes.</summary>
+    public static string? LastSelfWrite { get; private set; }
+
+    private static int _clipboardBusy;
+    /// <summary>True while SACC is driving the clipboard for a send or capture; the Ctrl+C position watcher pauses then.</summary>
+    public static bool ClipboardBusy => Volatile.Read(ref _clipboardBusy) > 0;
+    private static void EnterClipboard() => Interlocked.Increment(ref _clipboardBusy);
+    private static void LeaveClipboard() => Interlocked.Decrement(ref _clipboardBusy);
+
     public static void SetClipboardText(string text)
     {
+        LastSelfWrite = text;
         for (int i = 0; ; i++)
         {
             // SetDataObject with copy=true survives SACC exiting; SetText can race other clipboard owners.

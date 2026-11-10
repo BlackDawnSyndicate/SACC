@@ -1233,7 +1233,17 @@
                             <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="155" Text="Magazine pattern (regex)"/><TextBox Text="{Binding Settings.MagazinePattern}" FontFamily="Cascadia Mono, Consolas" AutomationProperties.Name="Magazine pattern"/></DockPanel>
                             <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,9" Text="which codes a kit's 'Fill magazines' fills"/>
                             <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="155" Text="Colour scheme"/><ComboBox ItemsSource="{Binding ThemeNames}" SelectedItem="{Binding Theme}" AutomationProperties.Name="Colour scheme"/></DockPanel>
-                            <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,0" Text="header &amp; accent colours"/>
+                            <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,9" Text="header &amp; accent colours"/>
+
+                            <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,2,0,12"/>
+                            <CheckBox IsChecked="{Binding MinimapEnabled}" Content="Position minimap (from SCUM's Ctrl+C)"/>
+                            <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,9" Text="press Ctrl+C in game to drop a marker; it pauses while SACC uses the clipboard"/>
+                            <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="155" Text="Minimap mode"/><ComboBox ItemsSource="{Binding MinimapModes}" SelectedItem="{Binding MinimapMode}" AutomationProperties.Name="Minimap mode"/></DockPanel>
+                            <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,9" Text="Always = stays on screen; OnCopy = shows on Ctrl+C then fades"/>
+                            <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="155" Text="Minimap zoom"/><TextBox Text="{Binding MinimapZoom}" AutomationProperties.Name="Minimap zoom"/></DockPanel>
+                            <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,9" Text="0 (whole island) to 8 (closest in)"/>
+                            <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="155" Text="Fade after (s)"/><TextBox Text="{Binding MinimapFadeSeconds}" AutomationProperties.Name="Minimap fade seconds"/></DockPanel>
+                            <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,0" Text="OnCopy mode: how long it stays before fading"/>
                         </StackPanel>
 
                         <!-- Full-width: actions and notes -->
