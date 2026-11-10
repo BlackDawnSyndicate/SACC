@@ -48,6 +48,24 @@ public sealed class GroundGrid
 
     public int Height { get; }
 
+    /// <summary>Lowest terrain height in the grid (world cm).</summary>
+    public double MinHeightCm => _zMin;
+
+    /// <summary>Highest terrain height in the grid (world cm).</summary>
+    public double MaxHeightCm => _zMin + _zSpan;
+
+    /// <summary>The ground height (world cm) at cell (<paramref name="cx"/>, <paramref name="cy"/>), or null off the grid or where there is no terrain.</summary>
+    public double? HeightAtCell(int cx, int cy)
+    {
+        if (cx < 0 || cy < 0 || cx >= Width || cy >= Height)
+        {
+            return null;
+        }
+
+        var raw = _raw[(long)cy * Width + cx];
+        return raw == NoData ? null : _zMin + raw * (double)_zSpan / MaxRaw;
+    }
+
     /// <summary>Cells that have a terrain height.</summary>
     public int FilledCells
     {

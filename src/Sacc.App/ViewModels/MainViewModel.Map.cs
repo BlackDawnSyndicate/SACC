@@ -298,6 +298,15 @@ public sealed partial class MainViewModel
         set { if (value == Settings.MapShowLocations) return; Settings.MapShowLocations = value; Raise(); Save(); MapChanged?.Invoke(); }
     }
 
+    /// <summary>The loaded terrain height grid, for the map's temperature overlay (same grid the GM spawn uses).</summary>
+    public GroundGrid? MapTerrainGrid => Terrain;
+
+    public bool MapShowTemperature
+    {
+        get => Settings.MapShowTemperature;
+        set { if (value == Settings.MapShowTemperature) return; Settings.MapShowTemperature = value; Raise(); Save(); MapChanged?.Invoke(); }
+    }
+
     /// <summary>The spot the last right-click (or click) was on, and the marker there if any.</summary>
     public Vec3? MapPoint { get; private set; }
     public MapMarker? MapPointMarker { get; private set; }

@@ -73,6 +73,8 @@ public partial class MainWindow : Window
         MapCanvas.ShowHuntingAreas = _vm.MapShowHuntingAreas;
         MapCanvas.ShowPatrolPaths = _vm.MapShowPatrolPaths;
         MapCanvas.ShowLocations = _vm.MapShowLocations;
+        MapCanvas.Terrain = _vm.MapTerrainGrid;
+        MapCanvas.ShowTemperature = _vm.MapShowTemperature;
         MapCanvas.GridStyle = _vm.MapGrid;
         if (_vm.MapTemplate is { } mt && _vm.ActiveTileTemplate is { } mtiles) MissionCanvas.SetMap(mt, mtiles);
         MissionCanvas.Categories = _vm.MapCategoryLookup;

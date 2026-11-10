@@ -92,6 +92,8 @@ public sealed class Settings
     public bool MapShowPatrolPaths { get; set; }
     /// <summary>Map tab: draw the island's location names (from the bundled map-features), off by default.</summary>
     public bool MapShowLocations { get; set; }
+    /// <summary>Map tab: draw the altitude-based average-temperature heatmap (needs the terrain grid), off by default.</summary>
+    public bool MapShowTemperature { get; set; }
 }
 
 public sealed class PlayerRecord

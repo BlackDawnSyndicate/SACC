@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Sacc.Core;
 using Sacc.Core.Model;
 
@@ -89,6 +90,18 @@ public sealed class MapView : FrameworkElement
     private bool _showPatrol;
     public bool ShowLocations { get => _showLocations; set { _showLocations = value; InvalidateVisual(); } }
     private bool _showLocations;
+
+    /// <summary>The loaded terrain height grid; the temperature overlay is computed from it.</summary>
+    public GroundGrid? Terrain
+    {
+        get => _terrain;
+        set { if (!ReferenceEquals(_terrain, value)) { _terrain = value; _tempBitmap = null; InvalidateVisual(); } }
+    }
+    private GroundGrid? _terrain;
+    public bool ShowTemperature { get => _showTemp; set { _showTemp = value; InvalidateVisual(); } }
+    private bool _showTemp;
+    private WriteableBitmap? _tempBitmap;
+    private double _tempMinC, _tempMaxC, _tempFarX, _tempFarY;
 
     public GridStyle GridStyle { get => _gridStyle; set { _gridStyle = value; InvalidateVisual(); } }
     private GridStyle _gridStyle = GridStyle.Sectors;
@@ -220,6 +233,7 @@ public sealed class MapView : FrameworkElement
             }
         }
 
+        DrawTemperature(dc);
         DrawGrid(dc);
         DrawFeatures(dc);
 
@@ -299,6 +313,8 @@ public sealed class MapView : FrameworkElement
                 dc.DrawEllipse(online ? PlayerFill : OfflineFill, MarkerOutline, p, 6, 6);
                 Label(dc, string.IsNullOrWhiteSpace(pl.Nickname) ? pl.SteamId : pl.Nickname, p, 6);
             }
+
+        if (_showTemp && _terrain != null) DrawTemperatureLegend(dc);
     }
 
     // Saturated enough to read on the map's greens and greys; a player keeps their colour.
@@ -442,6 +458,105 @@ public sealed class MapView : FrameworkElement
                 else dc.DrawEllipse(fill, pen, p, selected ? 7 : 5, selected ? 7 : 5);
                 if (selected || _zoom >= 5) Label(dc, s.Summary, p, 8);
             }
+    }
+
+    // ---------------------------------------------------------------- temperature heatmap (from the terrain grid)
+
+    // A cold-to-warm ramp (blue → green → yellow → red); the overlay is half-transparent so the map reads through it.
+    private static readonly (double P, byte R, byte G, byte B)[] TempStops =
+    {
+        (0.00, 0x31, 0x6A, 0xBF), (0.25, 0x5A, 0xB4, 0xD6), (0.50, 0x9E, 0xD9, 0x8A),
+        (0.70, 0xFF, 0xE6, 0x59), (0.85, 0xF2, 0x8E, 0x2E), (1.00, 0xD7, 0x3A, 0x2C),
+    };
+    private const byte TempAlpha = 0x96;
+
+    private static uint TempColor(double n)
+    {
+        for (var k = 1; k < TempStops.Length; k++)
+        {
+            if (n <= TempStops[k].P)
+            {
+                var (p0, r0, g0, b0) = TempStops[k - 1];
+                var (p1, r1, g1, b1) = TempStops[k];
+                var f = (n - p0) / (p1 - p0);
+                byte L(byte a, byte b) => (byte)(a + ((b - a) * f));
+                return ((uint)TempAlpha << 24) | ((uint)L(r0, r1) << 16) | ((uint)L(g0, g1) << 8) | L(b0, b1);
+            }
+        }
+
+        var last = TempStops[^1];
+        return ((uint)TempAlpha << 24) | ((uint)last.R << 16) | ((uint)last.G << 8) | last.B;
+    }
+
+    private WriteableBitmap BuildTemperatureBitmap(GroundGrid grid)
+    {
+        // Downsample so the bitmap is at most ~1000 px wide; temperature is smooth, so this is plenty and the GPU scales it.
+        var step = Math.Max(1, (int)Math.Ceiling(grid.Width / 1000.0));
+        var w = (grid.Width + step - 1) / step;
+        var h = (grid.Height + step - 1) / step;
+        _tempMaxC = Temperature.CelsiusAt(grid.MinHeightCm); // warmest: the lowest land
+        _tempMinC = Temperature.CelsiusAt(grid.MaxHeightCm); // coldest: the highest peak
+        _tempFarX = grid.OriginXCm + (w * step * (double)grid.CellSizeCm);
+        _tempFarY = grid.OriginYCm + (h * step * (double)grid.CellSizeCm);
+        var span = _tempMaxC - _tempMinC;
+        var pixels = new uint[w * h];
+        for (var j = 0; j < h; j++)
+        {
+            for (var i = 0; i < w; i++)
+            {
+                if (grid.HeightAtCell(i * step, j * step) is not { } cm)
+                {
+                    continue; // sea / hole: transparent (0)
+                }
+
+                var n = span > 0 ? Math.Clamp((Temperature.CelsiusAt(cm) - _tempMinC) / span, 0, 1) : 0.5;
+                pixels[(j * w) + i] = TempColor(n);
+            }
+        }
+
+        var bmp = new WriteableBitmap(w, h, 96, 96, PixelFormats.Bgra32, null);
+        bmp.WritePixels(new Int32Rect(0, 0, w, h), pixels, w * 4, 0);
+        bmp.Freeze();
+        return bmp;
+    }
+
+    /// <summary>The altitude-based temperature overlay, a half-transparent heatmap under the grid and markers.</summary>
+    private void DrawTemperature(DrawingContext dc)
+    {
+        if (!_showTemp || _terrain is not { } grid || _projection == null)
+        {
+            return;
+        }
+
+        var bmp = _tempBitmap ??= BuildTemperatureBitmap(grid);
+        // The projection is an axis-aligned affine map, so the grid's world extent is a transformed rectangle on screen.
+        var s0 = WorldToScreen(new Vec3(grid.OriginXCm, grid.OriginYCm, 0));
+        var s1 = WorldToScreen(new Vec3(_tempFarX, _tempFarY, 0));
+        var a = (s1.X - s0.X) / bmp.PixelWidth;
+        var c = (s1.Y - s0.Y) / bmp.PixelHeight;
+        dc.PushTransform(new MatrixTransform(a, 0, 0, c, s0.X, s0.Y));
+        dc.DrawImage(bmp, new Rect(0, 0, bmp.PixelWidth, bmp.PixelHeight));
+        dc.Pop();
+    }
+
+    private static readonly Brush LegendBack = Frozen(new SolidColorBrush(Color.FromArgb(0xC0, 0x18, 0x1F, 0x24)));
+
+    private void DrawTemperatureLegend(DrawingContext dc)
+    {
+        const double w = 150, barH = 10, pad = 8;
+        var x = pad;
+        var y = ActualHeight - pad - barH - 20;
+        dc.DrawRoundedRectangle(LegendBack, null, new Rect(x - 4, y - 16, w + 8, barH + 34), 4, 4);
+        var stops = new GradientStopCollection();
+        foreach (var (p, r, g, b) in TempStops) stops.Add(new GradientStop(Color.FromRgb(r, g, b), p));
+        var brush = new LinearGradientBrush(stops, new Point(0, 0), new Point(1, 0));
+        dc.DrawText(new FormattedText("Avg temperature (est.)", CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, LabelFace, 10.5, GridText,
+            VisualTreeHelper.GetDpi(this).PixelsPerDip), new Point(x, y - 15));
+        dc.DrawRectangle(brush, MarkerOutline, new Rect(x, y, w, barH));
+        var dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+        dc.DrawText(new FormattedText(FormattableString.Invariant($"{_tempMinC:0}°C"), CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, LabelFace, 10, GridText, dpi), new Point(x, y + barH + 1));
+        var warm = new FormattedText(FormattableString.Invariant($"{_tempMaxC:0}°C"), CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, LabelFace, 10, GridText, dpi);
+        dc.DrawText(warm, new Point(x + w - warm.Width, y + barH + 1));
     }
 
     // ---------------------------------------------------------------- map-features overlays
