@@ -22,14 +22,12 @@
                 <Hyperlink NavigateUri="https://scum-map.com" RequestNavigate="Link_RequestNavigate"
                            Foreground="{DynamicResource MutedBrush}">Map © scum-map.com</Hyperlink>
             </TextBlock>
-            <!-- The map is scaled up a little so that, when rotated to the heading, its corners still cover the view. -->
-            <Grid ClipToBounds="True">
-                <map:MapView x:Name="MiniMap" RenderTransformOrigin="0.5,0.5">
+            <!-- The map is sized to the viewport diagonal and centred, so it always fills the area even when the
+                 window is stretched or the map is rotated to the heading (the excess is clipped). -->
+            <Grid x:Name="MapHost" ClipToBounds="True" SizeChanged="MapHost_SizeChanged">
+                <map:MapView x:Name="MiniMap" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
                     <map:MapView.RenderTransform>
-                        <TransformGroup>
-                            <ScaleTransform ScaleX="1.45" ScaleY="1.45"/>
-                            <RotateTransform x:Name="MapRotate" Angle="0"/>
-                        </TransformGroup>
+                        <RotateTransform x:Name="MapRotate" Angle="0"/>
                     </map:MapView.RenderTransform>
                 </map:MapView>
                 <!-- compass: fixed disc, needle + N rotate to point at true north -->

@@ -113,6 +113,17 @@ public partial class MinimapWindow : Window
         BeginAnimation(OpacityProperty, anim);
     }
 
+    // Keep the map a centred square the size of the viewport diagonal, so it covers the whole area at any
+    // aspect ratio and any rotation (the overhang is clipped by MapHost).
+    private void MapHost_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        var w = e.NewSize.Width;
+        var h = e.NewSize.Height;
+        var diag = Math.Ceiling(Math.Sqrt(w * w + h * h)) + 2;
+        MiniMap.Width = diag;
+        MiniMap.Height = diag;
+    }
+
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ButtonState == MouseButtonState.Pressed) DragMove();
