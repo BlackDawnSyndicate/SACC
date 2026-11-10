@@ -635,8 +635,12 @@
                             <TextBlock Text="Island overlays" Style="{StaticResource SectionLabel}" Margin="0,0,0,4"/>
                             <CheckBox Content="{Binding MapThreatZonesLabel}" IsChecked="{Binding MapShowThreatZones}" Margin="0,0,0,2"
                                       ToolTip="The island's threat zones, where zombie/NPC hordes spawn: red = high threat (HTZ), amber = medium (MTZ). From the data bundled with SACC."/>
-                            <CheckBox Content="{Binding MapHuntingAreasLabel}" IsChecked="{Binding MapShowHuntingAreas}" Margin="0,0,0,8"
+                            <CheckBox Content="{Binding MapHuntingAreasLabel}" IsChecked="{Binding MapShowHuntingAreas}" Margin="0,0,0,2"
                                       ToolTip="The island's hunting areas, where animals live (brown); purple = a mutant den. From the data bundled with SACC."/>
+                            <CheckBox Content="{Binding MapPatrolPathsLabel}" IsChecked="{Binding MapShowPatrolPaths}" Margin="0,0,0,2"
+                                      ToolTip="The routes the sentry mechs walk at military locations (orange dashed line, a dot at each spawner). From the data bundled with SACC."/>
+                            <CheckBox Content="{Binding MapLocationsLabel}" IsChecked="{Binding MapShowLocations}" Margin="0,0,0,8"
+                                      ToolTip="The island's place names (towns and POIs) at their centres. Names show as you zoom in. From the data bundled with SACC."/>
                             <TextBlock Text="Teleport target" Style="{StaticResource SectionLabel}" Margin="0,0,0,4"/>
                             <ComboBox IsEditable="True" TextSearch.TextPath="SteamId" ItemsSource="{Binding Players}"
                                       Text="{Binding MapTarget, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8"

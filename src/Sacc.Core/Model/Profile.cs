@@ -88,6 +88,10 @@ public sealed class Settings
     public bool MapShowThreatZones { get; set; }
     /// <summary>Map tab: draw the island's hunting areas (from the bundled map-features), off by default.</summary>
     public bool MapShowHuntingAreas { get; set; }
+    /// <summary>Map tab: draw the mech/sentry patrol paths (from the bundled map-features), off by default.</summary>
+    public bool MapShowPatrolPaths { get; set; }
+    /// <summary>Map tab: draw the island's location names (from the bundled map-features), off by default.</summary>
+    public bool MapShowLocations { get; set; }
 }
 
 public sealed class PlayerRecord

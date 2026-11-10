@@ -85,6 +85,10 @@ public sealed class MapView : FrameworkElement
     private bool _showThreat;
     public bool ShowHuntingAreas { get => _showHunting; set { _showHunting = value; InvalidateVisual(); } }
     private bool _showHunting;
+    public bool ShowPatrolPaths { get => _showPatrol; set { _showPatrol = value; InvalidateVisual(); } }
+    private bool _showPatrol;
+    public bool ShowLocations { get => _showLocations; set { _showLocations = value; InvalidateVisual(); } }
+    private bool _showLocations;
 
     public GridStyle GridStyle { get => _gridStyle; set { _gridStyle = value; InvalidateVisual(); } }
     private GridStyle _gridStyle = GridStyle.Sectors;
@@ -103,6 +107,9 @@ public sealed class MapView : FrameworkElement
     private static readonly (Pen Pen, Brush Fill) ThreatNone = AreaStyle("#9E9E9E");
     private static readonly (Pen Pen, Brush Fill) HuntingGame = AreaStyle("#8D6E4A");
     private static readonly (Pen Pen, Brush Fill) HuntingDen = AreaStyle("#8E44AD");
+    private static readonly Pen PatrolPen = Frozen(new Pen(new SolidColorBrush(Color.FromRgb(0xFF, 0x6D, 0x3A)), 2) { LineJoin = PenLineJoin.Round, DashStyle = DashStyles.Dash });
+    private static readonly Brush PatrolDot = Frozen(new SolidColorBrush(Color.FromRgb(0xFF, 0x6D, 0x3A)));
+    private static readonly Brush LocationFill = Frozen(new SolidColorBrush(Color.FromRgb(0xF2, 0xD7, 0x4E)));
 
     private static (Pen, Brush) AreaStyle(string hex)
     {
@@ -480,6 +487,43 @@ public sealed class MapView : FrameworkElement
                 dc.DrawEllipse(fill, pen, p, r, r);
                 if (labels) Label(dc, Pretty(h.Biome), p, 4);
             }
+
+        if (_showPatrol)
+            foreach (var route in _features.PatrolPaths)
+            {
+                var pts = route.Points.Select(pt => WorldToScreen(new Vec3(pt.X, pt.Y, 0))).ToList();
+                if (pts.Count < 2 || pts.TrueForAll(pt => Offscreen(pt, 0))) continue;
+                var g = new StreamGeometry();
+                using (var c = g.Open())
+                {
+                    c.BeginFigure(pts[0], false, false);
+                    c.PolyLineTo(pts.Skip(1).ToList(), true, true);
+                }
+                g.Freeze();
+                dc.DrawGeometry(null, PatrolPen, g);
+                dc.DrawEllipse(PatrolDot, null, pts[0], 3, 3); // the sentry's post
+            }
+
+        if (_showLocations)
+            foreach (var loc in _features.Locations)
+            {
+                var p = WorldToScreen(new Vec3(loc.X, loc.Y, 0));
+                if (Offscreen(p, 10)) continue;
+                dc.DrawGeometry(LocationFill, MarkerOutline, Diamond(p, 4));
+                if (_zoom >= 2.5) Label(dc, loc.Name, p, 5);
+            }
+    }
+
+    private static StreamGeometry Diamond(Point p, double r)
+    {
+        var g = new StreamGeometry();
+        using (var c = g.Open())
+        {
+            c.BeginFigure(new Point(p.X, p.Y - r), true, true);
+            c.PolyLineTo(new[] { new Point(p.X + r, p.Y), new Point(p.X, p.Y + r), new Point(p.X - r, p.Y) }, true, true);
+        }
+        g.Freeze();
+        return g;
     }
 
     private bool Offscreen(Point p, double r) =>

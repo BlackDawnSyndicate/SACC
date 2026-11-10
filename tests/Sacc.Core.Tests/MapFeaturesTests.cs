@@ -50,11 +50,38 @@ public class MapFeaturesTests
         Assert.Equal(den, new HuntingArea(0, 0, 1, biome).IsMutantDen);
 
     [Fact]
+    public void ReadsLocationsAndPatrolPaths()
+    {
+        var f = Parse("""
+            {
+              "version": 1,
+              "locations": [ { "x": 100, "y": 200, "name": "Outpost" } ],
+              "patrolPaths": [ { "points": [[0,0],[500,0],[500,500]] } ]
+            }
+            """);
+        Assert.Single(f.Locations);
+        Assert.Equal("Outpost", f.Locations[0].Name);
+        Assert.Equal(100, f.Locations[0].X);
+        Assert.Single(f.PatrolPaths);
+        Assert.Equal(3, f.PatrolPaths[0].Points.Count);
+        Assert.Equal((500.0, 500.0), f.PatrolPaths[0].Points[2]);
+    }
+
+    [Fact]
+    public void DropsPatrolPathsWithFewerThanTwoPoints()
+    {
+        var f = Parse("""{ "version": 1, "patrolPaths": [ { "points": [[0,0]] }, { "points": [] } ] }""");
+        Assert.Empty(f.PatrolPaths);
+    }
+
+    [Fact]
     public void MissingArraysBecomeEmpty()
     {
         var f = Parse("""{ "version": 1 }""");
         Assert.Empty(f.HuntingAreas);
         Assert.Empty(f.ThreatZones);
+        Assert.Empty(f.Locations);
+        Assert.Empty(f.PatrolPaths);
     }
 
     [Fact]

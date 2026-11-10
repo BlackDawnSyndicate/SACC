@@ -33,6 +33,12 @@ public sealed record ThreatZone(double X, double Y, double Rx, double Ry, double
     };
 }
 
+/// <summary>A named location (a POI) at a world point (cm).</summary>
+public sealed record Location(double X, double Y, string Name);
+
+/// <summary>A mech/sentry patrol path: the points it walks between, in world cm.</summary>
+public sealed record PatrolPath(IReadOnlyList<(double X, double Y)> Points);
+
 /// <summary>
 /// The island's map overlays, produced by SCUM Modding Studio's <c>asset map-features</c> (see the tool in
 /// <c>tools/scumstudio-mapfeatures/</c>): the threat zones and hunting areas, in UE world centimetres (the same X/Y the
@@ -40,14 +46,19 @@ public sealed record ThreatZone(double X, double Y, double Rx, double Ry, double
 /// </summary>
 public sealed class MapFeatures
 {
-    public MapFeatures(IReadOnlyList<HuntingArea> huntingAreas, IReadOnlyList<ThreatZone> threatZones)
+    public MapFeatures(IReadOnlyList<HuntingArea> huntingAreas, IReadOnlyList<ThreatZone> threatZones,
+        IReadOnlyList<Location> locations, IReadOnlyList<PatrolPath> patrolPaths)
     {
         HuntingAreas = huntingAreas;
         ThreatZones = threatZones;
+        Locations = locations;
+        PatrolPaths = patrolPaths;
     }
 
     public IReadOnlyList<HuntingArea> HuntingAreas { get; }
     public IReadOnlyList<ThreatZone> ThreatZones { get; }
+    public IReadOnlyList<Location> Locations { get; }
+    public IReadOnlyList<PatrolPath> PatrolPaths { get; }
 
     private static readonly JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true };
 
@@ -81,7 +92,17 @@ public sealed class MapFeatures
         var zones = (file.ThreatZones ?? [])
             .Select(z => new ThreatZone(z.X, z.Y, z.Rx, z.Ry, z.Yaw, z.Settings ?? ""))
             .ToList();
-        return new MapFeatures(hunting, zones);
+        var locations = (file.Locations ?? [])
+            .Select(l => new Location(l.X, l.Y, l.Name ?? ""))
+            .ToList();
+        var paths = (file.PatrolPaths ?? [])
+            .Select(p => new PatrolPath((p.Points ?? [])
+                .Where(pt => pt.Length >= 2)
+                .Select(pt => (pt[0], pt[1]))
+                .ToList()))
+            .Where(p => p.Points.Count >= 2)
+            .ToList();
+        return new MapFeatures(hunting, zones, locations, paths);
     }
 
     // The on-disk shape (camelCase; case-insensitive matching handles either casing).
@@ -90,6 +111,20 @@ public sealed class MapFeatures
         public int Version { get; set; }
         public List<HuntingDto>? HuntingAreas { get; set; }
         public List<ZoneDto>? ThreatZones { get; set; }
+        public List<LocationDto>? Locations { get; set; }
+        public List<PatrolDto>? PatrolPaths { get; set; }
+    }
+
+    private sealed class LocationDto
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+        public string? Name { get; set; }
+    }
+
+    private sealed class PatrolDto
+    {
+        public double[][]? Points { get; set; }
     }
 
     private sealed class HuntingDto

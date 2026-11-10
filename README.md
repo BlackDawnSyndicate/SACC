@@ -105,7 +105,7 @@ scumstudio asset heights "D:\SCUM\Content\Paks" --step 400 -o terrain.scgh
 
 ## Island overlays
 
-The Map tab can draw the island's own **threat zones** and **hunting areas** over the map — tick them under **Island overlays** in the map's layer panel. Threat zones are where zombie and NPC hordes spawn, coloured by SCUM's tier (**red** = high threat, **amber** = medium); hunting areas are where animals live (**brown**), with **purple** for mutant dens. Names and counts show when you zoom in.
+The Map tab can draw the island's own **threat zones**, **hunting areas**, **mech patrols** and **location names** over the map — tick them under **Island overlays** in the map's layer panel. Threat zones are where zombie and NPC hordes spawn, coloured by SCUM's tier (**red** = high threat, **amber** = medium); hunting areas are where animals live (**brown**), with **purple** for mutant dens; mech patrols are the routes the sentry robots walk at military locations (**orange dashed**, a dot at each spawner); location names are the towns and POIs at their centres. Names and counts show when you zoom in.
 
 Like the terrain grid, this is the game's own data: a build may bundle it (in `data\mapfeatures\map-features.json`), and to make or refresh your own you generate it with **[SCUM Modding Studio](https://github.com/ALLAWI32/SCUM-Modding-Studio)** (the producer is in `tools/scumstudio-mapfeatures/`):
 

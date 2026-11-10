@@ -283,6 +283,21 @@ public sealed partial class MainViewModel
         set { if (value == Settings.MapShowHuntingAreas) return; Settings.MapShowHuntingAreas = value; Raise(); Save(); MapChanged?.Invoke(); }
     }
 
+    public string MapPatrolPathsLabel => MapFeatures is { } f ? $"Mech patrols ({f.PatrolPaths.Count})" : "Mech patrols";
+    public string MapLocationsLabel => MapFeatures is { } f ? $"Location names ({f.Locations.Count})" : "Location names";
+
+    public bool MapShowPatrolPaths
+    {
+        get => Settings.MapShowPatrolPaths;
+        set { if (value == Settings.MapShowPatrolPaths) return; Settings.MapShowPatrolPaths = value; Raise(); Save(); MapChanged?.Invoke(); }
+    }
+
+    public bool MapShowLocations
+    {
+        get => Settings.MapShowLocations;
+        set { if (value == Settings.MapShowLocations) return; Settings.MapShowLocations = value; Raise(); Save(); MapChanged?.Invoke(); }
+    }
+
     /// <summary>The spot the last right-click (or click) was on, and the marker there if any.</summary>
     public Vec3? MapPoint { get; private set; }
     public MapMarker? MapPointMarker { get; private set; }
