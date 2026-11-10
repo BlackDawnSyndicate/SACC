@@ -1215,6 +1215,10 @@
                         <TextBlock Grid.Row="8" Text="Clipboard reply timeout (ms)"/>
                         <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding Settings.ClipboardCaptureTimeoutMs}"/>
 
+                        <TextBlock Grid.Row="9" Text="Colour scheme"/>
+                        <ComboBox Grid.Row="9" Grid.Column="1" Margin="0,0,0,8" ItemsSource="{Binding ThemeNames}" SelectedItem="{Binding Theme}"/>
+                        <TextBlock Grid.Row="9" Grid.Column="2" Text="  header &amp; accent colours" Foreground="{StaticResource MutedBrush}"/>
+
                         <TextBlock Grid.Row="14" Text="Max amount per spawn line"/>
                         <TextBox Grid.Row="14" Grid.Column="1" Text="{Binding Settings.MaxSpawnPerCommand}"/>
                         <TextBlock Grid.Row="14" Grid.Column="2" Text="  kits split bigger counts (10 matches SAH)" Foreground="{StaticResource MutedBrush}"/>

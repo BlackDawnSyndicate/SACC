@@ -96,6 +96,8 @@ public sealed class Settings
     public bool MapShowLocations { get; set; }
     /// <summary>Map tab: draw the altitude-based average-temperature heatmap (needs the terrain grid), off by default.</summary>
     public bool MapShowTemperature { get; set; }
+    /// <summary>The app's colour scheme (see ThemeManager): changes the header and accent colours. "Default" keeps the original look.</summary>
+    public string Theme { get; set; } = "Default";
 }
 
 public sealed class PlayerRecord

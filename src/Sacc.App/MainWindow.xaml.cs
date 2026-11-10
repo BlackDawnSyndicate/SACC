@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using Sacc.App.Infrastructure;
 using Sacc.App.ViewModels;
 
 namespace Sacc.App;
@@ -18,6 +19,7 @@ public partial class MainWindow : Window
             confirm: msg => MessageBox.Show(this, msg, "SACC", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes,
             ownWindow: () => new WindowInteropHelper(this).Handle);
         DataContext = _vm;
+        ThemeManager.Apply(_vm.Theme);
         WireMap();
     }
 
