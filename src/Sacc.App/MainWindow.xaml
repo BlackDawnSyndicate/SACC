@@ -64,7 +64,7 @@
         </Border>
 
         <!-- Status bar -->
-        <Border DockPanel.Dock="Bottom" Background="White" BorderBrush="#DADFE2" BorderThickness="0,1,0,0" Padding="10,5">
+        <Border DockPanel.Dock="Bottom" Background="{StaticResource FieldBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="10,5">
             <DockPanel>
                 <Button DockPanel.Dock="Right" Command="{Binding StopCommand}" Margin="0" MinWidth="0"
                         Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" Content="Stop (Esc)"/>
@@ -155,7 +155,7 @@
                                 </ItemsControl>
 
                                 <TextBlock Text="Will send" Style="{StaticResource SectionLabel}"/>
-                                <Border Background="White" BorderBrush="#DADFE2" BorderThickness="1" Padding="8,6">
+                                <Border Background="{StaticResource FieldBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="8,6">
                                     <TextBlock Text="{Binding Preview}" Style="{StaticResource Mono}" FontSize="14" TextWrapping="Wrap"/>
                                 </Border>
                                 <TextBlock Text="{Binding PreviewProblem}" Foreground="{StaticResource ErrorBrush}" TextWrapping="Wrap" Margin="0,4,0,0"
@@ -194,7 +194,7 @@
                         <TextBox Text="{Binding PlayerSearch, UpdateSourceTrigger=PropertyChanged}" Width="220" Margin="12,0,0,0" VerticalContentAlignment="Center"
                                  ToolTip="Filter by name or SteamID64"/>
                     </StackPanel>
-                    <Border DockPanel.Dock="Right" Width="260" Margin="10,0,0,0" Padding="10" Background="White" BorderBrush="#DADFE2" BorderThickness="1">
+                    <Border DockPanel.Dock="Right" Width="260" Margin="10,0,0,0" Padding="10" Background="{StaticResource FieldBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
                         <StackPanel>
                             <TextBlock Text="{Binding SelectedPlayer.Display, FallbackValue='Select a player'}" FontWeight="SemiBold" TextWrapping="Wrap"/>
                             <TextBlock Text="Tracking" Style="{StaticResource SectionLabel}"/>
@@ -295,7 +295,7 @@
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <DockPanel>
-                                        <Button DockPanel.Dock="Right" Content="✕" MinWidth="0" Padding="4,0" Margin="8,0,0,0"
+                                        <Button DockPanel.Dock="Right" Content="✕" MinWidth="0" Padding="4,0" Margin="8,0,0,0" AutomationProperties.Name="Remove"
                                                 Command="{Binding DataContext.RemoveFavoriteItemCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
                                         <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource CodeWithIcon}"/>
                                     </DockPanel>
@@ -325,7 +325,7 @@
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <DockPanel>
-                                        <Button DockPanel.Dock="Right" Content="✕" MinWidth="0" Padding="4,0" Margin="8,0,0,0"
+                                        <Button DockPanel.Dock="Right" Content="✕" MinWidth="0" Padding="4,0" Margin="8,0,0,0" AutomationProperties.Name="Remove"
                                                 Command="{Binding DataContext.RemoveFavoriteVehicleCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
                                         <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource CodeWithIcon}"/>
                                     </DockPanel>
@@ -368,7 +368,7 @@
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <DockPanel>
-                                        <Button DockPanel.Dock="Right" Content="✕" MinWidth="0" Padding="4,0" Margin="8,0,0,0"
+                                        <Button DockPanel.Dock="Right" Content="✕" MinWidth="0" Padding="4,0" Margin="8,0,0,0" AutomationProperties.Name="Remove"
                                                 Command="{Binding DataContext.RemoveContainerPresetCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
                                         <TextBlock Text="{Binding Summary}" FontFamily="Cascadia Mono, Consolas" TextTrimming="CharacterEllipsis"/>
                                     </DockPanel>
@@ -392,7 +392,7 @@
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <DockPanel>
-                                        <Button DockPanel.Dock="Right" Content="✕" MinWidth="0" Padding="4,0" Margin="8,0,0,0"
+                                        <Button DockPanel.Dock="Right" Content="✕" MinWidth="0" Padding="4,0" Margin="8,0,0,0" AutomationProperties.Name="Remove"
                                                 Command="{Binding DataContext.RemoveContainerItemCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
                                         <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource CodeWithIcon}"/>
                                     </DockPanel>
@@ -490,7 +490,7 @@
                             </WrapPanel>
 
                             <!-- Add-item row: type-ahead with icons, like the Spawner. -->
-                            <Border Background="White" BorderBrush="#DADFE2" BorderThickness="1" Padding="8,6" Margin="0,4,0,6">
+                            <Border Background="{StaticResource FieldBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="8,6" Margin="0,4,0,6">
                                 <DockPanel>
                                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                                         <TextBlock Text="Amount" VerticalAlignment="Center" Margin="8,0,4,0"/>
@@ -516,7 +516,7 @@
                                         <Popup x:Name="NewItemPopup" PlacementTarget="{Binding ElementName=NewItemBox}" Placement="Bottom"
                                                IsOpen="{Binding NewItemPopupOpen}" StaysOpen="False" AllowsTransparency="True"
                                                Width="{Binding ActualWidth, ElementName=NewItemBox}">
-                                            <Border Background="White" BorderBrush="#B8C0C6" BorderThickness="1">
+                                            <Border Background="{StaticResource FieldBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
                                                 <ListBox x:Name="NewItemSuggestions" ItemsSource="{Binding NewItemMatches}" MaxHeight="320"
                                                          ItemTemplate="{StaticResource CodeWithIcon}" BorderThickness="0"
                                                          PreviewMouseLeftButtonUp="NewItemSuggestions_Click" KeyDown="NewItemSuggestions_KeyDown"/>
@@ -794,7 +794,7 @@
                     </DockPanel>
 
                     <DockPanel Grid.Column="2">
-                        <Border DockPanel.Dock="Bottom" Background="White" BorderBrush="#DADFE2" BorderThickness="1,0,1,1" Padding="8,6">
+                        <Border DockPanel.Dock="Bottom" Background="{StaticResource FieldBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,0,1,1" Padding="8,6">
                             <DockPanel>
                                 <WrapPanel DockPanel.Dock="Right">
                                     <Button Style="{StaticResource PrimaryButton}" Command="{Binding TeleportHereCommand}" Content="Teleport here" Margin="0,0,6,0"/>
@@ -919,7 +919,7 @@
                             <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap"
                                        Text="Pins: ● creature  ▬ vehicle  ■ item or kit. Grey = not spawned, green = spawned, amber = some refused, red = refused, blue = sent, not confirmed. Yellow dashes = trigger radius, red dots = hold radius."/>
                         </Border>
-                        <Border BorderBrush="#DADFE2" BorderThickness="1">
+                        <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
                             <map:MapView x:Name="MissionCanvas"/>
                         </Border>
                     </DockPanel>
@@ -994,7 +994,7 @@
                                     <ItemsControl ItemsSource="{Binding SelectedPrefab.Members}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Border BorderBrush="#DADFE2" BorderThickness="1" Padding="4" Margin="0,0,0,4">
+                                                <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="4" Margin="0,0,0,4">
                                                     <StackPanel>
                                                         <DockPanel Margin="0,0,0,3">
                                                             <Button DockPanel.Dock="Right" Content="✕" MinWidth="0" Margin="4,0,0,0" AutomationProperties.Name="Remove member" ToolTip="Remove this member"
@@ -1168,14 +1168,14 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <Grid.Resources>
-                            <Style TargetType="TextBlock" BasedOn="{x:Null}">
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
                                 <Setter Property="VerticalAlignment" Value="Center"/>
                                 <Setter Property="Margin" Value="0,0,0,8"/>
                             </Style>
                             <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
                                 <Setter Property="Margin" Value="0,0,0,8"/>
                             </Style>
-                            <Style TargetType="CheckBox">
+                            <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
                                 <Setter Property="Margin" Value="0,0,0,8"/>
                                 <Setter Property="VerticalAlignment" Value="Center"/>
                             </Style>
