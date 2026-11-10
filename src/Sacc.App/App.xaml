@@ -29,7 +29,7 @@
                            RenderOptions.BitmapScalingMode="HighQuality"/>
                 </Border>
                 <TextBlock Text="{Binding}" VerticalAlignment="Center" FontFamily="Cascadia Mono, Consolas"/>
-                <TextBlock Text="not in #ListItems" VerticalAlignment="Center" Margin="8,0,0,0" FontStyle="Italic" Foreground="{StaticResource MutedBrush}"
+                <TextBlock Text="not in #ListItems" VerticalAlignment="Center" Margin="8,0,0,0" FontStyle="Italic" Foreground="{DynamicResource MutedBrush}"
                            Visibility="{Binding Converter={StaticResource UnlistedCode}}"
                            ToolTip="The game's own item list doesn't have this code: a DLC item, or renamed or removed in an update. It may not spawn."/>
             </StackPanel>
@@ -40,11 +40,11 @@
             <Setter Property="Padding" Value="10,4"/>
             <Setter Property="Margin" Value="0,0,6,6"/>
             <Setter Property="MinWidth" Value="70"/>
-            <Setter Property="Background" Value="{StaticResource FieldBrush}"/>
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
         </Style>
         <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
@@ -54,21 +54,21 @@
         <Style TargetType="TextBox">
             <Setter Property="Padding" Value="4,3"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Background" Value="{StaticResource FieldBrush}"/>
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-            <Setter Property="CaretBrush" Value="{StaticResource TextBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource TextBrush}"/>
         </Style>
         <Style TargetType="ComboBox">
             <Setter Property="Padding" Value="4,3"/>
-            <Setter Property="Background" Value="{StaticResource FieldBrush}"/>
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
         </Style>
         <Style x:Key="SectionLabel" TargetType="TextBlock">
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Margin" Value="0,8,0,4"/>
         </Style>
         <Style x:Key="Muted" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/>
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>
         <Style x:Key="Mono" TargetType="TextBlock">
@@ -82,17 +82,17 @@
             <Setter Property="RowHeaderWidth" Value="0"/>
             <Setter Property="SelectionMode" Value="Single"/>
             <Setter Property="CanUserAddRows" Value="False"/>
-            <Setter Property="Background" Value="{StaticResource FieldBrush}"/>
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-            <Setter Property="RowBackground" Value="{StaticResource FieldBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+            <Setter Property="RowBackground" Value="{DynamicResource FieldBrush}"/>
         </Style>
         <Style TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="{StaticResource FieldBrush}"/>
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
             <Setter Property="Padding" Value="6,4"/>
         </Style>
         <Style TargetType="DataGridCell">
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
         </Style>
     </Application.Resources>
 </Application>

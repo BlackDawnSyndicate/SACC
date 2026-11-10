@@ -53,11 +53,7 @@ public static class ThemeManager
         Set(res, "BorderBrush", theme.Border);
     }
 
-    private static void Set(ResourceDictionary res, string key, string hex)
-    {
-        if (res[key] is SolidColorBrush { IsFrozen: false } brush)
-        {
-            brush.Color = (Color)ColorConverter.ConvertFromString(hex);
-        }
-    }
+    // Replace the resource (not mutate): resources can resolve frozen, and DynamicResource consumers update on replace.
+    private static void Set(ResourceDictionary res, string key, string hex) =>
+        res[key] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
 }

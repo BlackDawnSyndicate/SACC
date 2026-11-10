@@ -4,7 +4,7 @@
         xmlns:infra="clr-namespace:Sacc.App.Infrastructure"
         xmlns:map="clr-namespace:Sacc.App.Map"
         Title="{Binding AppTitle}" Height="760" Width="1120" MinHeight="520" MinWidth="820"
-        Topmost="{Binding AlwaysOnTop}" Background="{StaticResource PanelBrush}" Foreground="{StaticResource TextBrush}">
+        Topmost="{Binding AlwaysOnTop}" Background="{DynamicResource PanelBrush}" Foreground="{DynamicResource TextBrush}">
     <Window.InputBindings>
         <KeyBinding Key="Escape" Command="{Binding StopCommand}"/>
     </Window.InputBindings>
@@ -36,7 +36,7 @@
 
     <DockPanel>
         <!-- Header -->
-        <Border DockPanel.Dock="Top" Background="{StaticResource HeaderBrush}" Padding="14,10">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource HeaderBrush}" Padding="14,10">
             <DockPanel>
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
                     <Ellipse Width="10" Height="10" Margin="0,0,6,0">
@@ -57,14 +57,14 @@
                     <CheckBox IsChecked="{Binding AlwaysOnTop}" Foreground="#DDE3E6" VerticalAlignment="Center">On top</CheckBox>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="SACC" FontSize="20" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
+                    <TextBlock Text="SACC" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/>
                     <TextBlock Text="SCUM Admin Command Console" FontSize="14" Foreground="#DDE3E6" Margin="10,5,0,0"/>
                 </StackPanel>
             </DockPanel>
         </Border>
 
         <!-- Status bar -->
-        <Border DockPanel.Dock="Bottom" Background="{StaticResource FieldBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="10,5">
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource FieldBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="10,5">
             <DockPanel>
                 <Button DockPanel.Dock="Right" Command="{Binding StopCommand}" Margin="0" MinWidth="0"
                         Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" Content="Stop (Esc)"/>
@@ -95,7 +95,7 @@
                                 <GroupStyle>
                                     <GroupStyle.HeaderTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" Margin="2,8,0,2"/>
+                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" Margin="2,8,0,2"/>
                                         </DataTemplate>
                                     </GroupStyle.HeaderTemplate>
                                 </GroupStyle>
@@ -109,7 +109,7 @@
                                         </Border>
                                         <StackPanel>
                                             <TextBlock Text="{Binding Name}"/>
-                                            <TextBlock Text="{Binding Template}" Style="{StaticResource Mono}" FontSize="11" Foreground="{StaticResource MutedBrush}"/>
+                                            <TextBlock Text="{Binding Template}" Style="{StaticResource Mono}" FontSize="11" Foreground="{DynamicResource MutedBrush}"/>
                                         </StackPanel>
                                     </DockPanel>
                                 </DataTemplate>
@@ -155,7 +155,7 @@
                                 </ItemsControl>
 
                                 <TextBlock Text="Will send" Style="{StaticResource SectionLabel}"/>
-                                <Border Background="{StaticResource FieldBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="8,6">
+                                <Border Background="{DynamicResource FieldBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="8,6">
                                     <TextBlock Text="{Binding Preview}" Style="{StaticResource Mono}" FontSize="14" TextWrapping="Wrap"/>
                                 </Border>
                                 <TextBlock Text="{Binding PreviewProblem}" Foreground="{StaticResource ErrorBrush}" TextWrapping="Wrap" Margin="0,4,0,0"
@@ -194,7 +194,7 @@
                         <TextBox Text="{Binding PlayerSearch, UpdateSourceTrigger=PropertyChanged}" Width="220" Margin="12,0,0,0" VerticalContentAlignment="Center"
                                  ToolTip="Filter by name or SteamID64"/>
                     </StackPanel>
-                    <Border DockPanel.Dock="Right" Width="260" Margin="10,0,0,0" Padding="10" Background="{StaticResource FieldBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                    <Border DockPanel.Dock="Right" Width="260" Margin="10,0,0,0" Padding="10" Background="{DynamicResource FieldBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                         <StackPanel>
                             <TextBlock Text="{Binding SelectedPlayer.Display, FallbackValue='Select a player'}" FontWeight="SemiBold" TextWrapping="Wrap"/>
                             <TextBlock Text="Tracking" Style="{StaticResource SectionLabel}"/>
@@ -432,7 +432,7 @@
                                     <GroupStyle.HeaderTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding Name, TargetNullValue='(no folder)'}" FontWeight="Bold"
-                                                       Foreground="{StaticResource AccentBrush}" Margin="2,8,0,2" TextWrapping="Wrap"/>
+                                                       Foreground="{DynamicResource AccentBrush}" Margin="2,8,0,2" TextWrapping="Wrap"/>
                                         </DataTemplate>
                                     </GroupStyle.HeaderTemplate>
                                 </GroupStyle>
@@ -441,7 +441,7 @@
                                 <DataTemplate>
                                     <DockPanel Margin="2">
                                         <TextBlock DockPanel.Dock="Right" Text="{Binding Items.Count, StringFormat='{}{0} items'}"
-                                                   Foreground="{StaticResource MutedBrush}" Margin="6,0,0,0"/>
+                                                   Foreground="{DynamicResource MutedBrush}" Margin="6,0,0,0"/>
                                         <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis"/>
                                     </DockPanel>
                                 </DataTemplate>
@@ -490,7 +490,7 @@
                             </WrapPanel>
 
                             <!-- Add-item row: type-ahead with icons, like the Spawner. -->
-                            <Border Background="{StaticResource FieldBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="8,6" Margin="0,4,0,6">
+                            <Border Background="{DynamicResource FieldBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="8,6" Margin="0,4,0,6">
                                 <DockPanel>
                                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                                         <TextBlock Text="Amount" VerticalAlignment="Center" Margin="8,0,4,0"/>
@@ -516,7 +516,7 @@
                                         <Popup x:Name="NewItemPopup" PlacementTarget="{Binding ElementName=NewItemBox}" Placement="Bottom"
                                                IsOpen="{Binding NewItemPopupOpen}" StaysOpen="False" AllowsTransparency="True"
                                                Width="{Binding ActualWidth, ElementName=NewItemBox}">
-                                            <Border Background="{StaticResource FieldBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                            <Border Background="{DynamicResource FieldBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                                 <ListBox x:Name="NewItemSuggestions" ItemsSource="{Binding NewItemMatches}" MaxHeight="320"
                                                          ItemTemplate="{StaticResource CodeWithIcon}" BorderThickness="0"
                                                          PreviewMouseLeftButtonUp="NewItemSuggestions_Click" KeyDown="NewItemSuggestions_KeyDown"/>
@@ -676,7 +676,7 @@
                                                         <CheckBox IsChecked="{Binding Items[0].SectionToggle.IsChecked}" Margin="2,6,0,2"
                                                                   AutomationProperties.Name="{Binding Name, StringFormat='Section {0}'}"
                                                                   ToolTip="Show or hide every layer in this section">
-                                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
+                                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/>
                                                         </CheckBox>
                                                     </DataTemplate>
                                                 </GroupStyle.HeaderTemplate>
@@ -794,7 +794,7 @@
                     </DockPanel>
 
                     <DockPanel Grid.Column="2">
-                        <Border DockPanel.Dock="Bottom" Background="{StaticResource FieldBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,0,1,1" Padding="8,6">
+                        <Border DockPanel.Dock="Bottom" Background="{DynamicResource FieldBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1,0,1,1" Padding="8,6">
                             <DockPanel>
                                 <WrapPanel DockPanel.Dock="Right">
                                     <Button Style="{StaticResource PrimaryButton}" Command="{Binding TeleportHereCommand}" Content="Teleport here" Margin="0,0,6,0"/>
@@ -919,7 +919,7 @@
                             <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap"
                                        Text="Pins: ● creature  ▬ vehicle  ■ item or kit. Grey = not spawned, green = spawned, amber = some refused, red = refused, blue = sent, not confirmed. Yellow dashes = trigger radius, red dots = hold radius."/>
                         </Border>
-                        <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                             <map:MapView x:Name="MissionCanvas"/>
                         </Border>
                     </DockPanel>
@@ -994,7 +994,7 @@
                                     <ItemsControl ItemsSource="{Binding SelectedPrefab.Members}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="4" Margin="0,0,0,4">
+                                                <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="4" Margin="0,0,0,4">
                                                     <StackPanel>
                                                         <DockPanel Margin="0,0,0,3">
                                                             <Button DockPanel.Dock="Right" Content="✕" MinWidth="0" Margin="4,0,0,0" AutomationProperties.Name="Remove member" ToolTip="Remove this member"
@@ -1192,18 +1192,18 @@
 
                         <TextBlock Grid.Row="0" Text="Your SteamID64"/>
                         <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Settings.MySteamId}"/>
-                        <TextBlock Grid.Row="0" Grid.Column="2" Text="  default target for self-commands" Foreground="{StaticResource MutedBrush}"/>
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="  default target for self-commands" Foreground="{DynamicResource MutedBrush}"/>
 
                         <TextBlock Grid.Row="1" Text="Game process name"/>
                         <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Settings.ProcessName}"/>
 
                         <TextBlock Grid.Row="2" Text="Open-chat key"/>
                         <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Settings.ChatKey}"/>
-                        <TextBlock Grid.Row="2" Grid.Column="2" Text="  WPF key name: T, Enter, Oem2…" Foreground="{StaticResource MutedBrush}"/>
+                        <TextBlock Grid.Row="2" Grid.Column="2" Text="  WPF key name: T, Enter, Oem2…" Foreground="{DynamicResource MutedBrush}"/>
 
                         <TextBlock Grid.Row="3" Text="Input mode"/>
                         <ComboBox Grid.Row="3" Grid.Column="1" Margin="0,0,0,8" ItemsSource="{Binding InputModes}" SelectedItem="{Binding Settings.InputMode}"/>
-                        <TextBlock Grid.Row="3" Grid.Column="2" Text="  Paste is fastest; Type if paste fails" Foreground="{StaticResource MutedBrush}"/>
+                        <TextBlock Grid.Row="3" Grid.Column="2" Text="  Paste is fastest; Type if paste fails" Foreground="{DynamicResource MutedBrush}"/>
 
                         <TextBlock Grid.Row="4" Text="Delay after focusing game (ms)"/>
                         <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Settings.FocusDelayMs}"/>
@@ -1218,11 +1218,11 @@
 
                         <TextBlock Grid.Row="19" Text="Colour scheme"/>
                         <ComboBox Grid.Row="19" Grid.Column="1" Margin="0,8,0,0" ItemsSource="{Binding ThemeNames}" SelectedItem="{Binding Theme}"/>
-                        <TextBlock Grid.Row="19" Grid.Column="2" Text="  header &amp; accent colours" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                        <TextBlock Grid.Row="19" Grid.Column="2" Text="  header &amp; accent colours" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
 
                         <TextBlock Grid.Row="14" Text="Max amount per spawn line"/>
                         <TextBox Grid.Row="14" Grid.Column="1" Text="{Binding Settings.MaxSpawnPerCommand}"/>
-                        <TextBlock Grid.Row="14" Grid.Column="2" Text="  kits split bigger counts (10 matches SAH)" Foreground="{StaticResource MutedBrush}"/>
+                        <TextBlock Grid.Row="14" Grid.Column="2" Text="  kits split bigger counts (10 matches SAH)" Foreground="{DynamicResource MutedBrush}"/>
 
                         <CheckBox Grid.Row="15" Grid.ColumnSpan="3" IsChecked="{Binding Settings.ChatStaysOpenAfterSend}"
                                   Content="Game chat stays open after Enter (SCUM does): open chat once per batch, press Escape at the end"/>
@@ -1230,10 +1230,10 @@
                         <TextBox Grid.Row="16" Grid.Column="1" Text="{Binding Settings.CloseDelayMs}"/>
                         <TextBlock Grid.Row="17" Text="&quot;Full&quot; StackCount"/>
                         <TextBox Grid.Row="17" Grid.Column="1" Text="{Binding Settings.FullStackCount}"/>
-                        <TextBlock Grid.Row="17" Grid.Column="2" Text="  sent when Full is ticked; the game caps overflow" Foreground="{StaticResource MutedBrush}"/>
+                        <TextBlock Grid.Row="17" Grid.Column="2" Text="  sent when Full is ticked; the game caps overflow" Foreground="{DynamicResource MutedBrush}"/>
                         <TextBlock Grid.Row="18" Text="Magazine pattern (regex)"/>
                         <TextBox Grid.Row="18" Grid.Column="1" Text="{Binding Settings.MagazinePattern}" FontFamily="Cascadia Mono, Consolas"/>
-                        <TextBlock Grid.Row="18" Grid.Column="2" Text="  which codes a kit's 'Fill magazines' fills" Foreground="{StaticResource MutedBrush}"/>
+                        <TextBlock Grid.Row="18" Grid.Column="2" Text="  which codes a kit's 'Fill magazines' fills" Foreground="{DynamicResource MutedBrush}"/>
 
                         <CheckBox Grid.Row="9" Grid.ColumnSpan="3" IsChecked="{Binding Settings.RestoreClipboard}" Content="Restore my clipboard text after sending"/>
                         <CheckBox Grid.Row="10" Grid.ColumnSpan="3" IsChecked="{Binding Settings.ReturnFocusToSacc}" Content="Switch back to SACC after sending"/>
@@ -1249,7 +1249,7 @@
                             <Button Command="{Binding ReloadIconsCommand}" Content="Reload icons"/>
                             <Button Command="{Binding RelaunchAsAdminCommand}" Content="Restart as administrator"/>
                         </WrapPanel>
-                        <TextBlock Grid.Row="13" Grid.ColumnSpan="3" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,0"
+                        <TextBlock Grid.Row="13" Grid.ColumnSpan="3" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,0"
                                    Text="SACC sends commands by focusing the SCUM window, opening chat, and pasting or typing the line. If SCUM runs as administrator, SACC must too, or Windows will block the keystrokes. Commands marked Conflicting or Unverified in the catalog may need their template adjusted for the current game version."/>
                     </Grid>
                 </ScrollViewer>
