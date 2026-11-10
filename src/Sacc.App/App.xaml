@@ -36,12 +36,6 @@
         </DataTemplate>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
 
-        <Style TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-        </Style>
-        <Style TargetType="CheckBox">
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-        </Style>
         <Style TargetType="Button">
             <Setter Property="Padding" Value="10,4"/>
             <Setter Property="Margin" Value="0,0,6,6"/>
@@ -69,7 +63,7 @@
             <Setter Property="Background" Value="{StaticResource FieldBrush}"/>
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
         </Style>
-        <Style x:Key="SectionLabel" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Style x:Key="SectionLabel" TargetType="TextBlock">
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Margin" Value="0,8,0,4"/>
         </Style>
@@ -77,7 +71,7 @@
             <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>
-        <Style x:Key="Mono" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Style x:Key="Mono" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="Cascadia Mono, Consolas"/>
         </Style>
         <Style TargetType="DataGrid">

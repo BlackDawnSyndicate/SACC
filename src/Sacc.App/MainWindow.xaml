@@ -4,7 +4,7 @@
         xmlns:infra="clr-namespace:Sacc.App.Infrastructure"
         xmlns:map="clr-namespace:Sacc.App.Map"
         Title="{Binding AppTitle}" Height="760" Width="1120" MinHeight="520" MinWidth="820"
-        Topmost="{Binding AlwaysOnTop}" Background="{StaticResource PanelBrush}">
+        Topmost="{Binding AlwaysOnTop}" Background="{StaticResource PanelBrush}" Foreground="{StaticResource TextBrush}">
     <Window.InputBindings>
         <KeyBinding Key="Escape" Command="{Binding StopCommand}"/>
     </Window.InputBindings>
@@ -1168,14 +1168,14 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <Grid.Resources>
-                            <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                            <Style TargetType="TextBlock">
                                 <Setter Property="VerticalAlignment" Value="Center"/>
                                 <Setter Property="Margin" Value="0,0,0,8"/>
                             </Style>
                             <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
                                 <Setter Property="Margin" Value="0,0,0,8"/>
                             </Style>
-                            <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
+                            <Style TargetType="CheckBox">
                                 <Setter Property="Margin" Value="0,0,0,8"/>
                                 <Setter Property="VerticalAlignment" Value="Center"/>
                             </Style>

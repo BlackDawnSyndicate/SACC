@@ -12,7 +12,7 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>SACC</AssemblyName>
     <RootNamespace>Sacc.App</RootNamespace>
-    <Version>0.4.22</Version>
+    <Version>0.4.23</Version>
     <Product>SACC - SCUM Admin Command Console</Product>
     <Authors>Lurid Phoenix and Maddog Murphy</Authors>
     <Description>Clean-room admin command console for SCUM servers.</Description>
