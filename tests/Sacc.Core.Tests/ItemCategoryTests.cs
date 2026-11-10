@@ -17,7 +17,12 @@ public class ItemCategoryTests
     [InlineData("ColorCan_FireEngineRed", "Resources")]
     [InlineData("Bottle_Of_Water", "Drinks")]
     [InlineData("Bandage", "Medical")]
-    [InlineData("Car_Battery", "Electronics")]
+    [InlineData("AA_Battery", "Electronics")]
+    [InlineData("Car_Battery", "Vehicle Parts")]      // a car battery is a vehicle part, not generic electronics
+    [InlineData("Car_Wheel", "Vehicle Parts")]
+    [InlineData("Whiskey_Bottle", "Alcohol")]         // alcohol is its own category, ahead of Drinks
+    [InlineData("Red_Wine", "Alcohol")]
+    [InlineData("Bottle_Of_Soda", "Drinks")]
     [InlineData("Totally_Made_Up_Thing", "Other")]
     public void ClassifiesItemsByKeyword(string code, string expected) =>
         Assert.Equal(expected, ItemCategory.OfItem(code));
