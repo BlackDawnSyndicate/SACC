@@ -1247,7 +1247,11 @@
                             <CheckBox IsChecked="{Binding MinimapRotate}" Content="Rotate to direction of travel (North arrow)"/>
                             <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,9" Text="off = north up; on = your heading points up (from successive Ctrl+C while moving)"/>
                             <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="155" Text="Minimap map type"/><ComboBox ItemsSource="{Binding MapTypeNames}" SelectedItem="{Binding MinimapMapType}" AutomationProperties.Name="Minimap map type"/></DockPanel>
-                            <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,0" Text="e.g. Tactical; independent of the Map tab (list fills once the map has loaded)"/>
+                            <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,9" Text="e.g. Tactical; independent of the Map tab (list fills once the map has loaded)"/>
+                            <CheckBox IsChecked="{Binding MinimapAutoCopy}" Content="Auto Ctrl+C (refresh position on a timer)"/>
+                            <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,9" Text="presses Ctrl+C for you, only while SCUM is the focused window"/>
+                            <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="155" Text="Auto-copy every (s)"/><TextBox Text="{Binding MinimapAutoCopySeconds}" AutomationProperties.Name="Auto-copy interval seconds"/></DockPanel>
+                            <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,0" Text="how often to refresh your position automatically"/>
                         </StackPanel>
 
                         <!-- Full-width: actions and notes -->

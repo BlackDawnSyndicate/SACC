@@ -32,13 +32,28 @@ public partial class MainWindow : Window
     private ClipboardMonitor? _clipboard;
     private MinimapWindow? _minimap;
     private Vec3? _lastPos;
+    private System.Windows.Threading.DispatcherTimer? _autoCopy;
 
     private void WireMinimap()
     {
         _clipboard = new ClipboardMonitor();
         _clipboard.Changed += OnClipboardChanged;
+        _autoCopy = new System.Windows.Threading.DispatcherTimer();
+        _autoCopy.Tick += (_, _) => { if (_vm.MinimapEnabled && _vm.MinimapAutoCopy) _vm.TryAutoCopyPosition(); };
         _vm.MinimapChanged += ApplyMinimapSetting;
         ApplyMinimapSetting();
+    }
+
+    // Start/stop the auto Ctrl+C timer to match the current settings.
+    private void ApplyAutoCopy()
+    {
+        if (_autoCopy == null) return;
+        if (_vm.MinimapEnabled && _vm.MinimapAutoCopy)
+        {
+            _autoCopy.Interval = TimeSpan.FromSeconds(Math.Max(1, _vm.MinimapAutoCopySeconds));
+            _autoCopy.Start();
+        }
+        else _autoCopy.Stop();
     }
 
     private void OnClipboardChanged()
@@ -65,6 +80,7 @@ public partial class MainWindow : Window
 
     private async void ApplyMinimapSetting()
     {
+        ApplyAutoCopy();
         if (!_vm.MinimapEnabled) { _minimap?.HideNow(); return; }
         EnsureMinimap();
         await EnsureMinimapMapAsync();
@@ -195,6 +211,7 @@ public partial class MainWindow : Window
             _vm.Settings.MinimapSize = _minimap.Width;
         }
         _vm.Save();
+        _autoCopy?.Stop();
         _clipboard?.Dispose();
         _minimap?.Close();
         base.OnClosing(e);

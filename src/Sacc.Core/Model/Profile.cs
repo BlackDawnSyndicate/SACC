@@ -119,6 +119,10 @@ public sealed class Settings
     public bool MinimapRotate { get; set; } = true;
     /// <summary>scum-map map type for the minimap (e.g. Tactical), independent of the Map tab's type. Falls back to the Map tab's type if absent.</summary>
     public string MinimapMapType { get; set; } = "Tactical";
+    /// <summary>Automatically press Ctrl+C in the game on a timer so the minimap refreshes your position without you pressing it (only while the game is focused).</summary>
+    public bool MinimapAutoCopy { get; set; }
+    /// <summary>Seconds between automatic Ctrl+C presses when MinimapAutoCopy is on.</summary>
+    public double MinimapAutoCopySeconds { get; set; } = 3;
     /// <summary>Minimap overlay window position and size (screen pixels); left/top of -1 means the default top-right corner.</summary>
     public double MinimapLeft { get; set; } = -1;
     public double MinimapTop { get; set; } = -1;

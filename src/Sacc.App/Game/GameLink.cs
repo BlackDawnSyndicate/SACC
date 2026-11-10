@@ -293,6 +293,21 @@ public sealed class GameLink
     private static void Chord(int modifier, int vk) =>
         Send(KeyEvent(modifier, false), KeyEvent(vk, false), KeyEvent(vk, true), KeyEvent(modifier, true));
 
+    /// <summary>True when the named game process owns the foreground window (the player is in the game right now).</summary>
+    public bool IsGameForeground(string processName)
+    {
+        var g = Probe(processName);
+        return g.Found && GetForegroundWindow() == g.Window;
+    }
+
+    /// <summary>
+    /// Presses Ctrl+C into whatever window has focus (so the caller must check the game is foreground first).
+    /// Used by the minimap's auto-copy timer to refresh the player's position the same way a manual Ctrl+C would.
+    /// Not wrapped in the clipboard-busy guard: the game — not SACC — writes the clipboard, and the watcher must see it.
+    /// </summary>
+    public static void SendCopyChord() =>
+        Chord(KeyInterop.VirtualKeyFromKey(Key.LeftCtrl), KeyInterop.VirtualKeyFromKey(Key.C));
+
     private static void TypeText(string text)
     {
         var inputs = new List<INPUT>(text.Length * 2);

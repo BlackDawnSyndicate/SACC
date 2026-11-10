@@ -190,6 +190,24 @@ public sealed partial class MainViewModel : ObservableObject
         set { if (value == null || value == Settings.MinimapMapType) return; Settings.MinimapMapType = value; Raise(); Save(); MinimapChanged?.Invoke(); }
     }
 
+    public bool MinimapAutoCopy
+    {
+        get => Settings.MinimapAutoCopy;
+        set { Settings.MinimapAutoCopy = value; Raise(); Save(); MinimapChanged?.Invoke(); }
+    }
+
+    public double MinimapAutoCopySeconds
+    {
+        get => Settings.MinimapAutoCopySeconds;
+        set { Settings.MinimapAutoCopySeconds = Math.Max(1, value); Raise(); Save(); MinimapChanged?.Invoke(); }
+    }
+
+    /// <summary>Press Ctrl+C in the game to copy the current position — but only when the game is focused, so SACC never steals focus.</summary>
+    public void TryAutoCopyPosition()
+    {
+        if (_game.IsGameForeground(Settings.ProcessName)) GameLink.SendCopyChord();
+    }
+
     private string _search = "";
     public string SearchText
     {
