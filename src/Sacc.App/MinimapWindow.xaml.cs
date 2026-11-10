@@ -74,6 +74,7 @@ public partial class MinimapWindow : Window
         var angle = rotate ? -_heading : 0;
         MapRotate.Angle = angle;
         NeedleRotate.Angle = angle;
+        MiniMap.LabelUprightAngle = -angle;  // counter-rotate text so labels stay upright
     }
 
     /// <summary>Always-on mode: show and stay (no fade).</summary>

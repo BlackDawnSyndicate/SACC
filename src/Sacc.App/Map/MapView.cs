@@ -112,6 +112,10 @@ public sealed class MapView : FrameworkElement
     /// <summary>"You are here" marker (the last Ctrl+C position), drawn on top of everything; null hides it. Used by the minimap.</summary>
     public Vec3? SelfPosition { get => _self; set { _self = value; InvalidateVisual(); } }
 
+    private double _labelUpright;
+    /// <summary>Degrees to counter-rotate text labels, so they stay upright when the whole view is rotated (minimap). 0 = none.</summary>
+    public double LabelUprightAngle { get => _labelUpright; set { _labelUpright = value; InvalidateVisual(); } }
+
     /// <summary>
     /// Clockwise-from-up bearing (degrees) of the on-screen direction from <paramref name="a"/> to <paramref name="b"/>:
     /// 0 points up (north), 90 right (east). NaN when there is no projection or the two points coincide.
@@ -742,9 +746,11 @@ public sealed class MapView : FrameworkElement
         var halo = new FormattedText(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, GridFace, size, GridHalo, dpi);
         var front = new FormattedText(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, GridFace, size, GridText, dpi);
         var at = new Point(topLeft.X + 4, topLeft.Y + 2);
+        if (_labelUpright != 0) dc.PushTransform(new RotateTransform(_labelUpright, at.X, at.Y));
         // A cheap outline: the dark copy offset in four directions keeps labels readable on any terrain.
         foreach (var (dx, dy) in new[] { (-1, 0), (1, 0), (0, -1), (0, 1) }) dc.DrawText(halo, new Point(at.X + dx, at.Y + dy));
         dc.DrawText(front, at);
+        if (_labelUpright != 0) dc.Pop();
     }
 
     private void Label(DrawingContext dc, string text, Point at, double offset)
@@ -753,8 +759,10 @@ public sealed class MapView : FrameworkElement
         var ft = new FormattedText(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, LabelFace, 11, Brushes.White,
             VisualTreeHelper.GetDpi(this).PixelsPerDip);
         var origin = new Point(at.X + offset + 3, at.Y - ft.Height / 2);
+        if (_labelUpright != 0) dc.PushTransform(new RotateTransform(_labelUpright, at.X, at.Y));
         dc.DrawRoundedRectangle(LabelBack, null, new Rect(origin.X - 3, origin.Y - 1, ft.Width + 6, ft.Height + 2), 3, 3);
         dc.DrawText(ft, origin);
+        if (_labelUpright != 0) dc.Pop();
     }
 
     private Brush BrushFor(string hex)
