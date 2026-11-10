@@ -72,7 +72,8 @@
             </DockPanel>
         </Border>
 
-        <TabControl Margin="8" Padding="10">
+        <TabControl Margin="8" Padding="10" Background="{DynamicResource PanelBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}" Foreground="{DynamicResource TextBrush}">
             <!-- ============================================================ Console -->
             <TabItem Header="Console">
                 <Grid>
@@ -1160,7 +1161,7 @@
 
             <!-- ============================================================ Settings -->
             <TabItem Header="Settings">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Background="{DynamicResource PanelBrush}">
                     <Grid Margin="0,0,10,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
