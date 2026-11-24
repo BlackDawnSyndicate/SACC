@@ -50,6 +50,9 @@ public sealed partial class MainViewModel
             // Hide the suggestions once the box holds exactly one known code.
             NewItemPopupOpen = NewItemMatches.Count > 0
                 && !(NewItemMatches.Count == 1 && string.Equals(NewItemMatches[0], value.Trim(), StringComparison.OrdinalIgnoreCase));
+            // Narrow the loadout grid to matching rows as you type; the filter sticks after the popup closes
+            // (it's driven by the text, not the popup) and clears when the text is emptied.
+            ApplyKitItemFilter();
             CommandManager.InvalidateRequerySuggested();
         }
     }
@@ -80,12 +83,25 @@ public sealed partial class MainViewModel
         KitsView.Refresh();
     }
 
+    /// <summary>Filter the loadout grid to rows whose code contains the add-item text; empty text shows everything.</summary>
+    public void ApplyKitItemFilter()
+    {
+        if (SelectedKit == null) return;
+        var view = System.Windows.Data.CollectionViewSource.GetDefaultView(SelectedKit.Items);
+        if (view == null) return;
+        var term = _newItemCode.Trim();
+        view.Filter = term.Length == 0
+            ? null
+            : o => o is KitItem it && it.Code?.Contains(term, StringComparison.OrdinalIgnoreCase) == true;
+    }
+
     /// <summary>Put a suggestion into the box (keeps amount/stack as typed).</summary>
     public void PickNewItem(string code)
     {
         _newItemCode = code;
         Raise(nameof(NewItemCode));
         NewItemPopupOpen = false;
+        ApplyKitItemFilter();   // picking a suggestion or clearing the box updates the loadout filter too
         CommandManager.InvalidateRequerySuggested();
     }
 
@@ -129,8 +145,13 @@ public sealed partial class MainViewModel
         Save();
         Status = (known == null ? $"Added '{code}', which isn't a known code; check the spelling. " : $"Added {known}. ")
                  + $"Kit now has {kit.Items.Count} item(s).";
-        PickNewItem("");
+        // Keep the code in the box so its loadout filter stays put — switch kits and add/remove the same
+        // item across loadouts without retyping. The added row stays visible (it matches), and clearing
+        // the box (or deleting the text) drops the filter.
+        NewItemPopupOpen = false;
+        ApplyKitItemFilter();
         NewItemAmount = "1";
+        CommandManager.InvalidateRequerySuggested();
     }
 
     private void RemoveKitItem()

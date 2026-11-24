@@ -1,0 +1,84 @@
+<Window x:Class="Sacc.App.PlayerDetailsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Player" Width="360" SizeToContent="Height" MinHeight="300"
+        Background="{DynamicResource PanelBrush}" Foreground="{DynamicResource TextBrush}" ShowInTaskbar="False">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12">
+        <StackPanel>
+            <TextBlock Text="{Binding SelectedPlayer.Display, FallbackValue='No player selected'}" FontWeight="Bold" FontSize="15" TextWrapping="Wrap"/>
+
+            <TextBlock Text="Details" Style="{StaticResource SectionLabel}"/>
+            <Grid Margin="0,0,0,2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
+                    <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Name" Style="{StaticResource Muted}" Margin="0,0,10,2"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedPlayer.Nickname}" TextWrapping="Wrap"/>
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Steam name" Style="{StaticResource Muted}" Margin="0,0,10,2"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedPlayer.PlatformName}" TextWrapping="Wrap"/>
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="SteamID64" Style="{StaticResource Muted}" Margin="0,0,10,2"/>
+                <TextBox   Grid.Row="2" Grid.Column="1" Text="{Binding SelectedPlayer.SteamId, Mode=OneWay}" IsReadOnly="True" BorderThickness="0" Background="Transparent" Padding="0"/>
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Fame" Style="{StaticResource Muted}" Margin="0,0,10,2"/>
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedPlayer.Fame}"/>
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="Account" Style="{StaticResource Muted}" Margin="0,0,10,2"/>
+                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding SelectedPlayer.Account}"/>
+                <TextBlock Grid.Row="5" Grid.Column="0" Text="Gold" Style="{StaticResource Muted}" Margin="0,0,10,2"/>
+                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding SelectedPlayer.Gold}"/>
+                <TextBlock Grid.Row="6" Grid.Column="0" Text="Location" Style="{StaticResource Muted}" Margin="0,0,10,2"/>
+                <TextBlock Grid.Row="6" Grid.Column="1" TextWrapping="Wrap">
+                    <Run Text="{Binding SelectedPlayer, Converter={StaticResource Sector}, Mode=OneWay}"/>
+                    <Run Text="  "/><Run Text="{Binding SelectedPlayer.Location, Mode=OneWay}"/>
+                </TextBlock>
+                <TextBlock Grid.Row="7" Grid.Column="0" Text="Last seen" Style="{StaticResource Muted}" Margin="0,0,10,2"/>
+                <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding SelectedPlayer.LastSeen, StringFormat='MMM d HH:mm'}"/>
+            </Grid>
+
+            <TextBlock Text="Teleport" Style="{StaticResource SectionLabel}"/>
+            <WrapPanel>
+                <Button Command="{Binding PlayerActionCommand}" CommandParameter="teleport-to-player" Content="Go to"
+                        ToolTip="Teleport you to this player (#TeleportTo player)"/>
+                <Button Command="{Binding PlayerActionCommand}" CommandParameter="teleport-to-me" Content="Bring"
+                        ToolTip="Teleport this player to you (#TeleportToMe)"/>
+                <Button Command="{Binding PlayerActionCommand}" CommandParameter="location" Content="Locate"/>
+                <Button Command="{Binding UsePlayerAsTargetCommand}" Content="Use as target"
+                        ToolTip="Fill the target box on the Locations and Macros tabs"/>
+            </WrapPanel>
+            <WrapPanel Margin="0,2,0,0">
+                <Button Command="{Binding MarkTeleportDestCommand}" Content="Mark dest"
+                        ToolTip="Remember this player as the destination for a player-to-player teleport"/>
+                <Button Command="{Binding MovePlayerToDestCommand}" Content="Move to dest"
+                        ToolTip="Teleport this player onto the marked destination player"/>
+            </WrapPanel>
+            <TextBlock Text="{Binding TeleportDestLabel}" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,1,0,0"/>
+
+            <TextBlock Text="Tracking" Style="{StaticResource SectionLabel}"/>
+            <WrapPanel>
+                <Button Command="{Binding ShowTrackCommand}" Content="Show on map" ToolTip="Draw this player's track on the Map"/>
+                <Button Command="{Binding ExportTrackCommand}" Content="Export…" ToolTip="Save this player's track as CSV"/>
+            </WrapPanel>
+
+            <TextBlock Text="Fame / currency" Style="{StaticResource SectionLabel}"/>
+            <DockPanel Margin="0,0,0,6">
+                <ComboBox DockPanel.Dock="Right" Width="80" Margin="6,0,0,0" ItemsSource="{Binding Currencies}" SelectedItem="{Binding PlayerCurrency}"/>
+                <TextBox Text="{Binding PlayerAmount, UpdateSourceTrigger=PropertyChanged}" ToolTip="Amount"/>
+            </DockPanel>
+            <WrapPanel>
+                <Button Command="{Binding PlayerActionCommand}" CommandParameter="set-fame" Content="Set fame"/>
+                <Button Command="{Binding PlayerActionCommand}" CommandParameter="change-currency" Content="Add money"/>
+            </WrapPanel>
+
+            <TextBlock Text="Moderation" Style="{StaticResource SectionLabel}"/>
+            <WrapPanel>
+                <Button Command="{Binding PlayerActionCommand}" CommandParameter="mute" Content="Mute"/>
+                <Button Command="{Binding PlayerActionCommand}" CommandParameter="unmute" Content="Unmute"/>
+                <Button Style="{StaticResource DangerButton}" Command="{Binding PlayerActionCommand}" CommandParameter="kick" Content="Kick"/>
+                <Button Style="{StaticResource DangerButton}" Command="{Binding PlayerActionCommand}" CommandParameter="ban" Content="Ban"/>
+            </WrapPanel>
+        </StackPanel>
+    </ScrollViewer>
+</Window>

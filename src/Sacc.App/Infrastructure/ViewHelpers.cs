@@ -27,6 +27,7 @@ public sealed class ParamTemplateSelector : DataTemplateSelector
 
 public sealed class ConfidenceBrushConverter : IValueConverter
 {
+    private static readonly Brush Verified = Frozen(0x00, 0x89, 0x7B);
     private static readonly Brush Documented = Frozen(0x2E, 0x7D, 0x32);
     private static readonly Brush Conflicting = Frozen(0xE0, 0x8A, 0x00);
     private static readonly Brush Unverified = Frozen(0x8E, 0x24, 0xAA);
@@ -40,6 +41,7 @@ public sealed class ConfidenceBrushConverter : IValueConverter
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture) => value switch
     {
+        Confidence.Verified => Verified,
         Confidence.Documented => Documented,
         Confidence.Conflicting => Conflicting,
         _ => Unverified,
@@ -86,6 +88,16 @@ public sealed class NotEmptyToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
         value is string s && s.Length > 0 || value is not (string or null) ? Visibility.Visible : Visibility.Collapsed;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>Visible when the bound bool is false (Collapsed when true) — the inverse of BooleanToVisibilityConverter.</summary>
+public sealed class InverseBoolToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is true ? Visibility.Collapsed : Visibility.Visible;
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
         throw new NotSupportedException();

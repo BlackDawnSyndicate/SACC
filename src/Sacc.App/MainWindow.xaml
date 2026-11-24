@@ -55,6 +55,9 @@
                     <CheckBox IsChecked="{Binding DryRun}" Foreground="#FFD27F" VerticalAlignment="Center" Margin="0,0,14,0"
                               ToolTip="Log commands without sending anything to the game">Dry run</CheckBox>
                     <CheckBox IsChecked="{Binding AlwaysOnTop}" Foreground="#DDE3E6" VerticalAlignment="Center">On top</CheckBox>
+                    <TextBlock Text="Theme" Foreground="#DDE3E6" VerticalAlignment="Center" Margin="18,0,6,0"/>
+                    <ComboBox ItemsSource="{Binding ThemeNames}" SelectedItem="{Binding Theme}" Width="120" VerticalAlignment="Center"
+                              AutomationProperties.Name="Colour scheme" ToolTip="Colour scheme (header &amp; accent colours)"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="SACC" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/>
@@ -178,82 +181,6 @@
                 </Grid>
             </TabItem>
 
-            <!-- ============================================================ Players -->
-            <TabItem Header="Players">
-                <DockPanel>
-                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
-                        <Button Style="{StaticResource PrimaryButton}" Command="{Binding RefreshPlayersCommand}" Content="Refresh from game"
-                                ToolTip="Sends #ListPlayers true and reads the clipboard"/>
-                        <Button Command="{Binding PastePlayersCommand}" Content="Paste list"
-                                ToolTip="Parse #ListPlayers output you copied yourself"/>
-                        <Button Command="{Binding ImportSahFilesCommand}" Content="Import SAH players…"
-                                ToolTip="Import a 'SAH Players (date).json' export"/>
-                        <Button Command="{Binding ClearPlayersCommand}" Content="Clear"/>
-                        <CheckBox Content="{Binding PlayersOnlineLabel}" IsChecked="{Binding PlayersOnlineOnly}" VerticalAlignment="Center" Margin="12,0,0,0"
-                                  ToolTip="Only players in the last #ListPlayers output (Refresh from game or Paste list)"/>
-                        <TextBox Text="{Binding PlayerSearch, UpdateSourceTrigger=PropertyChanged}" Width="220" Margin="12,0,0,0" VerticalContentAlignment="Center"
-                                 ToolTip="Filter by name or SteamID64"/>
-                    </StackPanel>
-                    <Border DockPanel.Dock="Right" Width="260" Margin="10,0,0,0" Padding="10" Background="{DynamicResource FieldBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-                        <StackPanel>
-                            <TextBlock Text="{Binding SelectedPlayer.Display, FallbackValue='Select a player'}" FontWeight="SemiBold" TextWrapping="Wrap"/>
-                            <TextBlock Text="Tracking" Style="{StaticResource SectionLabel}"/>
-                            <DockPanel Margin="0,0,0,2">
-                                <CheckBox DockPanel.Dock="Left" Content="Track every" IsChecked="{Binding Tracking}" VerticalAlignment="Center"
-                                          ToolTip="Reads #ListPlayers on a timer and records where everyone is. Each read types into the game, so this starts off whenever SACC opens."/>
-                                <TextBlock DockPanel.Dock="Right" Text="s" VerticalAlignment="Center" Margin="3,0,0,0"/>
-                                <TextBox Text="{Binding TrackInterval, UpdateSourceTrigger=LostFocus}" Margin="6,0,0,0" AutomationProperties.Name="Track interval seconds"
-                                         ToolTip="Seconds between reads, 10 or more"/>
-                            </DockPanel>
-                            <TextBlock Text="{Binding TrackingLabel}" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,2"/>
-                            <WrapPanel>
-                                <Button Command="{Binding ShowTrackCommand}" Content="Show on map" ToolTip="Draw the selected player's track on the Map tab"/>
-                                <Button Command="{Binding ExportTrackCommand}" Content="Export…" ToolTip="Save the selected player's track as CSV: time, SteamID, name, X, Y, Z"/>
-                                <Button Command="{Binding ExportAllTracksCommand}" Content="Export all…" ToolTip="Save everyone's tracks as one CSV"/>
-                                <Button Command="{Binding ClearTracksCommand}" Content="Clear" ToolTip="Delete every tracked point (tracks.csv)"/>
-                            </WrapPanel>
-                            <TextBlock Text="Teleport" Style="{StaticResource SectionLabel}"/>
-                            <WrapPanel>
-                                <Button Command="{Binding PlayerActionCommand}" CommandParameter="teleport-to-player" Content="Go to"/>
-                                <Button Command="{Binding PlayerActionCommand}" CommandParameter="teleport-to-me" Content="Bring"/>
-                                <Button Command="{Binding PlayerActionCommand}" CommandParameter="location" Content="Locate"/>
-                                <Button Command="{Binding UsePlayerAsTargetCommand}" Content="Use as target"
-                                        ToolTip="Fill the target box on the Locations and Macros tabs"/>
-                            </WrapPanel>
-                            <TextBlock Text="Fame / currency" Style="{StaticResource SectionLabel}"/>
-                            <DockPanel Margin="0,0,0,6">
-                                <ComboBox DockPanel.Dock="Right" Width="80" Margin="6,0,0,0" ItemsSource="{Binding Currencies}" SelectedItem="{Binding PlayerCurrency}"/>
-                                <TextBox Text="{Binding PlayerAmount, UpdateSourceTrigger=PropertyChanged}" ToolTip="Amount"/>
-                            </DockPanel>
-                            <WrapPanel>
-                                <Button Command="{Binding PlayerActionCommand}" CommandParameter="set-fame" Content="Set fame"/>
-                                <Button Command="{Binding PlayerActionCommand}" CommandParameter="change-currency" Content="Add money"/>
-                            </WrapPanel>
-                            <TextBlock Text="Moderation" Style="{StaticResource SectionLabel}"/>
-                            <WrapPanel>
-                                <Button Command="{Binding PlayerActionCommand}" CommandParameter="mute" Content="Mute"/>
-                                <Button Command="{Binding PlayerActionCommand}" CommandParameter="unmute" Content="Unmute"/>
-                                <Button Style="{StaticResource DangerButton}" Command="{Binding PlayerActionCommand}" CommandParameter="kick" Content="Kick"/>
-                                <Button Style="{StaticResource DangerButton}" Command="{Binding PlayerActionCommand}" CommandParameter="ban" Content="Ban"/>
-                            </WrapPanel>
-                        </StackPanel>
-                    </Border>
-                    <DataGrid ItemsSource="{Binding PlayersView}" SelectedItem="{Binding SelectedPlayer}" IsReadOnly="True">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Name" Binding="{Binding Nickname}" Width="2*"/>
-                            <DataGridTextColumn Header="Steam name" Binding="{Binding PlatformName}" Width="1.5*"/>
-                            <DataGridTextColumn Header="SteamID64" Binding="{Binding SteamId}" Width="150"/>
-                            <DataGridTextColumn Header="Fame" Binding="{Binding Fame}" Width="70"/>
-                            <DataGridTextColumn Header="Account" Binding="{Binding Account}" Width="90"/>
-                            <DataGridTextColumn Header="Gold" Binding="{Binding Gold}" Width="60"/>
-                            <DataGridTextColumn Header="Sector" Binding="{Binding Converter={StaticResource Sector}}" Width="60"/>
-                            <DataGridTextColumn Header="Location" Binding="{Binding Location}" Width="2*"/>
-                            <DataGridTextColumn Header="Seen" Binding="{Binding LastSeen, StringFormat='MMM d HH:mm'}" Width="100"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </DockPanel>
-            </TabItem>
-
             <!-- ============================================================ Spawner -->
             <TabItem Header="Spawner">
                 <TabControl>
@@ -317,6 +244,37 @@
                                 </ListBox.ItemTemplate>
                             </ListBox>
                         </DockPanel>
+                        <!-- Details for the selected item: category and name always; weight/size/price/etc. when a metadata file is loaded. -->
+                        <Border DockPanel.Dock="Bottom" Margin="0,10,0,0" Padding="10"
+                                Background="{DynamicResource FieldBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                Visibility="{Binding SelectedItemDetails, Converter={StaticResource NotEmptyToVisibility}}">
+                            <DockPanel DataContext="{Binding SelectedItemDetails}">
+                                <Image DockPanel.Dock="Left" Width="44" Height="44" Margin="0,0,10,0" VerticalAlignment="Top"
+                                       Source="{Binding Code, Converter={StaticResource CodeToIcon}}" Stretch="Uniform"/>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14" TextWrapping="Wrap"/>
+                                    <DockPanel Margin="0,1,0,0">
+                                        <TextBlock Text="{Binding Category}" Style="{StaticResource Muted}"/>
+                                        <TextBlock Text="{Binding Code}" Style="{StaticResource Muted}" FontFamily="Cascadia Mono, Consolas"
+                                                   TextTrimming="CharacterEllipsis" Margin="10,0,0,0"/>
+                                    </DockPanel>
+                                    <WrapPanel Margin="0,6,0,0" Visibility="{Binding HasMeta, Converter={StaticResource BoolToVisibility}}">
+                                        <StackPanel Margin="0,0,18,4"><TextBlock Text="Weight" Style="{StaticResource Muted}"/><TextBlock Text="{Binding Weight}"/></StackPanel>
+                                        <StackPanel Margin="0,0,18,4"><TextBlock Text="Size" Style="{StaticResource Muted}"/><TextBlock Text="{Binding Size}"/></StackPanel>
+                                        <StackPanel Margin="0,0,18,4"><TextBlock Text="Rarity" Style="{StaticResource Muted}"/><TextBlock Text="{Binding Rarity}"/></StackPanel>
+                                        <StackPanel Margin="0,0,18,4"><TextBlock Text="Buy" Style="{StaticResource Muted}"/><TextBlock Text="{Binding Buy}"/></StackPanel>
+                                        <StackPanel Margin="0,0,18,4"><TextBlock Text="Sell" Style="{StaticResource Muted}"/><TextBlock Text="{Binding Sell}"/></StackPanel>
+                                        <StackPanel Margin="0,0,18,4"><TextBlock Text="Fame" Style="{StaticResource Muted}"/><TextBlock Text="{Binding Fame}"/></StackPanel>
+                                        <StackPanel Margin="0,0,18,4"><TextBlock Text="DLC" Style="{StaticResource Muted}"/><TextBlock Text="{Binding Dlc}"/></StackPanel>
+                                    </WrapPanel>
+                                    <TextBlock Text="{Binding Description}" TextWrapping="Wrap" Margin="0,6,0,0"
+                                               Visibility="{Binding HasDescription, Converter={StaticResource BoolToVisibility}}"/>
+                                    <TextBlock Margin="0,6,0,0" Style="{StaticResource Muted}" TextWrapping="Wrap"
+                                               Visibility="{Binding HasMeta, Converter={StaticResource InverseBoolToVisibility}}"
+                                               Text="No item metadata loaded yet — weight, size, price and rarity appear here once a game-item-meta.json is in the data folder."/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
                         <ListBox x:Name="ItemMatchesList" ItemsSource="{Binding ItemMatches}" ItemTemplate="{StaticResource CodeWithIcon}"
                                  SelectedItem="{Binding SelectedItemMatch}"
                                  MouseDoubleClick="ItemMatches_DoubleClick"
@@ -595,15 +553,44 @@
                         <ColumnDefinition Width="270"/>
                         <ColumnDefinition Width="10"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="320"/>
                     </Grid.ColumnDefinitions>
 
                     <DockPanel>
                         <StackPanel DockPanel.Dock="Top">
-                            <DockPanel Margin="0,0,0,6">
+                            <DockPanel Margin="0,0,0,4">
                                 <Button DockPanel.Dock="Right" Command="{Binding RefreshMapCommand}" Content="Refresh" Margin="6,0,0,0" MinWidth="0"
                                         ToolTip="Re-download markers and the current map version from scum-map.com"/>
-                                <ComboBox ItemsSource="{Binding MapTypeNames}" SelectedItem="{Binding MapType}" ToolTip="Map style"/>
+                                <TextBlock Text="Base map layers" Style="{StaticResource SectionLabel}" VerticalAlignment="Center"/>
                             </DockPanel>
+                            <ItemsControl ItemsSource="{Binding MapLayers}" Margin="0,0,0,6"
+                                          ToolTip="Tick several layers to stack them; drag opacity down to let the ones beneath show through, and use ▲▼ to change which sits on top.">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="#141B1F" CornerRadius="3" Padding="4,3" Margin="0,0,0,3">
+                                            <DockPanel>
+                                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Button Content="▲" MinWidth="0" Padding="5,0" Margin="2,0,0,0"
+                                                            Command="{Binding DataContext.MoveMapLayerUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}" ToolTip="Move up (towards the top of the stack)"/>
+                                                    <Button Content="▼" MinWidth="0" Padding="5,0" Margin="2,0,0,0"
+                                                            Command="{Binding DataContext.MoveMapLayerDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}" ToolTip="Move down (towards the bottom of the stack)"/>
+                                                </StackPanel>
+                                                <TextBlock DockPanel.Dock="Right" Text="{Binding OpacityPercent, StringFormat={}{0}%}" Width="34"
+                                                           TextAlignment="Right" VerticalAlignment="Center" Style="{StaticResource Muted}"/>
+                                                <CheckBox DockPanel.Dock="Left" IsChecked="{Binding Visible}" Content="{Binding DisplayName}"
+                                                          VerticalAlignment="Center" MinWidth="96"
+                                                          ToolTip="Show this layer. The temperature overlay needs the bundled terrain grid."/>
+                                                <Slider Minimum="0.05" Maximum="1" Value="{Binding Opacity}" VerticalAlignment="Center" Margin="6,0,4,0"
+                                                        IsEnabled="{Binding Visible}" AutomationProperties.Name="Layer opacity"
+                                                        ToolTip="Layer opacity: lower lets the layers underneath show through."/>
+                                            </DockPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                             <ComboBox ItemsSource="{Binding MapGridChoices}" SelectedValuePath="Key" DisplayMemberPath="Value"
                                       SelectedValue="{Binding MapGrid}" Margin="0,0,0,6" ToolTip="Sector / keypad grid overlay"/>
                             <DockPanel Margin="0,0,0,8">
@@ -615,14 +602,6 @@
                                     </TextBox.InputBindings>
                                 </TextBox>
                             </DockPanel>
-                            <DockPanel Margin="0,0,0,4">
-                                <Button DockPanel.Dock="Right" Command="{Binding RefreshPlayersCommand}" Content="Refresh" Padding="6,0" Margin="4,0,0,0"
-                                        ToolTip="Sends #ListPlayers true and reads the clipboard"/>
-                                <CheckBox Content="{Binding MapOnlineLabel}" IsChecked="{Binding MapShowOnline}" VerticalAlignment="Center"
-                                          ToolTip="{Binding MapOnlineTip}"/>
-                            </DockPanel>
-                            <CheckBox Content="Offline players (last known)" IsChecked="{Binding MapShowPlayers}" Margin="0,0,0,4"
-                                      ToolTip="Everyone else, where they were last seen (grey)"/>
                             <DockPanel Margin="0,0,0,4">
                                 <Button DockPanel.Dock="Right" Command="{Binding PasteFlagsCommand}" Content="Paste" Padding="6,0" Margin="4,0,0,0"
                                         ToolTip="Read #ListFlags output you copied yourself"/>
@@ -645,13 +624,25 @@
                                          ToolTip="Type a car's ID (e.g. 36293735): the map keeps only vehicles whose ID starts with it, labelled with their ID, and centres on the car once one is left. Empty = all vehicles."/>
                             </DockPanel>
                             <CheckBox Content="{Binding MapTracksLabel}" IsChecked="{Binding MapShowTracks}" Margin="0,0,0,2"
-                                      ToolTip="Where tracked players went (Players tab → Tracking): a ring and time where a run starts, a dot and time where it ends. No line joins separate sessions."/>
+                                      ToolTip="Where tracked players went: a ring and time where a run starts, a dot and time where it ends. No line joins separate sessions."/>
                             <DockPanel Margin="18,0,0,4">
                                 <TextBlock DockPanel.Dock="Right" Text="h" VerticalAlignment="Center" Margin="3,0,0,0"/>
                                 <TextBox DockPanel.Dock="Right" Width="36" Text="{Binding MapTrackHours, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Track hours"
                                          ToolTip="How many hours back to draw; 0 or empty = everything" Margin="4,0,0,0"/>
                                 <ComboBox ItemsSource="{Binding TrackChoices}" SelectedItem="{Binding MapTrackChoice}" DisplayMemberPath="Label" AutomationProperties.Name="Track player"/>
                             </DockPanel>
+                            <DockPanel Margin="18,0,0,2">
+                                <TextBlock DockPanel.Dock="Right" Text="s" VerticalAlignment="Center" Margin="3,0,0,0"/>
+                                <TextBox DockPanel.Dock="Right" Width="40" Text="{Binding TrackInterval, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Track interval seconds"
+                                         ToolTip="Seconds between reads, 10 or more" Margin="4,0,0,0"/>
+                                <CheckBox Content="Track every" IsChecked="{Binding Tracking}" VerticalAlignment="Center"
+                                          ToolTip="Reads #ListPlayers on a timer and records where everyone is. Each read types into the game, so this starts off whenever SACC opens."/>
+                            </DockPanel>
+                            <TextBlock Text="{Binding TrackingLabel}" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="18,0,0,2"/>
+                            <WrapPanel Margin="18,0,0,6">
+                                <Button Command="{Binding ExportAllTracksCommand}" Content="Export all…" ToolTip="Save everyone's tracks as one CSV"/>
+                                <Button Command="{Binding ClearTracksCommand}" Content="Clear tracks" ToolTip="Delete every tracked point (tracks.csv)"/>
+                            </WrapPanel>
                             <CheckBox Content="Show saved locations" IsChecked="{Binding MapShowBookmarks}" Margin="0,0,0,8"/>
                             <TextBlock Text="Island overlays" Style="{StaticResource SectionLabel}" Margin="0,0,0,4"/>
                             <CheckBox Content="{Binding MapThreatZonesLabel}" IsChecked="{Binding MapShowThreatZones}" Margin="0,0,0,2"
@@ -660,18 +651,8 @@
                                       ToolTip="The island's hunting areas, where animals live (brown); purple = a mutant den. From the data bundled with SACC."/>
                             <CheckBox Content="{Binding MapPatrolPathsLabel}" IsChecked="{Binding MapShowPatrolPaths}" Margin="0,0,0,2"
                                       ToolTip="The routes the sentry mechs walk at military locations (orange dashed line, a dot at each spawner). From the data bundled with SACC."/>
-                            <CheckBox Content="{Binding MapLocationsLabel}" IsChecked="{Binding MapShowLocations}" Margin="0,0,0,2"
+                            <CheckBox Content="{Binding MapLocationsLabel}" IsChecked="{Binding MapShowLocations}" Margin="0,0,0,8"
                                       ToolTip="The island's place names (towns and POIs) at their centres. Names show as you zoom in. From the data bundled with SACC."/>
-                            <CheckBox Content="Temperature (est.)" IsChecked="{Binding MapShowTemperature}" Margin="0,0,0,8"
-                                      ToolTip="A rough average-temperature heatmap computed from the terrain grid's altitude (blue = cold high ground, red = warm low ground). A guess, like scum-map's; needs the bundled terrain grid."/>
-                            <TextBlock Text="Teleport target" Style="{StaticResource SectionLabel}" Margin="0,0,0,4"/>
-                            <ComboBox IsEditable="True" TextSearch.TextPath="SteamId" ItemsSource="{Binding Players}"
-                                      Text="{Binding MapTarget, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8"
-                                      ToolTip="Who 'Teleport here' moves. Empty = you.">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate><TextBlock Text="{Binding Display}"/></DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
                         </StackPanel>
                         <TextBlock DockPanel.Dock="Bottom" Text="{Binding MapStatus}" Style="{StaticResource Muted}" Margin="0,6,0,0"/>
                         <TabControl>
@@ -732,6 +713,12 @@
                                               ToolTip="The game's own landscape heights, decoded by SCUM Modding Studio into a .scgh grid. When loaded this is the most accurate source and wins over everything but a Set height; the climb starts just below it.">
                                         <TextBlock Text="{Binding GmTerrainLabel}" TextWrapping="Wrap"/>
                                     </CheckBox>
+                                </DockPanel>
+                                <DockPanel Margin="20,0,0,2">
+                                    <TextBox DockPanel.Dock="Right" Width="80" Text="{Binding GmTerrainLift, UpdateSourceTrigger=LostFocus}"
+                                             IsEnabled="{Binding GmHeightFromTerrain}" AutomationProperties.Name="Terrain lift value"/>
+                                    <TextBlock Text="Terrain lift (cm)" VerticalAlignment="Center" Style="{StaticResource Muted}"
+                                               ToolTip="Added to terrain-grid heights only, to lift spawns onto the walkable surface (the landscape grid reads a bit low, so items can sink). 150 = 1.5 m up; calibrated against 115 measured spawn climbs. Does not affect the other sources."/>
                                 </DockPanel>
                                 <DockPanel Margin="0,0,0,2">
                                     <Button DockPanel.Dock="Right" Content="Forget" Command="{Binding ForgetGroundCommand}" Padding="6,0"
@@ -815,16 +802,6 @@
                     </DockPanel>
 
                     <DockPanel Grid.Column="2">
-                        <Border DockPanel.Dock="Bottom" Background="{DynamicResource FieldBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1,0,1,1" Padding="8,6">
-                            <DockPanel>
-                                <WrapPanel DockPanel.Dock="Right">
-                                    <Button Style="{StaticResource PrimaryButton}" Command="{Binding TeleportHereCommand}" Content="Teleport here" Margin="0,0,6,0"/>
-                                    <Button Command="{Binding CopyTeleportCommand}" Content="Copy command" Margin="0,0,6,0"/>
-                                    <Button Command="{Binding SaveHereCommand}" Content="Save location" Margin="0"/>
-                                </WrapPanel>
-                                <TextBlock Text="{Binding MapPointText}" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                            </DockPanel>
-                        </Border>
                         <Grid>
                             <map:MapView x:Name="MapCanvas">
                                 <map:MapView.ContextMenu>
@@ -840,7 +817,7 @@
                                         </MenuItem>
                                         <MenuItem Header="{Binding GmHeightText}" IsEnabled="False"/>
                                         <Separator/>
-                                        <MenuItem Header="Teleport target here" Command="{Binding TeleportHereCommand}"/>
+                                        <MenuItem Header="{Binding TeleportHereHeader}" Command="{Binding TeleportHereCommand}"/>
                                         <MenuItem Header="Copy teleport command" Command="{Binding CopyTeleportCommand}"/>
                                         <MenuItem Header="Save as location" Command="{Binding SaveHereCommand}"/>
                                         <MenuItem Header="WhalleyBot">
@@ -873,6 +850,59 @@
                                 </TextBlock>
                             </Border>
                         </Grid>
+                    </DockPanel>
+
+                    <!-- Right bar: the players list (the old Players tab, condensed). Double-click a row for the full pop-out. -->
+                    <DockPanel Grid.Column="4">
+                        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                            <TextBlock Text="Players" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <Button DockPanel.Dock="Right" Click="PlayerDatabase_Click" Content="Database…" Padding="6,0" Margin="4,0,0,0"
+                                    ToolTip="Open the full player table in its own window"/>
+                            <Button DockPanel.Dock="Right" Command="{Binding PastePlayersCommand}" Content="Paste" Padding="6,0" Margin="4,0,0,0"
+                                    ToolTip="Parse #ListPlayers output you copied yourself"/>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Command="{Binding RefreshPlayersCommand}" Content="Refresh" Padding="6,0" Margin="4,0,0,0"
+                                    ToolTip="Sends #ListPlayers true and reads the clipboard"/>
+                        </DockPanel>
+                        <TextBox DockPanel.Dock="Top" Text="{Binding PlayerSearch, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,4"
+                                 VerticalContentAlignment="Center" ToolTip="The list shows who's online now; type a name or SteamID64 to search everyone, including offline"/>
+                        <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+                            <CheckBox Content="{Binding MapOnlineLabel}" IsChecked="{Binding MapShowOnline}" VerticalAlignment="Center" Margin="0,0,10,0"
+                                      ToolTip="{Binding MapOnlineTip}"/>
+                            <CheckBox Content="Offline dots" IsChecked="{Binding MapShowPlayers}" VerticalAlignment="Center"
+                                      ToolTip="Everyone else, where they were last seen (grey)"/>
+                        </WrapPanel>
+                        <Border DockPanel.Dock="Bottom" Background="{DynamicResource FieldBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="8,6" Margin="0,6,0,0">
+                            <StackPanel>
+                                <TextBlock Text="{Binding SelectedPlayer.Display, FallbackValue='Select a player'}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                                <WrapPanel>
+                                    <Button Command="{Binding PlayerActionCommand}" CommandParameter="teleport-to-player" Content="Go to"
+                                            ToolTip="Teleport you to the selected player (#TeleportTo player)"/>
+                                    <Button Command="{Binding PlayerActionCommand}" CommandParameter="teleport-to-me" Content="Bring"
+                                            ToolTip="Teleport the selected player to you (#TeleportToMe)"/>
+                                    <Button Command="{Binding PlayerActionCommand}" CommandParameter="location" Content="Locate"/>
+                                </WrapPanel>
+                                <TextBlock Text="Double-click a player (list or map dot) for all details and actions." Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Border>
+                        <DataGrid ItemsSource="{Binding PlayersView}" SelectedItem="{Binding SelectedPlayer}" IsReadOnly="True"
+                                  AutoGenerateColumns="False" HeadersVisibility="Column" MouseDoubleClick="PlayersBar_MouseDoubleClick"
+                                  ToolTip="Click to select (highlights on the map); right-click for Show last location; double-click for the full pop-out">
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <EventSetter Event="PreviewMouseRightButtonDown" Handler="PlayerRow_RightButtonDown"/>
+                                </Style>
+                            </DataGrid.RowStyle>
+                            <DataGrid.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Show last location" Command="{Binding ShowLastLocationCommand}"/>
+                                </ContextMenu>
+                            </DataGrid.ContextMenu>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Name" Binding="{Binding Nickname}" Width="*"/>
+                                <DataGridTextColumn Header="Sector" Binding="{Binding Converter={StaticResource Sector}}" Width="60"/>
+                                <DataGridTextColumn Header="Seen" Binding="{Binding LastSeen, StringFormat='MMM d HH:mm'}" Width="100"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
                     </DockPanel>
                 </Grid>
             </TabItem>
@@ -1195,7 +1225,7 @@
                         <Grid.Resources>
                             <Style TargetType="TextBlock"><Setter Property="VerticalAlignment" Value="Center"/></Style>
                             <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}"/>
-                            <Style TargetType="CheckBox"><Setter Property="VerticalAlignment" Value="Center"/><Setter Property="Margin" Value="0,0,0,8"/><Setter Property="MaxWidth" Value="420"/><Setter Property="HorizontalAlignment" Value="Left"/></Style>
+                            <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}"><Setter Property="VerticalAlignment" Value="Center"/><Setter Property="Margin" Value="0,0,0,8"/><Setter Property="MaxWidth" Value="420"/><Setter Property="HorizontalAlignment" Value="Left"/></Style>
                             <Style x:Key="Hint" TargetType="TextBlock" BasedOn="{StaticResource Muted}"><Setter Property="FontSize" Value="11"/><Setter Property="Margin" Value="185,0,0,9"/></Style>
                             <Style x:Key="Field" TargetType="DockPanel"><Setter Property="Margin" Value="0,0,0,2"/></Style>
                         </Grid.Resources>
@@ -1232,8 +1262,7 @@
                             <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,9" Text="sent when Full is ticked; the game caps overflow"/>
                             <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="155" Text="Magazine pattern (regex)"/><TextBox Text="{Binding Settings.MagazinePattern}" FontFamily="Cascadia Mono, Consolas" AutomationProperties.Name="Magazine pattern"/></DockPanel>
                             <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,9" Text="which codes a kit's 'Fill magazines' fills"/>
-                            <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="155" Text="Colour scheme"/><ComboBox ItemsSource="{Binding ThemeNames}" SelectedItem="{Binding Theme}" AutomationProperties.Name="Colour scheme"/></DockPanel>
-                            <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,9" Text="header &amp; accent colours"/>
+                            <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,9" Text="Colour scheme moved to the top bar, next to Dry run / On top."/>
 
                             <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,2,0,12"/>
                             <CheckBox IsChecked="{Binding MinimapEnabled}" Content="Position minimap (from SCUM's Ctrl+C)"/>
@@ -1246,8 +1275,6 @@
                             <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,9" Text="OnCopy mode: how long it stays before fading"/>
                             <CheckBox IsChecked="{Binding MinimapRotate}" Content="Rotate to direction of travel (North arrow)"/>
                             <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,9" Text="off = north up; on = your heading points up (from successive Ctrl+C while moving)"/>
-                            <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="155" Text="Minimap map type"/><ComboBox ItemsSource="{Binding MapTypeNames}" SelectedItem="{Binding MinimapMapType}" AutomationProperties.Name="Minimap map type"/></DockPanel>
-                            <TextBlock Style="{StaticResource Hint}" Margin="155,0,0,9" Text="e.g. Tactical; independent of the Map tab (list fills once the map has loaded)"/>
                             <CheckBox IsChecked="{Binding MinimapAutoCopy}" Content="Auto Ctrl+C (refresh position on a timer)"/>
                             <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,9" Text="presses Ctrl+C for you, only while SCUM is the focused window"/>
                             <DockPanel Style="{StaticResource Field}"><TextBlock DockPanel.Dock="Left" Width="155" Text="Auto-copy every (s)"/><TextBox Text="{Binding MinimapAutoCopySeconds}" AutomationProperties.Name="Auto-copy interval seconds"/></DockPanel>

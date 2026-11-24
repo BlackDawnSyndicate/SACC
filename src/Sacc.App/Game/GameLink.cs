@@ -304,9 +304,22 @@ public sealed class GameLink
     /// Presses Ctrl+C into whatever window has focus (so the caller must check the game is foreground first).
     /// Used by the minimap's auto-copy timer to refresh the player's position the same way a manual Ctrl+C would.
     /// Not wrapped in the clipboard-busy guard: the game — not SACC — writes the clipboard, and the watcher must see it.
+    ///
+    /// Unlike the chat chords (which type into SCUM's text box and tolerate a single batched SendInput), this fires
+    /// during gameplay, where SCUM reads raw input for movement binds. A batched same-frame Ctrl+C is read there as a
+    /// bare C (crouch) before the Ctrl modifier registers, so hold Ctrl with small gaps around the C tap. Blocks ~80 ms,
+    /// so callers run it off the UI thread.
     /// </summary>
-    public static void SendCopyChord() =>
-        Chord(KeyInterop.VirtualKeyFromKey(Key.LeftCtrl), KeyInterop.VirtualKeyFromKey(Key.C));
+    public static void SendCopyChord()
+    {
+        var ctrl = KeyInterop.VirtualKeyFromKey(Key.LeftCtrl);
+        var c = KeyInterop.VirtualKeyFromKey(Key.C);
+        Send(KeyEvent(ctrl, false));                        // Ctrl down
+        Thread.Sleep(40);                                   // let the gameplay input poll see Ctrl held first,
+        Send(KeyEvent(c, false), KeyEvent(c, true));        // so Ctrl+C copies position instead of C crouching
+        Thread.Sleep(40);
+        Send(KeyEvent(ctrl, true));                         // Ctrl up
+    }
 
     private static void TypeText(string text)
     {

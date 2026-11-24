@@ -21,6 +21,19 @@ public sealed class MapView : FrameworkElement
     private MapTemplate? _template;
     private MapProjection? _projection;
     private string? _tileTemplate;
+
+    /// <summary>One entry in the base-map stack: a tile layer (<see cref="TileUrl"/> set) or the temperature
+    /// overlay (<see cref="Temperature"/> true), drawn at <see cref="Opacity"/> (0..1).</summary>
+    public readonly record struct MapRenderLayer(string? TileUrl, bool Temperature, double Opacity);
+
+    /// <summary>The base-map stack, bottom-first (index 0 drawn first/underneath). Empty = fall back to the single
+    /// <see cref="SetMap"/> tile template plus the <see cref="ShowTemperature"/> overlay (used by the minimap/mission).</summary>
+    public IReadOnlyList<MapRenderLayer> BaseLayers
+    {
+        get => _baseLayers;
+        set { _baseLayers = value ?? Array.Empty<MapRenderLayer>(); InvalidateVisual(); }
+    }
+    private IReadOnlyList<MapRenderLayer> _baseLayers = Array.Empty<MapRenderLayer>();
     private double _zoom = 1.5, _cx = 160, _cy = 160;
     private Point? _dragStart;
     private (double X, double Y) _dragCenter;
@@ -37,6 +50,7 @@ public sealed class MapView : FrameworkElement
     private static readonly Brush BookmarkFill = Frozen(new SolidColorBrush(Color.FromRgb(0xFF, 0xA0, 0x2E)));
     private static readonly Brush LabelBack = Frozen(new SolidColorBrush(Color.FromArgb(0xB0, 0, 0, 0)));
     private static readonly Pen SelfOutline = Frozen(new Pen(Brushes.White, 2));
+    private static readonly Pen SelectedRing = Frozen(new Pen(new SolidColorBrush(Color.FromRgb(0xFF, 0xD7, 0x00)), 2.5));
     private static readonly Brush SelfFill = Frozen(new SolidColorBrush(Color.FromRgb(0xFF, 0x30, 0x30)));
     private static readonly Pen SelfCross = Frozen(new Pen(new SolidColorBrush(Color.FromArgb(0xF0, 0xFF, 0x30, 0x30)), 1.5));
     private static readonly Typeface LabelFace = new("Segoe UI");
@@ -49,6 +63,14 @@ public sealed class MapView : FrameworkElement
 
     public IEnumerable<PlayerRecord>? Players { get => _players; set { Rebind(ref _players, value); } }
     private IEnumerable<PlayerRecord>? _players;
+
+    /// <summary>The globally selected player, drawn with a highlight ring; null = none.</summary>
+    public PlayerRecord? SelectedPlayer { get => _selectedPlayer; set { _selectedPlayer = value; InvalidateVisual(); } }
+    private PlayerRecord? _selectedPlayer;
+
+    /// <summary>Raised when a player dot is clicked (select) or double-clicked (activate — open details).</summary>
+    public event Action<PlayerRecord>? PlayerSelected;
+    public event Action<PlayerRecord>? PlayerActivated;
 
     public IEnumerable<Bookmark>? Bookmarks { get => _bookmarks; set { Rebind(ref _bookmarks, value); } }
     private IEnumerable<Bookmark>? _bookmarks;
@@ -111,6 +133,9 @@ public sealed class MapView : FrameworkElement
     private Vec3? _self;
     /// <summary>"You are here" marker (the last Ctrl+C position), drawn on top of everything; null hides it. Used by the minimap.</summary>
     public Vec3? SelfPosition { get => _self; set { _self = value; InvalidateVisual(); } }
+
+    /// <summary>The marker under the cursor; its toggle-category is labelled on hover when the marker isn't labelled itself.</summary>
+    private MapMarker? _hoverMarker;
 
     private double _labelUpright;
     /// <summary>Degrees to counter-rotate text labels, so they stay upright when the whole view is rotated (minimap). 0 = none.</summary>
@@ -245,21 +270,34 @@ public sealed class MapView : FrameworkElement
         var x0 = Math.Max(0, (int)Math.Floor(left / tileUnits)); var x1 = Math.Min(tilesX - 1, (int)Math.Floor(right / tileUnits));
         var y0 = Math.Max(0, (int)Math.Floor(top / tileUnits)); var y1 = Math.Min(tilesY - 1, (int)Math.Floor(bottom / tileUnits));
 
-        for (var ty = y0; ty <= y1; ty++)
-        for (var tx = x0; tx <= x1; tx++)
+        // The base-map stack, bottom-first. With no stack set (minimap/mission), fall back to the single tile
+        // template plus the temperature overlay on top, matching the old single-layer behaviour.
+        var layers = _baseLayers;
+        if (layers.Count == 0)
         {
-            var origin = ToScreen(tx * tileUnits, ty * tileUnits);
-            var rect = new Rect(origin.X, origin.Y, tileUnits * scale + 0.5, tileUnits * scale + 0.5);
-            var task = Data.GetTileAsync(_tileTemplate, nz, tx, ty);
-            if (task.IsCompletedSuccessfully && task.Result != null) dc.DrawImage(task.Result, rect);
-            else
-            {
-                dc.DrawRectangle(PlaceholderFill, null, rect);
-                if (!task.IsCompleted) task.ContinueWith(_ => InvalidateVisual(), TaskScheduler.FromCurrentSynchronizationContext());
-            }
+            var fb = new List<MapRenderLayer> { new(_tileTemplate, false, 1.0) };
+            if (_showTemp) fb.Add(new MapRenderLayer(null, true, 1.0));
+            layers = fb;
         }
 
-        DrawTemperature(dc);
+        // Only the lowest tile layer paints placeholders, so upper transparent layers never flash grey boxes
+        // over tiles that are already drawn underneath.
+        var bottomTileIndex = -1;
+        for (var i = 0; i < layers.Count; i++) if (!layers[i].Temperature) { bottomTileIndex = i; break; }
+        var anyTemperature = false;
+
+        for (var i = 0; i < layers.Count; i++)
+        {
+            var layer = layers[i];
+            var opacity = Math.Clamp(layer.Opacity, 0, 1);
+            if (opacity <= 0) continue;
+            var pushed = opacity < 1.0;
+            if (pushed) dc.PushOpacity(opacity);
+            if (layer.Temperature) { DrawTemperatureCore(dc); anyTemperature = true; }
+            else if (layer.TileUrl != null) DrawTileLayer(dc, layer.TileUrl, nz, tileUnits, scale, x0, x1, y0, y1, i == bottomTileIndex);
+            if (pushed) dc.Pop();
+        }
+
         DrawGrid(dc);
         DrawFeatures(dc);
 
@@ -271,7 +309,8 @@ public sealed class MapView : FrameworkElement
             var p = ToScreen(m.MapX, m.MapY);
             Categories.TryGetValue(m.CategoryId, out var cat);
             dc.DrawEllipse(BrushFor(cat?.Background ?? "#888888"), MarkerOutline, p, r, r);
-            if (_zoom >= 5.5) Label(dc, m.Title, p, r);
+            // Markers with no title of their own (e.g. fishing spots) fall back to the category name.
+            if (_zoom >= 5.5) Label(dc, string.IsNullOrWhiteSpace(m.Title) ? cat?.Name ?? "" : m.Title, p, r);
         }
 
         if (_showBookmarks && _bookmarks != null)
@@ -337,11 +376,25 @@ public sealed class MapView : FrameworkElement
                 var (mx, my) = _projection.ToMap(loc.X, loc.Y);
                 var p = ToScreen(mx, my);
                 dc.DrawEllipse(online ? PlayerFill : OfflineFill, MarkerOutline, p, 6, 6);
+                if (_selectedPlayer != null && pl.SteamId == _selectedPlayer.SteamId) dc.DrawEllipse(null, SelectedRing, p, 9, 9);
                 Label(dc, string.IsNullOrWhiteSpace(pl.Nickname) ? pl.SteamId : pl.Nickname, p, 6);
             }
 
-        if (_showTemp && _terrain != null) DrawTemperatureLegend(dc);
+        if (anyTemperature && _terrain != null) DrawTemperatureLegend(dc);
         DrawSelf(dc);
+        DrawHoverLabel(dc);
+    }
+
+    /// <summary>Label the hovered marker with its toggle-category, so the anonymous dots say what they are when the
+    /// marker's own title isn't being drawn (it only draws once zoomed well in).</summary>
+    private void DrawHoverLabel(DrawingContext dc)
+    {
+        if (_hoverMarker is not { } m || _zoom >= 5.5) return; // its own title already shows when zoomed in
+        var p = ToScreen(m.MapX, m.MapY);
+        Categories.TryGetValue(m.CategoryId, out var cat);
+        var text = !string.IsNullOrWhiteSpace(cat?.Name) ? cat!.Name : m.Title;
+        var r = Math.Clamp(2 + _zoom * 1.2, 3, 9);
+        Label(dc, text, p, r);
     }
 
     /// <summary>The "you are here" crosshair + dot, on top of everything.</summary>
@@ -557,13 +610,11 @@ public sealed class MapView : FrameworkElement
         return bmp;
     }
 
-    /// <summary>The altitude-based temperature overlay, a half-transparent heatmap under the grid and markers.</summary>
-    private void DrawTemperature(DrawingContext dc)
+    /// <summary>The altitude-based temperature overlay, a half-transparent heatmap under the grid and markers.
+    /// Caller sets any layer opacity (via PushOpacity); this just paints the heatmap at its own per-pixel alpha.</summary>
+    private void DrawTemperatureCore(DrawingContext dc)
     {
-        if (!_showTemp || _terrain is not { } grid || _projection == null)
-        {
-            return;
-        }
+        if (_terrain is not { } grid || _projection == null) return;
 
         var bmp = _tempBitmap ??= BuildTemperatureBitmap(grid);
         // The projection is an axis-aligned affine map, so the grid's world extent is a transformed rectangle on screen.
@@ -574,6 +625,27 @@ public sealed class MapView : FrameworkElement
         dc.PushTransform(new MatrixTransform(a, 0, 0, c, s0.X, s0.Y));
         dc.DrawImage(bmp, new Rect(0, 0, bmp.PixelWidth, bmp.PixelHeight));
         dc.Pop();
+    }
+
+    /// <summary>Draw one tile layer over the visible area. Only the lowest layer paints grey placeholders for
+    /// tiles still loading; higher layers just leave gaps (showing the layers beneath) until their tiles arrive.</summary>
+    private void DrawTileLayer(DrawingContext dc, string template, int nz, double tileUnits, double scale,
+                               int x0, int x1, int y0, int y1, bool drawPlaceholders)
+    {
+        if (Data == null) return;
+        for (var ty = y0; ty <= y1; ty++)
+        for (var tx = x0; tx <= x1; tx++)
+        {
+            var origin = ToScreen(tx * tileUnits, ty * tileUnits);
+            var rect = new Rect(origin.X, origin.Y, tileUnits * scale + 0.5, tileUnits * scale + 0.5);
+            var task = Data.GetTileAsync(template, nz, tx, ty);
+            if (task.IsCompletedSuccessfully && task.Result != null) dc.DrawImage(task.Result, rect);
+            else
+            {
+                if (drawPlaceholders) dc.DrawRectangle(PlaceholderFill, null, rect);
+                if (!task.IsCompleted) task.ContinueWith(_ => InvalidateVisual(), TaskScheduler.FromCurrentSynchronizationContext());
+            }
+        }
     }
 
     private static readonly Brush LegendBack = Frozen(new SolidColorBrush(Color.FromArgb(0xC0, 0x18, 0x1F, 0x24)));
@@ -793,12 +865,23 @@ public sealed class MapView : FrameworkElement
     protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
     {
         Focus();
-        _dragStart = e.GetPosition(this);
+        var pos = e.GetPosition(this);
+        _pressPlayer = PlayerNear(pos);
+        if (e.ClickCount == 2 && _pressPlayer is { } dbl)
+        {
+            // A double-click on a dot activates it (open details); don't start a pan.
+            _dragStart = null;
+            PlayerActivated?.Invoke(dbl);
+            e.Handled = true;
+            return;
+        }
+        _dragStart = pos;
         _dragCenter = (_cx, _cy);
         _dragged = false;
         CaptureMouse();
         e.Handled = true;
     }
+    private PlayerRecord? _pressPlayer;
 
     protected override void OnMouseMove(MouseEventArgs e)
     {
@@ -811,15 +894,23 @@ public sealed class MapView : FrameworkElement
             _cy = _dragCenter.Y - d.Y / Scale;
             InvalidateVisual();
         }
-        Hover?.Invoke(WorldAt(p), MarkerNear(p));
+        var near = MarkerNear(p);
+        if (!ReferenceEquals(near, _hoverMarker)) { _hoverMarker = near; InvalidateVisual(); }
+        Hover?.Invoke(WorldAt(p), near);
     }
 
     protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
     {
         ReleaseMouseCapture();
         var p = e.GetPosition(this);
-        if (_dragStart != null && !_dragged && WorldAt(p) is { } w) Clicked?.Invoke(w, MarkerNear(p));
+        if (_dragStart != null && !_dragged)
+        {
+            // A click that landed on a player dot selects it; otherwise it picks the map spot.
+            if (_pressPlayer is { } pl && ReferenceEquals(PlayerNear(p), pl)) PlayerSelected?.Invoke(pl);
+            else if (WorldAt(p) is { } w) Clicked?.Invoke(w, MarkerNear(p));
+        }
         _dragStart = null;
+        _pressPlayer = null;
     }
 
     protected override void OnMouseRightButtonDown(MouseButtonEventArgs e)
@@ -828,7 +919,11 @@ public sealed class MapView : FrameworkElement
         if (WorldAt(p) is { } w) ContextRequested?.Invoke(w, MarkerNear(p));
     }
 
-    protected override void OnMouseLeave(MouseEventArgs e) => Hover?.Invoke(null, null);
+    protected override void OnMouseLeave(MouseEventArgs e)
+    {
+        if (_hoverMarker != null) { _hoverMarker = null; InvalidateVisual(); }
+        Hover?.Invoke(null, null);
+    }
 
     private Vec3? WorldAt(Point p)
     {
@@ -847,6 +942,25 @@ public sealed class MapView : FrameworkElement
             var s = ToScreen(m.MapX, m.MapY);
             var d = (s.X - p.X) * (s.X - p.X) + (s.Y - p.Y) * (s.Y - p.Y);
             if (d < bestD) { bestD = d; best = m; }
+        }
+        return best;
+    }
+
+    /// <summary>The visible player dot within ~8px of the point (nearest wins), respecting the online/offline toggles.</summary>
+    private PlayerRecord? PlayerNear(Point p)
+    {
+        if (_projection == null || _players == null || !(_showPlayers || _showOnline)) return null;
+        PlayerRecord? best = null;
+        var bestD = 8.0 * 8.0;
+        foreach (var pl in _players)
+        {
+            if (pl.Location is not { } loc) continue;
+            var online = _listedAt is { } at && pl.LastSeen >= at;
+            if (online ? !_showOnline : !_showPlayers) continue;
+            var (mx, my) = _projection.ToMap(loc.X, loc.Y);
+            var s = ToScreen(mx, my);
+            var d = (s.X - p.X) * (s.X - p.X) + (s.Y - p.Y) * (s.Y - p.Y);
+            if (d < bestD) { bestD = d; best = pl; }
         }
         return best;
     }

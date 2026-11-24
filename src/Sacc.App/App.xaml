@@ -16,6 +16,7 @@
 
         <infra:ConfidenceBrushConverter x:Key="ConfidenceBrush"/>
         <infra:NotEmptyToVisibilityConverter x:Key="NotEmptyToVisibility"/>
+        <infra:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility"/>
         <infra:InverseBoolConverter x:Key="InverseBool"/>
         <infra:SectorConverter x:Key="Sector"/>
         <infra:CodeToIconConverter x:Key="CodeToIcon"/>
@@ -72,6 +73,39 @@
         </Style>
         <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Foreground" Value="{StaticResource ErrorBrush}"/>
+        </Style>
+        <!-- Toggle/radio-as-button (the map tool strip): field surface, accent fill when checked, so the
+             active tool reads in the theme accent instead of the system blue. Margin defaults to 0 so the
+             ComboBox's internal toggle (which borrows {x:Type ToggleButton}) isn't pushed around. -->
+        <Style TargetType="ToggleButton">
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="MinWidth" Value="40"/>
+            <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="1" CornerRadius="3" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrush}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style TargetType="TextBox">
             <Setter Property="Padding" Value="4,3"/>
@@ -199,6 +233,26 @@
         </Style>
         <Style TargetType="DataGridCell">
             <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridCell">
+                        <Border Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="1" SnapsToDevicePixels="True">
+                            <ContentPresenter VerticalAlignment="Center" Margin="4,0,4,0"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <!-- Selected row uses the accent, not WPF's system selection brush (the cream/blue). -->
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrush}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <!-- Popups live in their own visual tree and don't inherit the window's themed Foreground, so they'd

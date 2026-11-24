@@ -21,6 +21,32 @@ public sealed class SpawnQueueItem
     public string Summary => Stack.Length > 0 ? $"{Amount}×  {Code}   (stack {Stack})" : $"{Amount}×  {Code}";
 }
 
+/// <summary>
+/// Display-ready details for the item selected in the Spawner: a readable title, its category and (when a
+/// metadata file is loaded) weight, size, rarity, trader prices, fame and DLC. Stat strings fall back to an
+/// em dash; <see cref="HasMeta"/> is false when no metadata file covers the code, so the UI can hide the grid
+/// rather than show a wall of dashes.
+/// </summary>
+public sealed class ItemDetails
+{
+    public const string Dash = "—";
+
+    public string Code { get; init; } = "";
+    public string Title { get; init; } = "";
+    public string Category { get; init; } = "";
+    public bool HasMeta { get; init; }
+    public string? Description { get; init; }
+    public bool HasDescription => !string.IsNullOrWhiteSpace(Description);
+
+    public string Weight { get; init; } = Dash;
+    public string Size { get; init; } = Dash;
+    public string Rarity { get; init; } = Dash;
+    public string Buy { get; init; } = Dash;
+    public string Sell { get; init; } = Dash;
+    public string Fame { get; init; } = Dash;
+    public string Dlc { get; init; } = Dash;
+}
+
 public sealed class ParamFieldViewModel : ObservableObject
 {
     private readonly Action _changed;

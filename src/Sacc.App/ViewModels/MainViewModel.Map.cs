@@ -158,21 +158,18 @@ public sealed partial class MainViewModel
     public string? ActiveTileTemplate =>
         (_map?.Template.Types.FirstOrDefault(t => t.Name == Settings.MapType) ?? _map?.Template.Types.FirstOrDefault())?.TemplateUrl;
 
-    /// <summary>Tile template for the minimap's own map type, falling back to the Map tab's type, then the first type.</summary>
-    public string? MinimapTileTemplate =>
-        (_map?.Template.Types.FirstOrDefault(t => t.Name == Settings.MinimapMapType)
-         ?? _map?.Template.Types.FirstOrDefault(t => t.Name == Settings.MapType)
-         ?? _map?.Template.Types.FirstOrDefault())?.TemplateUrl;
-
     private string _mapStatus = "The map loads when you open this tab.";
     public string MapStatus { get => _mapStatus; private set => Set(ref _mapStatus, value); }
 
     private string _mapHover = "";
     public string MapHover { get => _mapHover; set => Set(ref _mapHover, value); }
 
-    private string _mapTarget = "";
-    /// <summary>Who "Teleport here" moves; empty = you (no player argument).</summary>
-    public string MapTarget { get => _mapTarget; set => Set(ref _mapTarget, value); }
+    /// <summary>Who "Teleport here" moves: the one selected player, or empty = you (no player argument).</summary>
+    public string MapTarget => SelectedPlayer?.SteamId ?? "";
+
+    /// <summary>Context-menu / button label for the map teleport, naming the selected player.</summary>
+    public string TeleportHereHeader =>
+        SelectedPlayer is { } p ? $"Teleport {(string.IsNullOrWhiteSpace(p.Nickname) ? p.SteamId : p.Nickname)} here" : "Teleport here (you)";
 
     private bool _mapShowOnline = true;
     /// <summary>Players in the last #ListPlayers output, at the position it gave.</summary>
@@ -363,6 +360,7 @@ public sealed partial class MainViewModel
             Raise(nameof(MapCategoriesView));
             Raise(nameof(MapTypeNames));
             Raise(nameof(MapType));
+            RebuildMapLayers();   // the map now offers its real type list; fold in any new/removed types
             RecomputeVisibleMarkers();
             MapStatus = $"{_map.Markers.Count:N0} markers in {MapCategories.Count} categories · data "
                         + (_map.FromCache ? $"cached {_map.FetchedUtc.ToLocalTime():MMM d HH:mm}" : "just refreshed");
@@ -432,7 +430,12 @@ public sealed partial class MainViewModel
     public void MapHovered(Vec3? world, MapMarker? marker)
     {
         if (world is not { } w) { MapHover = ""; return; }
-        MapHover = Grid.KeypadName(w.X, w.Y) + FormattableString.Invariant($"   X {w.X:0}   Y {w.Y:0}") + (marker != null ? $"   ·   {marker.Title}" : "");
+        // The terrain (DTED/Z) grid, when loaded, gives the ground height under the cursor (world units, like X/Y).
+        var z = Terrain?.At(w.X, w.Y);
+        MapHover = Grid.KeypadName(w.X, w.Y)
+            + FormattableString.Invariant($"   X {w.X:0}   Y {w.Y:0}")
+            + (z is { } gz ? FormattableString.Invariant($"   Z {gz:0}") : "")
+            + (marker != null ? $"   ·   {marker.Title}" : "");
     }
 
     /// <summary>Remember the clicked spot (snapping to a marker under the cursor) for the context actions.</summary>

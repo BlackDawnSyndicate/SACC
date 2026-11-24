@@ -200,8 +200,15 @@ public sealed partial class MainViewModel
     private (double Z, string Source)? TerrainGround(Vec3 p)
     {
         if (!Settings.GmHeightFromTerrain || Terrain is not { } t || t.At(p.X, p.Y) is not { } z) return null;
-        return (z, "from the terrain grid");
+        var lift = Settings.GmTerrainLiftCm;
+        var source = lift != 0
+            ? FormattableString.Invariant($"from the terrain grid, {lift / 100:+0.#;-0.#} m lift")
+            : "from the terrain grid";
+        return (z + lift, source);
     }
+
+    /// <summary>Centimetres added to a terrain-grid height only, to centre the landscape-vs-walkable bias (default +150).</summary>
+    public string GmTerrainLift { get => Num(Settings.GmTerrainLiftCm); set { if (TryNum(value, out var v)) { Settings.GmTerrainLiftCm = v; Raise(); UpdateGmSpot(); } } }
 
     public ICommand LoadTerrainCommand => _loadTerrain ??= new RelayCommand(() =>
     {

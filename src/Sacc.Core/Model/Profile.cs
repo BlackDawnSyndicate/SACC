@@ -70,6 +70,13 @@ public sealed class Settings
     /// <summary>The landscape height grid (terrain.scgh), the game's own ground; when loaded it is the top source, under a set height.</summary>
     public bool GmHeightFromTerrain { get; set; } = true;
     /// <summary>
+    /// Centimetres added to a terrain-grid height only. The landscape heightfield sits below the walkable surface
+    /// entities rest on (calibrated against 115 measured spawn climbs: the grid read ~1.5 m low, never high, so
+    /// un-climbed spawns like items sank). +150 ≈ centres that bias on the real surface. Terrain source only, so
+    /// learned/marker heights are untouched; this is on top of <see cref="GmHeightOffset"/>.
+    /// </summary>
+    public double GmTerrainLiftCm { get; set; } = 150;
+    /// <summary>
     /// Ground-checked GM spawns (NPC squads, zombies) climb to the surface: from the height guess minus
     /// <see cref="GmClimbRange"/> up to plus it, in <see cref="GmClimbStep"/> steps, stopping at the first
     /// step the game doesn't refuse. Each step waits up to <see cref="GmClimbWaitMs"/> for a refusal in SCUM's log.
@@ -105,6 +112,9 @@ public sealed class Settings
     public bool MapShowLocations { get; set; }
     /// <summary>Map tab: draw the altitude-based average-temperature heatmap (needs the terrain grid), off by default.</summary>
     public bool MapShowTemperature { get; set; }
+    /// <summary>Map tab: the base-map layer stack (tile types + temperature), top-to-bottom, with per-layer
+    /// visibility and opacity. Reconciled with the map's offered types on load; empty until first used.</summary>
+    public List<MapLayerState> MapLayers { get; set; } = new();
     /// <summary>The app's colour scheme (see ThemeManager): changes the header and accent colours. "Default" keeps the original look.</summary>
     public string Theme { get; set; } = "Default";
 
@@ -117,8 +127,6 @@ public sealed class Settings
     public double MinimapFadeSeconds { get; set; } = 6;
     /// <summary>Rotate the minimap so the player's direction of travel points up (a North arrow shows where north is). Off = north up.</summary>
     public bool MinimapRotate { get; set; } = true;
-    /// <summary>scum-map map type for the minimap (e.g. Tactical), independent of the Map tab's type. Falls back to the Map tab's type if absent.</summary>
-    public string MinimapMapType { get; set; } = "Tactical";
     /// <summary>Automatically press Ctrl+C in the game on a timer so the minimap refreshes your position without you pressing it (only while the game is focused).</summary>
     public bool MinimapAutoCopy { get; set; }
     /// <summary>Seconds between automatic Ctrl+C presses when MinimapAutoCopy is on.</summary>

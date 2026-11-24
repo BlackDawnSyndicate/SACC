@@ -9,6 +9,8 @@ public enum ParamKind { Text, Integer, Number, Player, Bool, Choice, Message }
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum Confidence
 {
+    /// <summary>Confirmed working in-game by the user (the strongest level).</summary>
+    Verified,
     /// <summary>Syntax agrees across public server-host documentation.</summary>
     Documented,
     /// <summary>Public sources disagree on the syntax; verify in-game.</summary>

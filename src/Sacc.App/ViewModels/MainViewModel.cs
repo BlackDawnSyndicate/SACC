@@ -44,6 +44,8 @@ public sealed partial class MainViewModel : ObservableObject
         InitContainers();
         InitTracking();
         InitMissions();
+        InitMapLayers();
+        RebuildMapLayers();   // seed from saved settings; reconciled again once the map's type list loads
         RebuildItemCatalog();
 
         CommandsView = new ListCollectionView(new List<CommandDef>());
@@ -59,6 +61,8 @@ public sealed partial class MainViewModel : ObservableObject
         ClearPlayersCommand = new RelayCommand(() => { Players.Clear(); _profile.PlayersListedAt = null; RefreshPlayersView(); Save(); });
         PlayerActionCommand = new AsyncCommand(PlayerActionAsync, _ => SelectedPlayer != null);
         UsePlayerAsTargetCommand = new RelayCommand(() => { BookmarkTarget = MacroTarget = SelectedPlayer?.SteamId ?? ""; }, () => SelectedPlayer != null);
+        MarkTeleportDestCommand = new RelayCommand(() => TeleportDest = SelectedPlayer, () => SelectedPlayer != null);
+        MovePlayerToDestCommand = new AsyncCommand(MovePlayerToDestAsync, () => SelectedPlayer != null && TeleportDest != null);
 
         AddBookmarkCommand = new RelayCommand(() => { Bookmarks.Add(new Bookmark { Name = "New location" }); Save(); });
         DeleteBookmarkCommand = new RelayCommand(() => { if (SelectedBookmark != null) { Bookmarks.Remove(SelectedBookmark); Save(); } }, () => SelectedBookmark != null);
@@ -184,12 +188,6 @@ public sealed partial class MainViewModel : ObservableObject
         set { Settings.MinimapRotate = value; Raise(); Save(); MinimapChanged?.Invoke(); }
     }
 
-    public string MinimapMapType
-    {
-        get => Settings.MinimapMapType;
-        set { if (value == null || value == Settings.MinimapMapType) return; Settings.MinimapMapType = value; Raise(); Save(); MinimapChanged?.Invoke(); }
-    }
-
     public bool MinimapAutoCopy
     {
         get => Settings.MinimapAutoCopy;
@@ -205,7 +203,8 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Press Ctrl+C in the game to copy the current position — but only when the game is focused, so SACC never steals focus.</summary>
     public void TryAutoCopyPosition()
     {
-        if (_game.IsGameForeground(Settings.ProcessName)) GameLink.SendCopyChord();
+        // SendCopyChord blocks ~80ms holding Ctrl around the C tap; run it off the UI thread so the tick doesn't hitch.
+        if (_game.IsGameForeground(Settings.ProcessName)) System.Threading.Tasks.Task.Run(GameLink.SendCopyChord);
     }
 
     private string _search = "";
@@ -241,7 +240,49 @@ public sealed partial class MainViewModel : ObservableObject
     public string FreeformText { get => _freeform; set => Set(ref _freeform, value); }
 
     private PlayerRecord? _selectedPlayer;
-    public PlayerRecord? SelectedPlayer { get => _selectedPlayer; set { if (Set(ref _selectedPlayer, value)) CommandManager.InvalidateRequerySuggested(); } }
+    public PlayerRecord? SelectedPlayer
+    {
+        get => _selectedPlayer;
+        set
+        {
+            if (!Set(ref _selectedPlayer, value)) return;
+            CommandManager.InvalidateRequerySuggested();
+            Raise(nameof(MapTarget));
+            Raise(nameof(TeleportHereHeader));
+            SelectedPlayerChanged?.Invoke();
+            // Selecting a player only highlights them; it never recentres the map. Centring is an explicit
+            // action: the player list's right-click "Show last location" (ShowLastLocationCommand).
+        }
+    }
+
+    /// <summary>Raised whenever the selected player changes, so the map can refresh its highlight ring.</summary>
+    public event Action? SelectedPlayerChanged;
+    /// <summary>Raised when an explicit "Show last location" asks the map to recentre on a player.</summary>
+    public event Action<PlayerRecord>? CenterOnPlayerRequested;
+
+    private ICommand? _showLastLocation;
+    /// <summary>Right-click "Show last location": recentre the map on the selected player's last-known position.</summary>
+    public ICommand ShowLastLocationCommand => _showLastLocation ??= new RelayCommand(() =>
+    {
+        if (SelectedPlayer is { Location: { } } p) CenterOnPlayerRequested?.Invoke(p);
+        else Status = "That player has no known location yet (refresh players first).";
+    }, () => SelectedPlayer?.Location != null);
+
+    /// <summary>Select a player picked on the map: highlight them everywhere (centring is never automatic).</summary>
+    public void SelectPlayerFromMap(PlayerRecord p) => SelectedPlayer = p;
+
+    // Destination for a player-to-player teleport. SCUM has no "#TeleportTo A B" command (it answers "unknown
+    // command"), so moving one player onto another is done with the verified #Teleport {x} {y} {z} {player}
+    // against this player's last-known position.
+    private PlayerRecord? _teleportDest;
+    public PlayerRecord? TeleportDest
+    {
+        get => _teleportDest;
+        set { if (Set(ref _teleportDest, value)) { Raise(nameof(TeleportDestLabel)); CommandManager.InvalidateRequerySuggested(); } }
+    }
+    public string TeleportDestLabel => TeleportDest is { } d
+        ? $"Destination: {(string.IsNullOrWhiteSpace(d.Nickname) ? d.SteamId : d.Nickname)}"
+        : "No destination set — pick a player and press Mark dest";
 
     private string _playerAmount = "";
     public string PlayerAmount { get => _playerAmount; set => Set(ref _playerAmount, value); }
@@ -300,6 +341,8 @@ public sealed partial class MainViewModel : ObservableObject
     public ICommand ClearPlayersCommand { get; }
     public ICommand PlayerActionCommand { get; }
     public ICommand UsePlayerAsTargetCommand { get; }
+    public ICommand MarkTeleportDestCommand { get; }
+    public ICommand MovePlayerToDestCommand { get; }
     public ICommand AddBookmarkCommand { get; }
     public ICommand DeleteBookmarkCommand { get; }
     public ICommand TeleportBookmarkCommand { get; }
@@ -328,10 +371,23 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void LoadCatalog()
     {
+        string? syncNote = null;
+        try
+        {
+            // Keep an unedited user copy from silently shadowing a newer bundled catalog (refreshes it in place).
+            var sync = CatalogSync.Reconcile(AppPaths.UserCatalog, AppPaths.BundledCatalog);
+            syncNote = sync.Message;
+            if (sync.Message != null) FileLog.Write("INFO", $"Catalog sync: {sync.Action} {sync.Message}");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            FileLog.Write("WARN", $"Catalog sync skipped: {ex.Message}");
+        }
+
         try
         {
             _catalog = JsonStore.LoadCatalog(AppPaths.ActiveCatalog);
-            Status = $"Loaded {_catalog.Commands.Count} commands from {AppPaths.ActiveCatalog}.";
+            Status = syncNote ?? $"Loaded {_catalog.Commands.Count} commands from {AppPaths.ActiveCatalog}.";
         }
         catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or InvalidDataException)
         {
@@ -532,27 +588,15 @@ public sealed partial class MainViewModel : ObservableObject
 
     public ListCollectionView PlayersView { get; }
 
-    private bool _playersOnlineOnly = true;
-    public bool PlayersOnlineOnly { get => _playersOnlineOnly; set { if (Set(ref _playersOnlineOnly, value)) RefreshPlayersView(); } }
-
     private string _playerSearch = "";
     public string PlayerSearch { get => _playerSearch; set { if (Set(ref _playerSearch, value ?? "")) RefreshPlayersView(); } }
 
-    public string PlayersOnlineLabel
-    {
-        get
-        {
-            var at = _profile.PlayersListedAt;
-            if (at == null) return "Online now (not listed yet)";
-            var count = Players.Count(p => p.LastSeen >= at.Value);
-            return $"Online now ({count}, listed {at.Value:MMM d HH:mm})";
-        }
-    }
-
+    // The list shows who is online now (the last #ListPlayers); a search reaches everyone, online or not,
+    // so offline players stay findable without a separate filter toggle (the Database window has the full table).
     private bool PlayerVisible(PlayerRecord p)
     {
-        if (_playersOnlineOnly && (_profile.PlayersListedAt is not { } at || p.LastSeen < at)) return false;
-        if (_playerSearch.Length == 0) return true;
+        if (_playerSearch.Length == 0)
+            return _profile.PlayersListedAt is { } at && p.LastSeen >= at;
         return p.Nickname.Contains(_playerSearch, StringComparison.OrdinalIgnoreCase)
             || p.PlatformName.Contains(_playerSearch, StringComparison.OrdinalIgnoreCase)
             || p.SteamId.Contains(_playerSearch, StringComparison.OrdinalIgnoreCase);
@@ -561,7 +605,6 @@ public sealed partial class MainViewModel : ObservableObject
     private void RefreshPlayersView()
     {
         PlayersView.Refresh();
-        Raise(nameof(PlayersOnlineLabel));
         Raise(nameof(MapOnlineLabel));
         Raise(nameof(MapOnlineTip));
         MapChanged?.Invoke();
@@ -575,6 +618,20 @@ public sealed partial class MainViewModel : ObservableObject
             ["player"] = SelectedPlayer.SteamId,
             ["amount"] = PlayerAmount,
             ["currency"] = PlayerCurrency,
+        });
+    }
+
+    // Move the selected player (teleportee) onto the marked destination player with #TeleportTo.
+    private Task MovePlayerToDestAsync()
+    {
+        if (SelectedPlayer is not { } mover) { Status = "Select the player to move first."; return Task.CompletedTask; }
+        if (TeleportDest is not { } dest) { Status = "Mark a destination player first (select one and press Mark dest)."; return Task.CompletedTask; }
+        var destName = string.IsNullOrWhiteSpace(dest.Nickname) ? dest.SteamId : dest.Nickname;
+        if (mover.SteamId == dest.SteamId) { Status = $"{destName} is both the player to move and the destination."; return Task.CompletedTask; }
+        return RunCatalogAsync("teleport-to-other", new()
+        {
+            ["destination"] = dest.SteamId,
+            ["teleportee"] = mover.SteamId,
         });
     }
 
@@ -737,7 +794,12 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             Directory.CreateDirectory(AppPaths.Root);
-            if (!File.Exists(AppPaths.UserCatalog)) File.Copy(AppPaths.BundledCatalog, AppPaths.UserCatalog);
+            if (!File.Exists(AppPaths.UserCatalog))
+            {
+                File.Copy(AppPaths.BundledCatalog, AppPaths.UserCatalog);
+                // Record what this copy was made from, so later edits are recognised and the copy isn't auto-refreshed over.
+                CatalogSync.RecordSource(AppPaths.UserCatalog, AppPaths.BundledCatalog);
+            }
             Process.Start(new ProcessStartInfo(AppPaths.UserCatalog) { UseShellExecute = true });
             Status = "Editing your catalog copy. Save it, then press Reload catalog.";
         }

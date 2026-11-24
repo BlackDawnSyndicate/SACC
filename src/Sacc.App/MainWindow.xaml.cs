@@ -97,8 +97,9 @@ public partial class MainWindow : Window
     {
         if (_minimap == null) return;
         if (_vm.MapTemplate == null) await _vm.EnsureMapLoadedAsync();
-        // (Re)point the minimap at its own map type's tiles — cheap to repeat, and picks up a type change.
-        if (_vm.MapTemplate is { } t && _vm.MinimapTileTemplate is { } tiles)
+        // (Re)point the minimap at a base template; the layer stack (ApplyMapLayers → BaseLayers) is what actually
+        // draws it, so this is only the fallback template. Use the Map tab's active type to match.
+        if (_vm.MapTemplate is { } t && _vm.ActiveTileTemplate is { } tiles)
             _minimap.SetMap(t, tiles, _vm.MapDataService);
     }
 
@@ -133,8 +134,17 @@ public partial class MainWindow : Window
         MapCanvas.Hover += _vm.MapHovered;
         MapCanvas.Clicked += _vm.MapPointPicked;
         MapCanvas.ContextRequested += _vm.MapPointPicked;
+        MapCanvas.PlayerSelected += p => _vm.SelectPlayerFromMap(p);
+        MapCanvas.PlayerActivated += p => { _vm.SelectPlayerFromMap(p); OpenPlayerDetails(); };
         _vm.MapChanged += SyncMap;
         _vm.MapGoRequested += (world, zoom) => MapCanvas.CenterOn(world.X, world.Y, zoom);
+        // One selected player, highlighted on every map; a list/UI selection of an online player recentres.
+        _vm.SelectedPlayerChanged += () =>
+        {
+            MapCanvas.SelectedPlayer = _vm.SelectedPlayer;
+            if (_minimap != null) _minimap.Map.SelectedPlayer = _vm.SelectedPlayer;
+        };
+        _vm.CenterOnPlayerRequested += p => { if (p.Location is { } l) MapCanvas.CenterOn(l.X, l.Y); };
 
         MissionCanvas.Data = _vm.MapDataService;
         MissionCanvas.Players = _vm.Players;
@@ -175,15 +185,57 @@ public partial class MainWindow : Window
         v.ShowPatrolPaths = _vm.MapShowPatrolPaths;
         v.ShowLocations = _vm.MapShowLocations;
         v.Terrain = _vm.MapTerrainGrid;
-        v.ShowTemperature = _vm.MapShowTemperature;
+        v.ShowTemperature = _vm.MapShowTemperature;   // only used if BaseLayers is empty (fallback)
+        v.BaseLayers = BuildBaseLayers();             // stacked tile types + temperature; the minimap mirrors it too
         v.GridStyle = _vm.MapGrid;
+        v.SelectedPlayer = _vm.SelectedPlayer;
+    }
+
+    // ---- player pop-outs: a single reused details window and the full-table database window.
+
+    private PlayerDetailsWindow? _details;
+    private void OpenPlayerDetails()
+    {
+        if (_details is not { IsLoaded: true })
+        {
+            _details = new PlayerDetailsWindow { Owner = this, DataContext = _vm };
+            _details.Closed += (_, _) => _details = null;
+        }
+        _details.Show();
+        _details.Activate();
+    }
+
+    private PlayerDatabaseWindow? _database;
+    private void OpenPlayerDatabase()
+    {
+        if (_database is not { IsLoaded: true })
+        {
+            _database = new PlayerDatabaseWindow { Owner = this, DataContext = _vm, OpenPlayer = OpenPlayerDetails };
+            _database.Closed += (_, _) => _database = null;
+        }
+        _database.Show();
+        _database.Activate();
+    }
+
+    private void PlayerDatabase_Click(object sender, RoutedEventArgs e) => OpenPlayerDatabase();
+
+    private void PlayersBar_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (ItemsControl.ContainerFromElement((System.Windows.Controls.DataGrid)sender, (DependencyObject)e.OriginalSource) is DataGridRow)
+            OpenPlayerDetails();
+    }
+
+    // Right-click selects the row before its context menu opens, so "Show last location" acts on it.
+    private void PlayerRow_RightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is DataGridRow row) row.IsSelected = true;
     }
 
     private void SyncMap()
     {
         if (_vm.MapTemplate is { } t && _vm.ActiveTileTemplate is { } tiles) MapCanvas.SetMap(t, tiles);
         ApplyMapLayers(MapCanvas);
-        if (_minimap is { HasMap: true }) ApplyMapLayers(_minimap.Map);  // the minimap mirrors the main map's layers
+        if (_minimap is { HasMap: true }) ApplyMapLayers(_minimap.Map);  // the minimap mirrors the main map's layer stack
         if (_vm.MapTemplate is { } mt && _vm.ActiveTileTemplate is { } mtiles) MissionCanvas.SetMap(mt, mtiles);
         MissionCanvas.Categories = _vm.MapCategoryLookup;
         MissionCanvas.PlayersListedAt = _vm.PlayersListedAt;
@@ -192,6 +244,24 @@ public partial class MainWindow : Window
         MissionCanvas.SelectedPhase = _vm.SelectedPhase;
         MissionCanvas.SelectedSpawn = _vm.SelectedSpawn;
         if (Sacc.App.Map.MapDataService.WebpUnsupported) _vm.NoteWebpMissing();
+    }
+
+    /// <summary>Translate the view model's top-to-bottom layer stack into bottom-first render layers, resolving
+    /// each tile type to its URL and dropping hidden or unavailable layers. Shared by the main map and the minimap.</summary>
+    private IReadOnlyList<Map.MapView.MapRenderLayer> BuildBaseLayers()
+    {
+        if (_vm.MapTemplate is not { } tmpl) return Array.Empty<Map.MapView.MapRenderLayer>();
+        string? Url(string id) => tmpl.Types.FirstOrDefault(t => t.Name == id)?.TemplateUrl;
+
+        var list = new List<Map.MapView.MapRenderLayer>();
+        for (var i = _vm.MapLayers.Count - 1; i >= 0; i--)   // VM is top-to-bottom; MapView wants bottom-first
+        {
+            var l = _vm.MapLayers[i];
+            if (!l.Visible) continue;
+            if (l.IsTemperature) list.Add(new Map.MapView.MapRenderLayer(null, true, l.Opacity));
+            else if (Url(l.Id) is { } u) list.Add(new Map.MapView.MapRenderLayer(u, false, l.Opacity));
+        }
+        return list;
     }
 
     private void ViewOnScumMap_Click(object sender, RoutedEventArgs e)

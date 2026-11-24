@@ -110,7 +110,36 @@ public sealed partial class MainViewModel
 
     // The item/vehicle currently highlighted in the match list; the ☆ button and its label act on this.
     private string? _selectedItemMatch;
-    public string? SelectedItemMatch { get => _selectedItemMatch; set { if (Set(ref _selectedItemMatch, value)) Raise(nameof(FavoriteItemLabel)); } }
+    public string? SelectedItemMatch { get => _selectedItemMatch; set { if (Set(ref _selectedItemMatch, value)) { Raise(nameof(FavoriteItemLabel)); Raise(nameof(SelectedItemDetails)); } } }
+
+    // ---- item metadata (weight, size, rarity, trader prices, fame, DLC, description), from game-item-meta.json.
+
+    private ItemMetaTable _itemMeta = ItemMetaTable.Empty;
+
+    /// <summary>Details for the selected item: its category always, plus the metadata fields when a file is loaded.</summary>
+    public ItemDetails? SelectedItemDetails => BuildItemDetails(SelectedItemMatch);
+
+    private ItemDetails? BuildItemDetails(string? code)
+    {
+        if (string.IsNullOrWhiteSpace(code)) return null;
+        code = code.Trim();
+        var m = _itemMeta.Get(code);
+        return new ItemDetails
+        {
+            Code = code,
+            Title = !string.IsNullOrWhiteSpace(m?.Name) ? m!.Name! : ItemName.Prettify(code),
+            Category = ItemCategory.OfItem(code),
+            HasMeta = m != null,
+            Description = m?.Description,
+            Weight = m?.WeightKg is { } w ? FormattableString.Invariant($"{w:0.##} kg") : ItemDetails.Dash,
+            Size = m is { Width: { } ww, Height: { } hh } ? FormattableString.Invariant($"{ww} × {hh}") : ItemDetails.Dash,
+            Rarity = string.IsNullOrWhiteSpace(m?.Rarity) ? ItemDetails.Dash : m!.Rarity!,
+            Buy = m?.TraderBuy is { } b ? FormattableString.Invariant($"{b:0.##}") : ItemDetails.Dash,
+            Sell = m?.TraderSell is { } s ? FormattableString.Invariant($"{s:0.##}") : ItemDetails.Dash,
+            Fame = m?.FameToBuy is { } f ? FormattableString.Invariant($"{f:#,0}") : ItemDetails.Dash,
+            Dlc = string.IsNullOrWhiteSpace(m?.Dlc) ? ItemDetails.Dash : m!.Dlc!,
+        };
+    }
 
     public const string FavoritesCategory = "Favorites";
 
@@ -141,6 +170,7 @@ public sealed partial class MainViewModel
         var kitVehicles = kitCodes.Where(c => c.StartsWith("#spawnvehicle ", StringComparison.OrdinalIgnoreCase))
                                   .Select(c => c["#spawnvehicle ".Length..].Trim());
         var table = LoadSahItemMap().Values;
+        _itemMeta = ItemMetaTable.Load(AppPaths.ActiveItemMeta);
         _gameItems = GameItemList.Load(AppPaths.ActiveGameItems);
         _itemCatalog = new ItemCatalog(table, kitCodes.Concat(FavoriteItems), kitVehicles.Concat(FavoriteVehicles), _gameItems?.Items);
         var catalog = _itemCatalog;
@@ -154,6 +184,7 @@ public sealed partial class MainViewModel
         Raise(nameof(FavoriteVehicleLabel));
         RefreshItemMatches();
         RefreshVehicleMatches();
+        Raise(nameof(SelectedItemDetails));
     }
 
     private void RefreshItemMatches()

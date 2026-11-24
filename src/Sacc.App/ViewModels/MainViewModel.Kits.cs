@@ -25,6 +25,7 @@ public sealed partial class MainViewModel
             Raise(nameof(SelectedKitFolder));
             Raise(nameof(ContainerToKitLabel));
             SelectedKitItem = null;
+            ApplyKitItemFilter();   // carry the add-item filter onto the newly selected kit's grid
             CommandManager.InvalidateRequerySuggested();
         }
     }

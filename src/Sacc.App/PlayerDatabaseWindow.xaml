@@ -1,0 +1,46 @@
+<Window x:Class="Sacc.App.PlayerDatabaseWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Player database" Width="980" Height="560" MinWidth="520" MinHeight="300"
+        Background="{DynamicResource PanelBrush}" Foreground="{DynamicResource TextBrush}" ShowInTaskbar="False">
+    <DockPanel Margin="10">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+            <Button Style="{StaticResource PrimaryButton}" Command="{Binding RefreshPlayersCommand}" Content="Refresh from game"
+                    ToolTip="Sends #ListPlayers true and reads the clipboard"/>
+            <Button Command="{Binding PastePlayersCommand}" Content="Paste list"
+                    ToolTip="Parse #ListPlayers output you copied yourself"/>
+            <Button Command="{Binding ImportSahFilesCommand}" Content="Import SAH players…"
+                    ToolTip="Import a 'SAH Players (date).json' export"/>
+            <Button Command="{Binding ClearPlayersCommand}" Content="Clear"/>
+            <CheckBox Content="{Binding PlayersOnlineLabel}" IsChecked="{Binding PlayersOnlineOnly}" VerticalAlignment="Center" Margin="12,0,0,0"
+                      ToolTip="Only players in the last #ListPlayers output (Refresh from game or Paste list)"/>
+            <TextBox Text="{Binding PlayerSearch, UpdateSourceTrigger=PropertyChanged}" Width="220" Margin="12,0,0,0" VerticalContentAlignment="Center"
+                     ToolTip="Filter by name or SteamID64"/>
+            <TextBlock Text="Double-click a row to open the player." Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+        </StackPanel>
+        <DataGrid x:Name="PlayersGrid" ItemsSource="{Binding PlayersView}" SelectedItem="{Binding SelectedPlayer}" IsReadOnly="True"
+                  MouseDoubleClick="PlayersGrid_MouseDoubleClick">
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <EventSetter Event="PreviewMouseRightButtonDown" Handler="PlayerRow_RightButtonDown"/>
+                </Style>
+            </DataGrid.RowStyle>
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Show last location" Command="{Binding ShowLastLocationCommand}"/>
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Name" Binding="{Binding Nickname}" Width="2*"/>
+                <DataGridTextColumn Header="Steam name" Binding="{Binding PlatformName}" Width="1.5*"/>
+                <DataGridTextColumn Header="SteamID64" Binding="{Binding SteamId}" Width="150"/>
+                <DataGridTextColumn Header="Fame" Binding="{Binding Fame}" Width="70"/>
+                <DataGridTextColumn Header="Account" Binding="{Binding Account}" Width="90"/>
+                <DataGridTextColumn Header="Gold" Binding="{Binding Gold}" Width="60"/>
+                <DataGridTextColumn Header="Sector" Binding="{Binding Converter={StaticResource Sector}}" Width="60"/>
+                <DataGridTextColumn Header="Location" Binding="{Binding Location}" Width="2*"/>
+                <DataGridTextColumn Header="Seen" Binding="{Binding LastSeen, StringFormat='MMM d HH:mm'}" Width="100"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</Window>

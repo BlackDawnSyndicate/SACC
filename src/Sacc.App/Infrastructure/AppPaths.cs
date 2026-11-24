@@ -48,6 +48,12 @@ public static class AppPaths
     public static string ActiveGameItems =>
         File.Exists(UserGameItems) ? UserGameItems : Path.Combine(AppContext.BaseDirectory, "data", "game-items.json");
 
+    /// <summary>Per-item metadata (weight, size, rarity, trader prices, fame, DLC, description); your copy overrides any bundled one.</summary>
+    public static string UserItemMeta => Path.Combine(Root, "game-item-meta.json");
+    public static string BundledItemMeta => Path.Combine(AppContext.BaseDirectory, "data", "game-item-meta.json");
+    /// <summary>The metadata SACC actually uses: your own if present, else the bundled one. The returned path may not exist.</summary>
+    public static string ActiveItemMeta => File.Exists(UserItemMeta) ? UserItemMeta : BundledItemMeta;
+
     /// <summary>SCUM's client log, where #ListItems output ends up.</summary>
     public static string ScumClientLog =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SCUM", "Saved", "Logs", "SCUM.log");
