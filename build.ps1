@@ -18,6 +18,7 @@ dotnet publish src/Sacc.App -c Release -r win-x64 --self-contained:$($SelfContai
 if ($LASTEXITCODE -ne 0) { throw "Publish failed." }
 
 Copy-Item README.md $out
+if (Test-Path CHANGELOG.md) { Copy-Item CHANGELOG.md $out }
 if (Test-Path LICENSE) { Copy-Item LICENSE $out }
 $zip = "$out.zip"
 Remove-Item $zip -ErrorAction SilentlyContinue
